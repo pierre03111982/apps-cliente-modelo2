@@ -445,18 +445,30 @@ export default function ExperimentarPage() {
           {/* Upload de Foto e Área Personalize o seu Look */}
           <div className={`mb-6 flex items-stretch gap-4 ${userPhotoUrl ? 'justify-start' : 'justify-center'}`}>
             {/* Upload de Foto - Sem caixa externa, apenas moldura dupla */}
-            <div className={`${userPhotoUrl ? 'flex-shrink-0' : 'w-full'}`}>
+            <div className={`${userPhotoUrl ? 'flex-shrink-0' : 'w-full'}`} id="photo-container">
               {userPhotoUrl ? (
-                <div className="relative inline-block h-full">
+                <div className="relative inline-block">
                   {/* Moldura Externa - Contínua */}
-                  <div className="relative rounded-2xl border-2 border-white/50 p-2 shadow-xl inline-block h-full">
+                  <div className="relative rounded-2xl border-2 border-white/50 p-2 shadow-xl inline-block">
                     {/* Moldura Interna - Pontilhada */}
-                    <div className="relative border-2 border-dashed border-white/30 rounded-xl p-1 inline-block h-full">
+                    <div className="relative border-2 border-dashed border-white/30 rounded-xl p-1 inline-block">
                       <img
                         src={userPhotoUrl}
                         alt="Sua foto"
-                        className="h-full w-auto max-h-full object-contain block rounded-lg"
-                        style={{ maxWidth: '100%' }}
+                        className="h-auto w-auto max-w-full object-contain block rounded-lg"
+                        id="uploaded-photo"
+                        onLoad={(e) => {
+                          // Sincronizar altura da caixa "Personalize" com a foto
+                          const photo = e.currentTarget
+                          const personalizeBox = document.getElementById('personalize-box')
+                          if (photo && personalizeBox) {
+                            const photoContainer = photo.closest('#photo-container')
+                            if (photoContainer) {
+                              const photoHeight = photoContainer.getBoundingClientRect().height
+                              personalizeBox.style.height = `${photoHeight}px`
+                            }
+                          }
+                        }}
                       />
                     </div>
                   </div>
@@ -490,7 +502,7 @@ export default function ExperimentarPage() {
 
             {/* Área: Personalize o seu Look - Ao lado da foto, mesmo tamanho */}
             {userPhotoUrl && (
-              <div className="flex-shrink-0 self-stretch rounded-xl border border-white/20 bg-white/10 backdrop-blur-lg p-3 md:p-4 shadow-xl flex flex-col min-h-0" style={{ width: '100%', maxWidth: '100%' }}>
+              <div id="personalize-box" className="flex-shrink-0 self-stretch rounded-xl border border-white/20 bg-white/10 backdrop-blur-lg p-3 md:p-4 shadow-xl flex flex-col min-h-0" style={{ width: '100%', maxWidth: '100%' }}>
                 <div className="mb-3 shrink-0">
                   <div className="rounded-lg border-2 border-white/50 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 p-2 shadow-lg">
                     <h2 className="text-center text-xs md:text-sm font-black text-white uppercase tracking-wide" style={{ fontFamily: 'Inter, sans-serif', textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}>
