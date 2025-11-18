@@ -2,9 +2,16 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
-  // Garantir que a rota raiz seja servida corretamente
-  if (request.nextUrl.pathname === '/') {
-    return NextResponse.next()
+  const pathname = request.nextUrl.pathname
+  
+  // Garantir que a rota raiz exata seja servida corretamente
+  // Não permitir que rotas dinâmicas capturem a rota raiz
+  if (pathname === '/' || pathname === '') {
+    return NextResponse.next({
+      headers: {
+        'x-middleware-rewrite': '/',
+      },
+    })
   }
   
   return NextResponse.next()
