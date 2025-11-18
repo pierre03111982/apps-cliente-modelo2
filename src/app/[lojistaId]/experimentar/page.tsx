@@ -481,7 +481,7 @@ export default function ExperimentarPage() {
                   />
                 </div>
               )}
-              <h3 className="text-lg font-bold text-white">
+              <h3 className="text-lg font-bold text-white" translate="no">
                 {lojistaData?.nome || "Loja"}
               </h3>
             </div>

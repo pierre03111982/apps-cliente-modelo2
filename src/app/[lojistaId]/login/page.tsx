@@ -223,12 +223,13 @@ export default function LoginPage() {
         {/* Card com moldura - proporções para celular */}
         <div className="w-full max-w-[90%] sm:max-w-sm rounded-2xl border border-white/30 bg-white/10 backdrop-blur-sm p-5 sm:p-6 md:p-8 shadow-2xl text-center">
           {/* 3. Títulos */}
-          <h1
-            className="mb-4 font-serif text-2xl md:text-3xl font-bold text-white drop-shadow-lg"
-            style={{ fontFamily: "Playfair Display, serif", textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}
-          >
-            EXPERIMENTE AI
-          </h1>
+              <h1
+                className="mb-4 font-serif text-2xl md:text-3xl font-bold text-white drop-shadow-lg"
+                style={{ fontFamily: "Playfair Display, serif", textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}
+                translate="no"
+              >
+                EXPERIMENTE AI
+              </h1>
           <h2
             className="mb-8 text-lg md:text-xl text-white"
             style={{ fontFamily: "Inter, sans-serif" }}
