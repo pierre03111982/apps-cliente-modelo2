@@ -86,62 +86,103 @@ export default function ResultadoPage() {
     loadData()
   }, [lojistaId])
 
+  // Verificar se já foi votado
+  const checkVoteStatus = async (compositionId: string | null) => {
+    if (!compositionId || !lojistaId) return null
+
+    try {
+      const stored = localStorage.getItem(`cliente_${lojistaId}`)
+      if (!stored) return null
+
+      const clienteData = JSON.parse(stored)
+      const clienteId = clienteData.clienteId
+
+      if (!clienteId) return null
+
+      const response = await fetch(
+        `/api/actions/check-vote?compositionId=${encodeURIComponent(compositionId)}&customerId=${encodeURIComponent(clienteId)}&lojistaId=${encodeURIComponent(lojistaId)}`
+      )
+
+      if (response.ok) {
+        const data = await response.json()
+        return data.votedType || data.action || null // "like" ou "dislike"
+      }
+    } catch (error) {
+      console.error("[ResultadoPage] Erro ao verificar voto:", error)
+    }
+
+    return null
+  }
+
   // Carregar looks do sessionStorage ou favorito
   useEffect(() => {
     if (!lojistaId) return
 
-    // Verificar se veio de favoritos
-    const fromFavoritosFlag = sessionStorage.getItem(`from_favoritos_${lojistaId}`)
-    if (fromFavoritosFlag === "true") {
-      setFromFavoritos(true)
-      // Carregar favorito do sessionStorage
-      const favoritoData = sessionStorage.getItem(`favorito_${lojistaId}`)
-      if (favoritoData) {
-        try {
-          const favoritoLook = JSON.parse(favoritoData)
-          setLooks([favoritoLook])
-          setCurrentLookIndex(0)
-          // Marcar como já votado (like)
-          setHasVoted(true)
-          setVotedType("like")
-          // Limpar flag
-          sessionStorage.removeItem(`from_favoritos_${lojistaId}`)
-        } catch (error) {
-          console.error("[ResultadoPage] Erro ao carregar favorito:", error)
+    const loadLooksAndCheckVote = async () => {
+      // Verificar se veio de favoritos
+      const fromFavoritosFlag = sessionStorage.getItem(`from_favoritos_${lojistaId}`)
+      if (fromFavoritosFlag === "true") {
+        setFromFavoritos(true)
+        // Carregar favorito do sessionStorage
+        const favoritoData = sessionStorage.getItem(`favorito_${lojistaId}`)
+        if (favoritoData) {
+          try {
+            const favoritoLook = JSON.parse(favoritoData)
+            setLooks([favoritoLook])
+            setCurrentLookIndex(0)
+            // Marcar como já votado (like) - veio de favoritos
+            setHasVoted(true)
+            setVotedType("like")
+            // Limpar flag
+            sessionStorage.removeItem(`from_favoritos_${lojistaId}`)
+          } catch (error) {
+            console.error("[ResultadoPage] Erro ao carregar favorito:", error)
+            router.push(`/${lojistaId}/experimentar`)
+          }
+        } else {
           router.push(`/${lojistaId}/experimentar`)
         }
+        return
+      }
+
+      // Carregar looks normalmente
+      const storedLooks = sessionStorage.getItem(`looks_${lojistaId}`)
+      if (storedLooks) {
+        try {
+          const parsedLooks = JSON.parse(storedLooks)
+          setLooks(parsedLooks)
+          
+          // Verificar se já foi votado no primeiro look
+          if (parsedLooks.length > 0 && parsedLooks[0].compositionId) {
+            const voteStatus = await checkVoteStatus(parsedLooks[0].compositionId)
+            if (voteStatus) {
+              setHasVoted(true)
+              setVotedType(voteStatus === "like" ? "like" : "dislike")
+            }
+          }
+        } catch (error) {
+          console.error("[ResultadoPage] Erro ao carregar looks:", error)
+        }
       } else {
+        // Se não houver looks, redirecionar para experimentar
         router.push(`/${lojistaId}/experimentar`)
       }
-      return
-    }
 
-    // Carregar looks normalmente
-    const storedLooks = sessionStorage.getItem(`looks_${lojistaId}`)
-    if (storedLooks) {
-      try {
-        const parsedLooks = JSON.parse(storedLooks)
-        setLooks(parsedLooks)
-      } catch (error) {
-        console.error("[ResultadoPage] Erro ao carregar looks:", error)
-      }
-    } else {
-      // Se não houver looks, redirecionar para experimentar
-      router.push(`/${lojistaId}/experimentar`)
-    }
-
-    // Carregar produtos selecionados do sessionStorage
-    const storedProducts = sessionStorage.getItem(`products_${lojistaId}`)
-    if (storedProducts) {
-      try {
-        const parsedProducts = JSON.parse(storedProducts)
-        if (parsedProducts && Array.isArray(parsedProducts) && parsedProducts.length > 0) {
-          setSelectedProducts(parsedProducts) // Carregar todos os produtos
+      // Carregar produtos selecionados do sessionStorage
+      const storedProducts = sessionStorage.getItem(`products_${lojistaId}`)
+      if (storedProducts) {
+        try {
+          const parsedProducts = JSON.parse(storedProducts)
+          if (parsedProducts && Array.isArray(parsedProducts) && parsedProducts.length > 0) {
+            setSelectedProducts(parsedProducts) // Carregar todos os produtos
+          }
+        } catch (error) {
+          console.error("[ResultadoPage] Erro ao carregar produtos:", error)
         }
-      } catch (error) {
-        console.error("[ResultadoPage] Erro ao carregar produtos:", error)
       }
     }
+
+    loadLooksAndCheckVote()
   }, [lojistaId, router])
 
   // Verificar se cliente está logado
@@ -154,13 +195,29 @@ export default function ResultadoPage() {
     }
   }, [lojistaId, router])
 
-  // Resetar votação quando mudar de look (mas não se vier de favoritos)
+  // Verificar voto quando mudar de look (mas não se vier de favoritos)
   useEffect(() => {
-    if (!fromFavoritos) {
-      setHasVoted(false)
-      setVotedType(null)
+    if (!fromFavoritos && looks.length > 0 && looks[currentLookIndex]) {
+      const checkVote = async () => {
+        const compositionId = looks[currentLookIndex].compositionId
+        if (compositionId) {
+          const voteStatus = await checkVoteStatus(compositionId)
+          if (voteStatus) {
+            setHasVoted(true)
+            setVotedType(voteStatus === "like" ? "like" : "dislike")
+          } else {
+            setHasVoted(false)
+            setVotedType(null)
+          }
+        } else {
+          setHasVoted(false)
+          setVotedType(null)
+        }
+      }
+      checkVote()
     }
-  }, [currentLookIndex, fromFavoritos])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentLookIndex, fromFavoritos, looks])
 
   // Carregar favoritos
   const loadFavorites = async () => {
@@ -247,12 +304,45 @@ export default function ResultadoPage() {
   const handleLike = useCallback(async () => {
     if (hasVoted) return
 
-    const success = await registerAction("like")
-    if (success) {
-      setHasVoted(true)
-      setVotedType("like")
+    const currentLook = looks[currentLookIndex]
+    if (!currentLook || !lojistaId) return
+
+    const stored = localStorage.getItem(`cliente_${lojistaId}`)
+    const clienteData = stored ? JSON.parse(stored) : null
+    const clienteId = clienteData?.clienteId || null
+    const clienteNome = clienteData?.nome || null
+
+    setLoadingAction("like")
+
+    try {
+      const response = await fetch("/api/actions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lojistaId,
+          action: "like",
+          compositionId: currentLook.compositionId || null,
+          jobId: currentLook.jobId || null,
+          customerId: clienteId,
+          customerName: clienteNome,
+          productName: currentLook.produtoNome,
+          productPrice: currentLook.produtoPreco || null,
+          imagemUrl: currentLook.imagemUrl,
+        }),
+      })
+
+      if (response.ok) {
+        setHasVoted(true)
+        setVotedType("like")
+        // Atualizar favoritos após dar like
+        await loadFavorites()
+      }
+    } catch (error) {
+      console.error("[ResultadoPage] Erro ao registrar like:", error)
+    } finally {
+      setLoadingAction(null)
     }
-  }, [hasVoted, currentLookIndex, looks, lojistaId])
+  }, [hasVoted, currentLookIndex, looks, lojistaId, loadFavorites])
 
   // Handle dislike
   const handleDislike = useCallback(async () => {

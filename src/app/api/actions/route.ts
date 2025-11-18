@@ -13,10 +13,16 @@ export async function POST(request: NextRequest) {
     const backendUrl =
       process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000";
 
+    // Se for dislike, não enviar imagemUrl (não salvar imagem)
+    const payload = { ...body };
+    if (body.action === "dislike") {
+      delete payload.imagemUrl;
+    }
+
     const response = await fetch(`${backendUrl}/api/actions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify(payload),
     });
 
     const data = await response.json();
