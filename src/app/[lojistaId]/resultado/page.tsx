@@ -219,8 +219,16 @@ export default function ResultadoPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentLookIndex, fromFavoritos, looks])
 
+  // Recarregar favoritos quando o modal for aberto
+  useEffect(() => {
+    if (showFavoritesModal && lojistaId) {
+      loadFavorites()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showFavoritesModal, lojistaId])
+
   // Carregar favoritos
-  const loadFavorites = async () => {
+  const loadFavorites = useCallback(async () => {
     if (!lojistaId) return
 
     try {
@@ -233,34 +241,76 @@ export default function ResultadoPage() {
 
       if (!clienteId) return
 
+      // Adicionar timestamp para evitar cache
       const response = await fetch(
-        `/api/cliente/favoritos?lojistaId=${encodeURIComponent(lojistaId)}&customerId=${encodeURIComponent(clienteId)}`
+        `/api/cliente/favoritos?lojistaId=${encodeURIComponent(lojistaId)}&customerId=${encodeURIComponent(clienteId)}&_t=${Date.now()}`,
+        {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+          }
+        }
       )
 
       if (response.ok) {
         const data = await response.json()
         const favoritesList = data.favorites || data.favoritos || []
-        // Filtrar apenas os likes (action === "like" ou tipo === "like")
+        
+        // Filtrar apenas os likes (action === "like" ou tipo === "like" ou votedType === "like")
         const likesOnly = favoritesList.filter((f: any) => {
-          const hasImage = f.imagemUrl
+          const hasImage = f.imagemUrl && f.imagemUrl.trim() !== ""
           const isLike = f.action === "like" || f.tipo === "like" || f.votedType === "like"
           // Se não tiver campo de ação, assumir que é like (compatibilidade com dados antigos)
           return hasImage && (isLike || (!f.action && !f.tipo && !f.votedType))
         })
+        
         // Ordenar por data de criação (mais recente primeiro)
         const sortedFavorites = likesOnly.sort((a: any, b: any) => {
-          const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt || 0)
-          const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt || 0)
+          // Tentar diferentes formatos de data
+          let dateA: Date
+          let dateB: Date
+          
+          if (a.createdAt?.toDate) {
+            dateA = a.createdAt.toDate()
+          } else if (a.createdAt?.seconds) {
+            dateA = new Date(a.createdAt.seconds * 1000)
+          } else if (typeof a.createdAt === 'string') {
+            dateA = new Date(a.createdAt)
+          } else if (a.createdAt) {
+            dateA = new Date(a.createdAt)
+          } else {
+            dateA = new Date(0) // Data muito antiga se não houver
+          }
+          
+          if (b.createdAt?.toDate) {
+            dateB = b.createdAt.toDate()
+          } else if (b.createdAt?.seconds) {
+            dateB = new Date(b.createdAt.seconds * 1000)
+          } else if (typeof b.createdAt === 'string') {
+            dateB = new Date(b.createdAt)
+          } else if (b.createdAt) {
+            dateB = new Date(b.createdAt)
+          } else {
+            dateB = new Date(0) // Data muito antiga se não houver
+          }
+          
+          // Ordenar do mais recente para o mais antigo
           return dateB.getTime() - dateA.getTime()
         })
-        setFavorites(sortedFavorites.slice(0, 10)) // Últimos 10 likes
+        
+        // Limitar a 10 favoritos mais recentes
+        const limitedFavorites = sortedFavorites.slice(0, 10)
+        
+        console.log("[ResultadoPage] Favoritos carregados:", limitedFavorites.length, "de", likesOnly.length, "likes totais")
+        
+        setFavorites(limitedFavorites)
       }
     } catch (error) {
       console.error("[ResultadoPage] Erro ao carregar favoritos:", error)
     } finally {
       setIsLoadingFavorites(false)
     }
-  }
+  }, [lojistaId])
 
   // Registrar ação (like/dislike)
   const registerAction = async (action: "like" | "dislike" | "share" | "checkout") => {
@@ -334,8 +384,10 @@ export default function ResultadoPage() {
       if (response.ok) {
         setHasVoted(true)
         setVotedType("like")
-        // Atualizar favoritos após dar like
-        await loadFavorites()
+        // Aguardar um pouco antes de atualizar favoritos para garantir que o backend processou
+        setTimeout(async () => {
+          await loadFavorites()
+        }, 500)
       }
     } catch (error) {
       console.error("[ResultadoPage] Erro ao registrar like:", error)
@@ -738,8 +790,8 @@ export default function ResultadoPage() {
                   </button>
                   <button
                     onClick={() => {
-                      loadFavorites()
                       setShowFavoritesModal(true)
+                      // loadFavorites será chamado automaticamente pelo useEffect quando o modal abrir
                     }}
                     className="flex-1 rounded-lg bg-pink-500 px-4 py-3 font-semibold text-white transition hover:bg-pink-600"
                   >
