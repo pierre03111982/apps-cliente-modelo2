@@ -410,8 +410,13 @@ export default function ExperimentarPage() {
   return (
     <div className="relative min-h-screen w-screen overflow-hidden">
       {/* 1. Imagem de Fundo com Desfoque e Overlay - Fixa */}
-      <div className="fixed inset-0 z-0" style={{ backgroundImage: `url(${CLOSET_BACKGROUND_IMAGE})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', backgroundAttachment: 'fixed' }}>
-        <div className="h-full w-full blur-[6px] brightness-50" style={{ backgroundImage: `url(${CLOSET_BACKGROUND_IMAGE})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', backgroundAttachment: 'fixed' }}></div>
+      <div className="fixed inset-0 z-0 overflow-hidden">
+        <img
+          src={CLOSET_BACKGROUND_IMAGE}
+          alt="Guarda-roupa de luxo"
+          className="absolute inset-0 h-full w-full object-cover blur-[6px] brightness-50"
+          style={{ objectFit: 'cover', objectPosition: 'center', minHeight: '100vh', minWidth: '100vw' }}
+        />
       </div>
 
       {/* 2. Conteúdo Principal */}
