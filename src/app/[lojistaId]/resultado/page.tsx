@@ -31,7 +31,7 @@ export default function ResultadoPage() {
   const [showFavoritesModal, setShowFavoritesModal] = useState(false)
   const [favorites, setFavorites] = useState<any[]>([])
   const [isLoadingFavorites, setIsLoadingFavorites] = useState(false)
-  const [selectedProduct, setSelectedProduct] = useState<any>(null)
+  const [selectedProducts, setSelectedProducts] = useState<any[]>([])
 
   // Carregar dados da loja
   useEffect(() => {
@@ -107,8 +107,8 @@ export default function ResultadoPage() {
     if (storedProducts) {
       try {
         const parsedProducts = JSON.parse(storedProducts)
-        if (parsedProducts && parsedProducts.length > 0) {
-          setSelectedProduct(parsedProducts[0]) // Pegar o primeiro produto
+        if (parsedProducts && Array.isArray(parsedProducts) && parsedProducts.length > 0) {
+          setSelectedProducts(parsedProducts) // Carregar todos os produtos
         }
       } catch (error) {
         console.error("[ResultadoPage] Erro ao carregar produtos:", error)
@@ -471,8 +471,8 @@ export default function ResultadoPage() {
         </div>
 
         {/* Imagem Gerada - Com Borda Dupla */}
-        <div className="flex items-start justify-center px-4 pt-4 pb-6">
-          <div className="w-full max-w-2xl">
+        <div className="flex items-start justify-center gap-4 px-4 pt-4 pb-6">
+          <div className="w-full max-w-2xl flex-shrink">
             <div className="relative inline-block">
               {/* Moldura Externa - Contínua */}
               <div className="relative rounded-2xl border-2 border-white/50 p-3 shadow-xl inline-block">
@@ -483,44 +483,52 @@ export default function ResultadoPage() {
                     alt={currentLook.titulo}
                     className="h-auto w-auto max-w-full object-contain block rounded-lg"
                   />
-                  
-                  {/* Miniatura do Produto - Canto Inferior Direito */}
-                  {(selectedProduct || currentLook.produtoNome) && (
-                    <div className="absolute bottom-2 right-2 z-10">
-                      <div className="rounded-lg border-2 border-white/50 bg-white overflow-hidden shadow-xl w-20">
-                        {/* Imagem do Produto */}
-                        {selectedProduct?.imagemUrl ? (
-                          <div className="relative aspect-square w-full">
-                            <Image
-                              src={selectedProduct.imagemUrl}
-                              alt={selectedProduct.nome || currentLook.produtoNome}
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
-                        ) : (
-                          <div className="relative aspect-square w-full bg-gray-200 flex items-center justify-center">
-                            <span className="text-[8px] text-gray-500">Sem imagem</span>
-                          </div>
-                        )}
-                        {/* Informações do Produto */}
-                        <div className="p-1 bg-white">
-                          <h3 className="text-left text-[8px] font-semibold text-gray-900 line-clamp-1 mb-0.5 leading-tight">
-                            {selectedProduct?.nome || currentLook.produtoNome}
-                          </h3>
-                          {(selectedProduct?.preco || currentLook.produtoPreco) && (
-                            <p className="text-left text-[8px] font-bold text-blue-600">
-                              {formatPrice(selectedProduct?.preco || currentLook.produtoPreco)}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Miniaturas dos Produtos - Lado Direito em Coluna Vertical */}
+          {selectedProducts.length > 0 && (
+            <div className="flex flex-col gap-3 flex-shrink-0">
+              {selectedProducts.map((produto, index) => (
+                <div key={produto.id || index} className="relative">
+                  {/* Moldura Externa - Contínua */}
+                  <div className="relative rounded-lg border-2 border-white/50 p-2 shadow-xl bg-white/10 backdrop-blur-sm">
+                    {/* Moldura Interna - Pontilhada */}
+                    <div className="relative border-2 border-dashed border-white/30 rounded-md p-1.5 bg-white overflow-hidden">
+                      {/* Imagem do Produto */}
+                      {produto.imagemUrl ? (
+                        <div className="relative aspect-square w-20">
+                          <Image
+                            src={produto.imagemUrl}
+                            alt={produto.nome || `Produto ${index + 1}`}
+                            fill
+                            className="object-cover rounded"
+                          />
+                        </div>
+                      ) : (
+                        <div className="relative aspect-square w-20 bg-gray-200 flex items-center justify-center rounded">
+                          <span className="text-[8px] text-gray-500">Sem imagem</span>
+                        </div>
+                      )}
+                      {/* Informações do Produto */}
+                      <div className="p-1 bg-white mt-1 rounded">
+                        <h3 className="text-left text-[8px] font-semibold text-gray-900 line-clamp-1 mb-0.5 leading-tight">
+                          {produto.nome || `Produto ${index + 1}`}
+                        </h3>
+                        {produto.preco && (
+                          <p className="text-left text-[8px] font-bold text-blue-600">
+                            {formatPrice(produto.preco)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Botões Comprar Agora e Adicionar ao Carrinho - Só aparecem após votação */}
