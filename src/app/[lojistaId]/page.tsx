@@ -3,6 +3,9 @@
 import React, { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 
+// Forçar renderização dinâmica para evitar erro 404 em rotas dinâmicas
+export const dynamic = 'force-dynamic'
+
 export default function ClienteAppPage() {
   const params = useParams()
   const router = useRouter()

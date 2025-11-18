@@ -20,6 +20,10 @@ const nextConfig = {
       },
     ],
   },
+  // Garantir que rotas dinâmicas sejam renderizadas sob demanda
+  experimental: {
+    dynamicIO: true,
+  },
 }
 
 export default nextConfig
