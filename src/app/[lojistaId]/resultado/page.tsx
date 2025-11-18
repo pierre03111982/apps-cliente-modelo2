@@ -530,6 +530,9 @@ export default function ResultadoPage() {
         setVotedType(null)
         setCurrentLookIndex(0)
         
+        // Atualizar favoritos antes de recarregar (caso tenha dado like anteriormente)
+        await loadFavorites()
+        
         // Recarregar a página para mostrar o novo look
         window.location.reload()
       } else {
