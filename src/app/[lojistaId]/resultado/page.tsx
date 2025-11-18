@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
-import { ArrowLeft, ThumbsUp, ThumbsDown, Share2, ShoppingCart, Heart, RefreshCw, Home, Instagram, Facebook, Music2, MessageCircle } from "lucide-react"
+import { ArrowLeft, ThumbsUp, ThumbsDown, Share2, ShoppingCart, Heart, RefreshCw, Home, Instagram, Facebook, Music2, MessageCircle, X } from "lucide-react"
 import { CLOSET_BACKGROUND_IMAGE } from "@/lib/constants"
 import { fetchLojistaData } from "@/lib/firebaseQueries"
 import type { LojistaData, GeneratedLook } from "@/lib/types"
@@ -154,7 +154,13 @@ export default function ResultadoPage() {
         const data = await response.json()
         const favoritesList = data.favorites || data.favoritos || []
         const validFavorites = favoritesList.filter((f: any) => f.imagemUrl)
-        setFavorites(validFavorites.slice(0, 20))
+        // Ordenar por data de criação (mais recente primeiro)
+        const sortedFavorites = validFavorites.sort((a: any, b: any) => {
+          const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt || 0)
+          const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt || 0)
+          return dateB.getTime() - dateA.getTime()
+        })
+        setFavorites(sortedFavorites.slice(0, 20))
       }
     } catch (error) {
       console.error("[ResultadoPage] Erro ao carregar favoritos:", error)
@@ -470,9 +476,9 @@ export default function ResultadoPage() {
           </div>
         </div>
 
-        {/* Imagem Gerada - Com Borda Dupla */}
-        <div className="flex items-start justify-center gap-4 px-4 pt-4 pb-6">
-          <div className="w-full max-w-2xl flex-shrink">
+        {/* Imagem Gerada - Com Borda Dupla e Produtos no Canto Inferior Direito */}
+        <div className="flex items-start justify-center px-4 pt-4 pb-6">
+          <div className="w-full max-w-2xl relative">
             <div className="relative inline-block">
               {/* Moldura Externa - Contínua */}
               <div className="relative rounded-2xl border-2 border-white/50 p-3 shadow-xl inline-block">
@@ -483,52 +489,52 @@ export default function ResultadoPage() {
                     alt={currentLook.titulo}
                     className="h-auto w-auto max-w-full object-contain block rounded-lg"
                   />
+                  
+                  {/* Miniaturas dos Produtos - Canto Inferior Direito */}
+                  {selectedProducts.length > 0 && (
+                    <div className="absolute bottom-2 right-2 flex flex-col gap-1.5 z-10">
+                      {selectedProducts.map((produto, index) => (
+                        <div key={produto.id || index} className="relative">
+                          {/* Moldura Externa - Contínua */}
+                          <div className="relative rounded-lg border-2 border-white/50 p-1 shadow-xl bg-white/90 backdrop-blur-sm">
+                            {/* Moldura Interna - Pontilhada */}
+                            <div className="relative border-2 border-dashed border-white/30 rounded-md p-0.5 bg-white overflow-hidden">
+                              {/* Imagem do Produto */}
+                              {produto.imagemUrl ? (
+                                <div className="relative aspect-square w-12">
+                                  <Image
+                                    src={produto.imagemUrl}
+                                    alt={produto.nome || `Produto ${index + 1}`}
+                                    fill
+                                    className="object-cover rounded"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="relative aspect-square w-12 bg-gray-200 flex items-center justify-center rounded">
+                                  <span className="text-[6px] text-gray-500">Sem imagem</span>
+                                </div>
+                              )}
+                              {/* Informações do Produto */}
+                              <div className="p-0.5 bg-white">
+                                <h3 className="text-left text-[6px] font-semibold text-gray-900 line-clamp-1 mb-0 leading-tight">
+                                  {produto.nome || `Produto ${index + 1}`}
+                                </h3>
+                                {produto.preco && (
+                                  <p className="text-left text-[6px] font-bold text-blue-600">
+                                    {formatPrice(produto.preco)}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
-
-          {/* Miniaturas dos Produtos - Lado Direito em Coluna Vertical */}
-          {selectedProducts.length > 0 && (
-            <div className="flex flex-col gap-3 flex-shrink-0">
-              {selectedProducts.map((produto, index) => (
-                <div key={produto.id || index} className="relative">
-                  {/* Moldura Externa - Contínua */}
-                  <div className="relative rounded-lg border-2 border-white/50 p-2 shadow-xl bg-white/10 backdrop-blur-sm">
-                    {/* Moldura Interna - Pontilhada */}
-                    <div className="relative border-2 border-dashed border-white/30 rounded-md p-1.5 bg-white overflow-hidden">
-                      {/* Imagem do Produto */}
-                      {produto.imagemUrl ? (
-                        <div className="relative aspect-square w-20">
-                          <Image
-                            src={produto.imagemUrl}
-                            alt={produto.nome || `Produto ${index + 1}`}
-                            fill
-                            className="object-cover rounded"
-                          />
-                        </div>
-                      ) : (
-                        <div className="relative aspect-square w-20 bg-gray-200 flex items-center justify-center rounded">
-                          <span className="text-[8px] text-gray-500">Sem imagem</span>
-                        </div>
-                      )}
-                      {/* Informações do Produto */}
-                      <div className="p-1 bg-white mt-1 rounded">
-                        <h3 className="text-left text-[8px] font-semibold text-gray-900 line-clamp-1 mb-0.5 leading-tight">
-                          {produto.nome || `Produto ${index + 1}`}
-                        </h3>
-                        {produto.preco && (
-                          <p className="text-left text-[8px] font-bold text-blue-600">
-                            {formatPrice(produto.preco)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Botões Comprar Agora e Adicionar ao Carrinho - Só aparecem após votação */}
@@ -648,7 +654,7 @@ export default function ResultadoPage() {
                 onClick={() => setShowFavoritesModal(false)}
                 className="text-white/70 hover:text-white transition"
               >
-                ×
+                <X className="h-6 w-6" />
               </button>
             </div>
 

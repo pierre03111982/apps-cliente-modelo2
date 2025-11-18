@@ -174,7 +174,13 @@ export default function ExperimentarPage() {
         const data = await response.json()
         const favoritesList = data.favorites || data.favoritos || []
         const validFavorites = favoritesList.filter((f: any) => f.imagemUrl)
-        setFavorites(validFavorites.slice(0, 20)) // Últimos 20
+        // Ordenar por data de criação (mais recente primeiro)
+        const sortedFavorites = validFavorites.sort((a: any, b: any) => {
+          const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt || 0)
+          const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt || 0)
+          return dateB.getTime() - dateA.getTime()
+        })
+        setFavorites(sortedFavorites.slice(0, 20)) // Últimos 20
       }
     } catch (error) {
       console.error("[ExperimentarPage] Erro ao carregar favoritos:", error)
@@ -493,7 +499,7 @@ export default function ExperimentarPage() {
                 <div className="mb-4 shrink-0">
                   <div className="rounded-lg border-2 border-white/50 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 p-3 shadow-lg">
                     <h2 className="text-center text-base md:text-lg font-black text-white uppercase tracking-wide" style={{ fontFamily: 'Inter, sans-serif', textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}>
-                      Personalize o seu Look
+                      Provador virtual com IA
                     </h2>
                   </div>
                 </div>
@@ -678,9 +684,11 @@ export default function ExperimentarPage() {
                 <span className="text-yellow-400 font-bold">GANHE</span> <span className="text-xl md:text-2xl font-bold text-yellow-400">{lojistaData?.descontoRedesSociais || 10}%</span> de <span className="text-yellow-400 font-bold">DESCONTO</span> em Todos os Produtos!
               </p>
               {descontoAplicado && (
-                <p className="text-xs font-semibold text-green-400 text-center animate-pulse">
-                  ✓ Desconto aplicado!
-                </p>
+                <>
+                  <p className="text-xs font-semibold text-green-400 text-center animate-pulse">
+                    ✓ Desconto aplicado!
+                  </p>
+                </>
               )}
             </div>
           </div>
