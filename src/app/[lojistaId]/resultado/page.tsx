@@ -623,8 +623,8 @@ export default function ResultadoPage() {
         )}
 
         {/* Logo e Nome da Loja com Redes Sociais - Sempre visível */}
-        <div className="mb-3 sm:mb-4 flex items-center justify-center gap-2 sm:gap-3 px-3 sm:px-4">
-          <div className="rounded-xl border border-white/30 bg-white/10 backdrop-blur-lg px-3 sm:px-4 py-2 sm:py-3 shadow-xl flex items-center gap-2 sm:gap-3 flex-wrap justify-center">
+        <div className="mb-3 sm:mb-4 flex items-center justify-center px-3 sm:px-4">
+          <div className="w-full max-w-2xl rounded-xl border border-white/30 bg-white/10 backdrop-blur-lg px-3 sm:px-4 py-2 sm:py-3 shadow-xl flex items-center gap-2 sm:gap-3 flex-wrap justify-center">
             {lojistaData?.logoUrl && (
               <div className="h-8 w-8 sm:h-10 sm:w-10 overflow-hidden rounded-full border-2 border-white/30 flex-shrink-0">
                 <Image
