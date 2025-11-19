@@ -209,29 +209,35 @@ export default function LoginPage() {
 
   return (
     <div className="relative h-screen w-screen overflow-hidden">
-      {/* 1. Imagem de Fundo com Desfoque e Overlay */}
+      {/* 1. Imagem de Fundo Futurista com Linhas Neon */}
       <div className="absolute inset-0 z-0">
         <img
           src={CLOSET_BACKGROUND_IMAGE}
-          alt="Guarda-roupa de luxo"
-          className="h-full w-full object-cover blur-[2px] brightness-50"
+          alt="Fundo futurista digital"
+          className="h-full w-full object-cover"
+          style={{ 
+            filter: 'brightness(0.4) saturate(1.2)',
+            opacity: 0.6
+          }}
         />
+        {/* Overlay gradiente para melhorar contraste */}
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-blue-900/20 to-pink-900/20"></div>
       </div>
 
       {/* 2. Conteúdo do Formulário Sobreposto */}
       <div className="relative z-10 flex h-full flex-col items-center justify-center px-3 sm:px-4 py-4 sm:py-6 text-white overflow-y-auto">
-        {/* Card com moldura - proporções responsivas */}
-        <div className="w-full max-w-[95%] sm:max-w-md md:max-w-lg lg:max-w-xl rounded-2xl border border-white/30 bg-white/10 backdrop-blur-sm p-4 sm:p-6 md:p-8 shadow-2xl text-center">
+        {/* Card com moldura neomorfista - proporções responsivas */}
+        <div className="w-full max-w-[95%] sm:max-w-md md:max-w-lg lg:max-w-xl neo-card p-4 sm:p-6 md:p-8 text-center rounded-3xl">
           {/* 3. Títulos */}
-              <h1
-                className="mb-3 sm:mb-4 font-serif text-xl sm:text-2xl md:text-3xl font-bold text-white drop-shadow-lg"
-                style={{ fontFamily: "Playfair Display, serif", textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}
-                translate="no"
-              >
-                EXPERIMENTE AI
-              </h1>
+          <h1
+            className="mb-3 sm:mb-4 font-serif text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-gradient-orange via-gradient-pink to-gradient-purple bg-clip-text text-transparent"
+            style={{ fontFamily: "Playfair Display, serif" }}
+            translate="no"
+          >
+            EXPERIMENTE AI
+          </h1>
           <h2
-            className="mb-6 sm:mb-8 text-base sm:text-lg md:text-xl text-white"
+            className="mb-6 sm:mb-8 text-base sm:text-lg md:text-xl text-white/90"
             style={{ fontFamily: "Inter, sans-serif" }}
           >
             Desbloqueie Seu Estilo Perfeito
@@ -248,10 +254,10 @@ export default function LoginPage() {
                 setConfirmPassword("")
                 setNome("")
               }}
-              className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base font-semibold transition-all ${
+              className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-sm sm:text-base font-semibold transition-all ${
                 mode === "login"
-                  ? "bg-white/20 text-white shadow-lg"
-                  : "bg-white/5 text-white/70 hover:bg-white/10"
+                  ? "gradient-button"
+                  : "neo-button"
               }`}
             >
               <LogIn className="inline-block mr-1.5 sm:mr-2 h-3.5 sm:h-4 w-3.5 sm:w-4" />
@@ -265,10 +271,10 @@ export default function LoginPage() {
                 setPassword("")
                 setConfirmPassword("")
               }}
-              className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base font-semibold transition-all ${
+              className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-sm sm:text-base font-semibold transition-all ${
                 mode === "register"
-                  ? "bg-white/20 text-white shadow-lg"
-                  : "bg-white/5 text-white/70 hover:bg-white/10"
+                  ? "gradient-button"
+                  : "neo-button"
               }`}
             >
               <UserPlus className="inline-block mr-1.5 sm:mr-2 h-3.5 sm:h-4 w-3.5 sm:w-4" />
@@ -285,7 +291,7 @@ export default function LoginPage() {
                 placeholder="Nome completo"
                 value={nome}
                 onChange={(e) => handleNomeChange(e.target.value)}
-                className="border-b border-white/50 bg-transparent py-2 sm:py-2.5 text-base sm:text-lg text-white placeholder-white/70 outline-none focus:border-white transition-colors"
+                className="neo-input px-4 py-3 text-base sm:text-lg"
                 required
               />
             )}
@@ -295,7 +301,7 @@ export default function LoginPage() {
               placeholder="WhatsApp com DDD"
               value={whatsapp}
               onChange={(e) => handleWhatsAppChange(e.target.value)}
-              className="border-b border-white/50 bg-transparent py-2 sm:py-2.5 text-base sm:text-lg text-white placeholder-white/70 outline-none focus:border-white transition-colors"
+              className="neo-input px-4 py-3 text-base sm:text-lg"
               required
             />
 
@@ -304,7 +310,7 @@ export default function LoginPage() {
               placeholder="Senha"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="border-b border-white/50 bg-transparent py-2 sm:py-2.5 text-base sm:text-lg text-white placeholder-white/70 outline-none focus:border-white transition-colors"
+              className="neo-input px-4 py-3 text-base sm:text-lg"
               required
             />
 
@@ -314,19 +320,19 @@ export default function LoginPage() {
                 placeholder="Confirmar senha"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="border-b border-white/50 bg-transparent py-2 sm:py-2.5 text-base sm:text-lg text-white placeholder-white/70 outline-none focus:border-white transition-colors"
+                className="neo-input px-4 py-3 text-base sm:text-lg"
                 required
               />
             )}
 
             {error && (
-              <p className="text-xs sm:text-sm text-red-300 text-left">{error}</p>
+              <p className="text-xs sm:text-sm text-red-400 text-left">{error}</p>
             )}
 
             <button
               type="submit"
               disabled={isSubmitting || !isFormValid()}
-              className="mt-2 sm:mt-4 rounded-lg bg-teal-700 py-2.5 sm:py-3 text-base sm:text-lg font-bold text-white transition hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="mt-2 sm:mt-4 gradient-button py-2.5 sm:py-3 text-base sm:text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
                 <>
@@ -351,9 +357,9 @@ export default function LoginPage() {
             <div className="mt-6 sm:mt-8">
               <p className="text-xs sm:text-sm text-white/80 mb-3 sm:mb-4">Continuar com...</p>
               <div className="flex justify-center gap-4 sm:gap-6">
-                <FaGoogle className="h-5 w-5 sm:h-6 sm:w-6 cursor-pointer transition hover:text-white/80 hover:scale-110" />
-                <FaApple className="h-5 w-5 sm:h-6 sm:w-6 cursor-pointer transition hover:text-white/80 hover:scale-110" />
-                <FaFacebook className="h-5 w-5 sm:h-6 sm:w-6 cursor-pointer transition hover:text-white/80 hover:scale-110" />
+                <FaGoogle className="h-5 w-5 sm:h-6 sm:w-6 cursor-pointer transition text-white/80 hover:text-gradient-orange hover:scale-110" />
+                <FaApple className="h-5 w-5 sm:h-6 sm:w-6 cursor-pointer transition text-white/80 hover:text-gradient-orange hover:scale-110" />
+                <FaFacebook className="h-5 w-5 sm:h-6 sm:w-6 cursor-pointer transition text-white/80 hover:text-gradient-orange hover:scale-110" />
               </div>
             </div>
           )}
@@ -370,7 +376,7 @@ export default function LoginPage() {
                     setPassword("")
                     setConfirmPassword("")
                   }}
-                  className="font-bold underline hover:text-white transition"
+                  className="font-bold text-gradient-orange hover:text-gradient-pink transition"
                 >
                   Cadastre-se
                 </button>
@@ -387,7 +393,7 @@ export default function LoginPage() {
                     setConfirmPassword("")
                     setNome("")
                   }}
-                  className="font-bold underline hover:text-white transition"
+                  className="font-bold text-gradient-orange hover:text-gradient-pink transition"
                 >
                   Entrar
                 </button>

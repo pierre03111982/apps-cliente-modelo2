@@ -593,15 +593,24 @@ export default function ResultadoPage() {
   }
 
   return (
-    <div className="relative min-h-screen w-screen overflow-hidden">
-      {/* Imagem de Fundo - Fixa sem redimensionar */}
+    <div className="relative min-h-screen w-screen overflow-hidden bg-dark-bg">
+      {/* Imagem de Fundo Futurista com Linhas Neon - Fixa */}
       <div className="fixed inset-0 z-0 overflow-hidden">
         <img
           src={CLOSET_BACKGROUND_IMAGE}
-          alt="Guarda-roupa de luxo"
-          className="absolute inset-0 h-full w-full object-cover blur-[2px] brightness-50"
-          style={{ objectFit: 'cover', objectPosition: 'center', minHeight: '100vh', minWidth: '100vw' }}
+          alt="Fundo futurista digital"
+          className="absolute inset-0 h-full w-full object-cover"
+          style={{ 
+            objectFit: 'cover', 
+            objectPosition: 'center', 
+            minHeight: '100vh', 
+            minWidth: '100vw',
+            filter: 'brightness(0.4) saturate(1.2)',
+            opacity: 0.6
+          }}
         />
+        {/* Overlay gradiente para melhorar contraste */}
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-blue-900/20 to-pink-900/20"></div>
       </div>
 
       {/* Conteúdo Principal */}
@@ -615,7 +624,7 @@ export default function ResultadoPage() {
                 sessionStorage.removeItem(`products_${lojistaId}`)
                 router.back()
               }}
-              className="rounded-full bg-white/10 p-2 text-white backdrop-blur-sm transition hover:bg-white/20"
+              className="rounded-full neo-button p-2 transition hover:shadow-glass"
             >
               <ArrowLeft className="h-6 w-6" />
             </button>
@@ -624,7 +633,7 @@ export default function ResultadoPage() {
 
         {/* Logo e Nome da Loja com Redes Sociais - Sempre visível */}
         <div className="mb-3 sm:mb-4 flex items-center justify-center px-3 sm:px-4">
-          <div className="w-full max-w-2xl rounded-xl border border-white/30 bg-white/10 backdrop-blur-lg px-3 sm:px-4 py-2 sm:py-3 shadow-xl flex items-center gap-2 sm:gap-3 flex-wrap justify-center">
+          <div className="w-full max-w-2xl neo-card px-3 sm:px-4 py-2 sm:py-3 flex items-center gap-2 sm:gap-3 flex-wrap justify-center rounded-xl">
             {lojistaData?.logoUrl && (
               <div className="h-8 w-8 sm:h-10 sm:w-10 overflow-hidden rounded-full border-2 border-white/30 flex-shrink-0">
                 <Image
@@ -689,14 +698,14 @@ export default function ResultadoPage() {
           </div>
         </div>
 
-        {/* Imagem Gerada - Com Borda Dupla e Produtos no Canto Inferior Direito */}
+            {/* Imagem Gerada - Com Borda Dupla e Produtos no Canto Inferior Direito */}
         <div className="flex items-start justify-center px-3 sm:px-4 pt-3 sm:pt-4 pb-4 sm:pb-6">
           <div className="w-full max-w-2xl relative">
             <div className="relative inline-block w-full">
               {/* Moldura Externa - Contínua */}
-              <div className="relative rounded-xl sm:rounded-2xl border-2 border-white/50 p-2 sm:p-3 shadow-xl inline-block w-full">
+              <div className="relative rounded-xl sm:rounded-2xl border-2 border-glass-border/50 p-2 sm:p-3 shadow-glass inline-block w-full">
                 {/* Moldura Interna - Pontilhada */}
-                <div className="relative border-2 border-dashed border-white/30 rounded-lg sm:rounded-xl p-1.5 sm:p-2 inline-block w-full">
+                <div className="relative border-2 border-dashed border-glass-border/30 rounded-lg sm:rounded-xl p-1.5 sm:p-2 inline-block w-full">
                   <img
                     src={currentLook.imagemUrl}
                     alt={currentLook.titulo}
@@ -709,9 +718,9 @@ export default function ResultadoPage() {
                       {selectedProducts.map((produto, index) => (
                         <div key={produto.id || index} className="relative">
                           {/* Moldura Externa - Contínua - Justa à imagem */}
-                          <div className="relative rounded border-2 border-white/50 shadow-xl bg-white/90 backdrop-blur-sm">
+                          <div className="relative rounded border-2 border-glass-border/50 shadow-glass neo-card">
                             {/* Moldura Interna - Pontilhada - Justa à imagem */}
-                            <div className="relative border-2 border-dashed border-white/30 rounded bg-white overflow-hidden">
+                            <div className="relative border-2 border-dashed border-glass-border/30 rounded bg-card-bg overflow-hidden">
                               {/* Imagem do Produto */}
                               {produto.imagemUrl ? (
                                 <div className="relative w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12">
@@ -724,19 +733,19 @@ export default function ResultadoPage() {
                                   />
                                 </div>
                               ) : (
-                                <div className="relative w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gray-200 flex items-center justify-center">
-                                  <span className="text-[6px] sm:text-[8px] text-gray-500">Sem imagem</span>
+                                <div className="relative w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-card-bg flex items-center justify-center">
+                                  <span className="text-[6px] sm:text-[8px] text-white/50">Sem imagem</span>
                                 </div>
                               )}
                               {/* Informações do Produto - Reduzidas e truncadas */}
-                              <div className="px-0.5 py-0.5 bg-white">
-                                <h3 className="text-left text-[6px] sm:text-[8px] md:text-[10px] font-semibold text-gray-900 line-clamp-1 mb-0 leading-tight truncate" title={produto.nome || `Produto ${index + 1}`}>
+                              <div className="px-0.5 py-0.5 bg-card-bg">
+                                <h3 className="text-left text-[6px] sm:text-[8px] md:text-[10px] font-semibold text-white line-clamp-1 mb-0 leading-tight truncate" title={produto.nome || `Produto ${index + 1}`}>
                                   {produto.nome && produto.nome.length > 10 
                                     ? `${produto.nome.substring(0, 10)}...` 
                                     : produto.nome || `Produto ${index + 1}`}
                                 </h3>
                                 {produto.preco && (
-                                  <p className="text-left text-[6px] sm:text-[8px] md:text-[10px] font-bold text-blue-600 truncate">
+                                  <p className="text-left text-[6px] sm:text-[8px] md:text-[10px] font-bold text-gradient-orange truncate">
                                     {formatPrice(produto.preco).length > 8 
                                       ? `${formatPrice(produto.preco).substring(0, 8)}...` 
                                       : formatPrice(produto.preco)}
@@ -761,13 +770,13 @@ export default function ResultadoPage() {
             <div className="w-full max-w-2xl space-y-2 sm:space-y-3">
               <button
                 onClick={handleCheckout}
-                className="w-full rounded-lg border-2 border-blue-600 bg-blue-600 px-4 sm:px-6 py-3 sm:py-4 text-base sm:text-lg font-bold text-white transition hover:bg-blue-700"
+                className="w-full rounded-lg gradient-button px-4 sm:px-6 py-3 sm:py-4 text-base sm:text-lg font-bold"
               >
                 Comprar agora
               </button>
               <button
                 onClick={handleCheckout}
-                className="w-full rounded-lg bg-gray-200 px-4 sm:px-6 py-3 sm:py-4 text-base sm:text-lg font-semibold text-blue-600 transition hover:bg-gray-300"
+                className="w-full rounded-lg neo-button px-4 sm:px-6 py-3 sm:py-4 text-base sm:text-lg font-semibold transition hover:shadow-glass"
               >
                 <div className="flex items-center justify-center gap-2">
                   <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -783,7 +792,7 @@ export default function ResultadoPage() {
           <div className="w-full max-w-2xl space-y-3 sm:space-y-4">
             {/* Caixa 1: Feedback Like/Dislike */}
             {!hasVoted && (
-              <div className="rounded-xl sm:rounded-2xl border border-white/30 bg-white/10 backdrop-blur-lg p-4 sm:p-6 shadow-xl text-center">
+              <div className="rounded-xl sm:rounded-2xl neo-card p-4 sm:p-6 text-center">
                 <p className="mb-3 sm:mb-4 text-base sm:text-lg font-semibold text-white drop-shadow-lg">
                   Curtiu o Look?
                 </p>
@@ -791,7 +800,7 @@ export default function ResultadoPage() {
                   <button
                     onClick={handleDislike}
                     disabled={loadingAction === "dislike"}
-                    className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-red-500/80 px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base text-white transition hover:bg-red-600 disabled:opacity-50"
+                    className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-gradient-to-r from-gradient-orange to-red-600 px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base text-white transition hover:shadow-glow-orange disabled:opacity-50"
                   >
                     <ThumbsDown className="h-4 w-4 sm:h-5 sm:w-5" />
                     Não
@@ -799,7 +808,7 @@ export default function ResultadoPage() {
                   <button
                     onClick={handleLike}
                     disabled={loadingAction === "like"}
-                    className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-green-500/80 px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base text-white transition hover:bg-green-600 disabled:opacity-50"
+                    className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-gradient-to-r from-gradient-green to-green-600 px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base text-white transition hover:shadow-glow-cyan disabled:opacity-50"
                   >
                     <ThumbsUp className="h-4 w-4 sm:h-5 sm:w-5" />
                     Sim
@@ -810,12 +819,12 @@ export default function ResultadoPage() {
 
             {/* Botões de Ação após votação */}
             {hasVoted && (
-              <div className="rounded-xl sm:rounded-2xl border border-white/30 bg-white/10 backdrop-blur-lg p-4 sm:p-6 shadow-xl">
+              <div className="rounded-xl sm:rounded-2xl neo-card p-4 sm:p-6">
                 <div className="flex flex-col gap-2 sm:gap-3">
                   <div className="flex gap-2 sm:gap-3">
                     <button
                       onClick={handleShare}
-                      className="flex-1 rounded-lg bg-blue-600 px-3 sm:px-4 py-2.5 sm:py-3 font-semibold text-white transition hover:bg-blue-700"
+                      className="flex-1 rounded-lg bg-gradient-to-r from-gradient-orange to-gradient-orange/80 px-3 sm:px-4 py-2.5 sm:py-3 font-semibold text-white transition hover:shadow-glow-orange"
                     >
                       <Share2 className="mx-auto h-4 w-4 sm:h-5 sm:w-5" />
                     </button>
@@ -824,7 +833,7 @@ export default function ResultadoPage() {
                         setShowFavoritesModal(true)
                         // loadFavorites será chamado automaticamente pelo useEffect quando o modal abrir
                       }}
-                      className="flex-1 rounded-lg bg-pink-500 px-3 sm:px-4 py-2.5 sm:py-3 font-semibold text-white transition hover:bg-pink-600"
+                      className="flex-1 rounded-lg bg-gradient-to-r from-gradient-pink to-gradient-pink/80 px-3 sm:px-4 py-2.5 sm:py-3 font-semibold text-white transition hover:shadow-glow-orange"
                     >
                       <div className="flex items-center justify-center gap-1.5 sm:gap-2">
                         <Heart className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -838,11 +847,11 @@ export default function ResultadoPage() {
 
             {/* Botões de Navegação */}
             {hasVoted && (
-              <div className="rounded-xl sm:rounded-2xl border border-white/30 bg-white/10 backdrop-blur-lg p-4 sm:p-6 shadow-xl">
+              <div className="rounded-xl sm:rounded-2xl neo-card p-4 sm:p-6">
                 <div className="flex flex-col gap-2 sm:gap-3">
                   <button
                     onClick={handleAddAccessory}
-                    className="w-full rounded-lg bg-purple-600 px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base font-semibold text-white transition hover:bg-purple-700"
+                    className="w-full rounded-lg gradient-button px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base font-semibold"
                   >
                     <div className="flex items-center justify-center gap-1.5 sm:gap-2">
                       <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -852,7 +861,7 @@ export default function ResultadoPage() {
                   <button
                     onClick={handleRegenerate}
                     disabled={loadingAction === "remix"}
-                    className="w-full rounded-lg bg-teal-600 px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base font-semibold text-white transition hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full rounded-lg bg-gradient-to-r from-gradient-blue to-gradient-blue/80 px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base font-semibold text-white transition hover:shadow-glow-orange disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <div className="flex items-center justify-center gap-1.5 sm:gap-2">
                       <RefreshCw className={`h-4 w-4 sm:h-5 sm:w-5 ${loadingAction === "remix" ? "animate-spin" : ""}`} />
@@ -861,7 +870,7 @@ export default function ResultadoPage() {
                   </button>
                   <button
                     onClick={handleGoHome}
-                    className="w-full rounded-lg bg-gray-600 px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base font-semibold text-white transition hover:bg-gray-700"
+                    className="w-full rounded-lg neo-button px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base font-semibold transition hover:shadow-glass"
                   >
                     <div className="flex items-center justify-center gap-1.5 sm:gap-2">
                       <Home className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -878,7 +887,7 @@ export default function ResultadoPage() {
       {/* Modal de Favoritos */}
       {showFavoritesModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-4xl rounded-xl border border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="w-full max-w-4xl rounded-xl neo-card p-6 max-h-[90vh] overflow-y-auto">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">Meus Favoritos</h2>
               <button
@@ -919,7 +928,7 @@ export default function ResultadoPage() {
                       // Recarregar a página para aplicar as mudanças
                       window.location.href = `/${lojistaId}/resultado?from=favoritos`
                     }}
-                    className="group relative overflow-hidden rounded-lg border border-white/20 bg-white/5 transition hover:bg-white/10 cursor-pointer"
+                    className="group relative overflow-hidden rounded-lg neo-card transition hover:shadow-glass cursor-pointer"
                   >
                     {favorito.imagemUrl && (
                       <div className="relative aspect-square w-full">

@@ -1,23 +1,25 @@
-# Pasta de Imagens
+# Imagens do Modelo 2
 
-Coloque aqui a imagem de fundo do closet de luxo.
+## Imagem de Fundo Futurista
 
-## Instruções:
+**Arquivo:** `futuristic-background.jpg` (ou `.png`, `.webp`)
 
-1. **Nome do arquivo:** `closet-background.jpg` (ou `.png` se for PNG)
+**Localização:** Coloque sua imagem neste diretório (`public/images/`)
 
-2. **Formato recomendado:**
-   - JPG ou PNG
-   - Resolução: 1920x1080 ou maior
-   - Tamanho: até 5MB
+**Especificações recomendadas:**
+- **Formato:** JPG, PNG ou WebP
+- **Tamanho:** 1920x1080px ou maior (para melhor qualidade)
+- **Peso:** Máximo 500KB (otimizado para web)
+- **Estilo:** Imagem futurista com linhas neon azul/magenta/rosa em fundo escuro
 
-3. **Após colocar a imagem:**
-   - Abra o arquivo `src/lib/constants.ts`
-   - Altere a linha para usar a imagem local:
-   ```typescript
-   export const CLOSET_BACKGROUND_IMAGE = "/images/closet-background.jpg"
-   ```
+**Como adicionar:**
+1. Renomeie sua imagem para `futuristic-background.jpg` (ou mantenha a extensão original)
+2. Coloque o arquivo neste diretório: `public/images/`
+3. Se usar outro nome, atualize a constante em `src/lib/constants.ts`
 
-4. **Se a imagem tiver outro nome:**
-   - Ajuste o caminho no arquivo `constants.ts` conforme o nome do arquivo
+**Exemplo de nome de arquivo:**
+- `futuristic-background.jpg` ✅
+- `futuristic-background.png` ✅
+- `futuristic-background.webp` ✅
 
+**Nota:** A imagem será carregada automaticamente em todas as telas (Login, Experimentar, Resultado).

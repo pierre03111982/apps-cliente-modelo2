@@ -586,15 +586,24 @@ export default function ExperimentarPage() {
   }
 
   return (
-    <div className="relative min-h-screen w-screen overflow-hidden">
-      {/* 1. Imagem de Fundo com Desfoque e Overlay - Fixa */}
+    <div className="relative min-h-screen w-screen overflow-hidden bg-dark-bg">
+      {/* 1. Imagem de Fundo Futurista com Linhas Neon - Fixa */}
       <div className="fixed inset-0 z-0 overflow-hidden">
         <img
           src={CLOSET_BACKGROUND_IMAGE}
-          alt="Guarda-roupa de luxo"
-          className="absolute inset-0 h-full w-full object-cover blur-[6px] brightness-50"
-          style={{ objectFit: 'cover', objectPosition: 'center', minHeight: '100vh', minWidth: '100vw' }}
+          alt="Fundo futurista digital"
+          className="absolute inset-0 h-full w-full object-cover"
+          style={{ 
+            objectFit: 'cover', 
+            objectPosition: 'center', 
+            minHeight: '100vh', 
+            minWidth: '100vw',
+            filter: 'brightness(0.4) saturate(1.2)',
+            opacity: 0.6
+          }}
         />
+        {/* Overlay gradiente para melhorar contraste */}
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-blue-900/20 to-pink-900/20"></div>
       </div>
 
       {/* 2. Conteúdo Principal */}
@@ -602,19 +611,19 @@ export default function ExperimentarPage() {
         <div className="mx-auto max-w-6xl">
           {/* Caixa com Logo e Nome da Loja */}
           <div className="mb-3 sm:mb-4 flex items-center justify-center gap-2 sm:gap-3">
-            <div className="rounded-xl border border-white/30 bg-white/10 backdrop-blur-lg px-3 sm:px-4 py-2 sm:py-3 shadow-xl flex items-center gap-2 sm:gap-3">
+            <div className="w-full rounded-3xl neo-card p-6 md:p-8 flex items-center gap-3 sm:gap-4 justify-center">
               {lojistaData?.logoUrl && (
-                <div className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 overflow-hidden rounded-full border-2 border-white/30 flex-shrink-0">
+                <div className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 overflow-hidden rounded-full border-2 border-white/30 flex-shrink-0">
                   <Image
                     src={lojistaData.logoUrl}
                     alt={lojistaData.nome || "Logo"}
-                    width={64}
-                    height={64}
+                    width={96}
+                    height={96}
                     className="h-full w-full object-contain"
                   />
                 </div>
               )}
-              <h3 className="text-base sm:text-lg md:text-xl font-bold text-white" translate="no">
+              <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white" translate="no">
                 {lojistaData?.nome || "Loja"}
               </h3>
             </div>
@@ -627,9 +636,9 @@ export default function ExperimentarPage() {
               {userPhotoUrl && !isRefineMode ? (
                 <div className="relative inline-block">
                   {/* Moldura Externa - Contínua */}
-                  <div className="relative rounded-2xl border-2 border-white/50 p-2 shadow-xl inline-block">
+                  <div className="relative rounded-2xl border-2 border-glass-border/50 p-2 shadow-glass inline-block">
                     {/* Moldura Interna - Pontilhada */}
-                    <div className="relative border-2 border-dashed border-white/30 rounded-xl p-1 inline-block">
+                    <div className="relative border-2 border-dashed border-glass-border/30 rounded-xl p-1 inline-block">
                       <img
                         src={userPhotoUrl}
                         alt="Sua foto"
@@ -664,8 +673,8 @@ export default function ExperimentarPage() {
               ) : isRefineMode ? (
                 // Em modo refinamento, mostrar a imagem base sem permitir upload
                 <div className="relative inline-block">
-                  <div className="relative rounded-2xl border-2 border-white/50 p-2 shadow-xl inline-block">
-                    <div className="relative border-2 border-dashed border-white/30 rounded-xl p-1 inline-block">
+                  <div className="relative rounded-2xl border-2 border-glass-border/50 p-2 shadow-glass inline-block">
+                    <div className="relative border-2 border-dashed border-glass-border/30 rounded-xl p-1 inline-block">
                       {refineBaseImageUrl && (
                         <img
                           src={refineBaseImageUrl}
@@ -675,14 +684,14 @@ export default function ExperimentarPage() {
                       )}
                     </div>
                   </div>
-                  <div className="absolute top-2 left-2 bg-purple-600/90 text-white px-3 py-1 rounded-lg text-xs font-semibold">
+                  <div className="absolute top-2 left-2 bg-gradient-to-r from-gradient-orange to-gradient-pink text-white px-3 py-1 rounded-lg text-xs font-semibold shadow-lg">
                     Modo Refinamento
                   </div>
                 </div>
               ) : (
                 <label
                   htmlFor="photo-upload"
-                  className="flex cursor-pointer flex-col items-center justify-center gap-3 sm:gap-4 rounded-2xl border-2 border-dashed border-white/30 bg-white/5 p-8 sm:p-10 md:p-12 transition hover:border-white/50 hover:bg-white/10"
+                  className="flex cursor-pointer flex-col items-center justify-center gap-3 sm:gap-4 rounded-2xl border-2 border-dashed border-glass-border/30 neo-card p-8 sm:p-10 md:p-12 transition hover:border-glass-border/50 hover:shadow-glass"
                 >
                   <Camera className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 text-white/70" />
                   <span className="text-base sm:text-lg font-semibold text-white text-center px-2">
@@ -702,9 +711,9 @@ export default function ExperimentarPage() {
 
             {/* Área: Personalize o seu Look - Ao lado da foto */}
             {userPhotoUrl && (
-              <div className="w-full sm:flex-1 self-stretch rounded-xl border border-white/20 bg-white/10 backdrop-blur-lg p-3 sm:p-4 md:p-5 shadow-xl flex flex-col min-h-0 sm:max-w-[48%] md:max-w-[42%]">
+              <div className="w-full sm:flex-1 self-stretch neo-card p-3 sm:p-4 md:p-5 flex flex-col min-h-0 sm:max-w-[48%] md:max-w-[42%] rounded-xl">
                 <div className="mb-3 sm:mb-4 shrink-0">
-                  <div className="rounded-lg border-2 border-white/50 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 p-2 sm:p-3 shadow-lg">
+                  <div className="rounded-lg border-2 border-glass-border/50 gradient-button p-2 sm:p-3">
                     <h2 className="text-center text-[10px] sm:text-xs md:text-sm font-black text-white uppercase tracking-wide" style={{ fontFamily: 'Inter, sans-serif', textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}>
                       Provador virtual com IA
                     </h2>
@@ -716,7 +725,7 @@ export default function ExperimentarPage() {
                   <div className="flex flex-col gap-3 shrink-0">
                     {/* Passo 1 */}
                     <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-500/80 text-sm font-bold text-white shadow-lg">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-orange/80 text-sm font-bold text-white shadow-lg">
                         1
                       </div>
                       <div className="flex flex-1 flex-col">
@@ -730,7 +739,7 @@ export default function ExperimentarPage() {
                     {/* Passo 2 */}
                     <div className="flex items-center gap-3">
                       <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-lg ${
-                        selectedProducts.length > 0 ? 'bg-teal-500/80' : 'bg-white/20'
+                        selectedProducts.length > 0 ? 'bg-gradient-orange/80' : 'bg-card-bg'
                       }`}>
                         2
                       </div>
@@ -745,7 +754,7 @@ export default function ExperimentarPage() {
                     {/* Passo 3 */}
                     <div className="flex items-center gap-3">
                       <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-lg ${
-                        userPhotoUrl && selectedProducts.length > 0 ? 'bg-teal-500/80' : 'bg-white/20'
+                        userPhotoUrl && selectedProducts.length > 0 ? 'bg-gradient-orange/80' : 'bg-card-bg'
                       }`}>
                         3
                       </div>
@@ -765,13 +774,13 @@ export default function ExperimentarPage() {
 
           {/* Caixa com Produtos Selecionados - Abaixo da Foto Upload */}
           {userPhotoUrl && selectedProducts.length > 0 && (
-            <div className="mb-4 sm:mb-6 rounded-xl border border-white/30 bg-white/10 backdrop-blur-lg p-2 sm:p-2.5 shadow-xl w-full sm:w-[90%] md:w-[80%] lg:w-[70%] mx-auto">
+            <div className="mb-4 sm:mb-6 neo-card p-2 sm:p-2.5 w-full sm:w-[90%] md:w-[80%] lg:w-[70%] mx-auto rounded-xl">
               <h3 className="mb-2 text-center text-xs sm:text-sm font-bold text-white">
                 Produtos Selecionados
               </h3>
               <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 {selectedProducts.map((produto, index) => (
-                  <div key={produto.id || index} className="rounded-lg border-2 border-white/30 bg-white overflow-hidden shadow-lg relative">
+                  <div key={produto.id || index} className="rounded-lg border-2 border-glass-border/30 neo-card overflow-hidden relative">
                     {/* Botão para remover produto */}
                     <button
                       onClick={() => toggleProductSelection(produto)}
@@ -792,8 +801,8 @@ export default function ExperimentarPage() {
                       </div>
                     )}
                     {/* Informações do Produto */}
-                    <div className="p-1.5 bg-white">
-                      <h3 className="text-left text-[10px] font-semibold text-gray-900 line-clamp-2 mb-0.5 leading-tight">
+                    <div className="p-1.5 bg-card-bg">
+                      <h3 className="text-left text-[10px] font-semibold text-white line-clamp-2 mb-0.5 leading-tight">
                         {produto.nome}
                       </h3>
                       <div className="flex flex-col gap-0.5">
@@ -805,14 +814,14 @@ export default function ExperimentarPage() {
                           if (descontoAplicado && descontoValido) {
                             return (
                               <>
-                                <p className="text-left text-[9px] text-gray-400 line-through">
+                                <p className="text-left text-[9px] text-white/50 line-through">
                                   {formatPrice(produto.preco)}
                                 </p>
                                 <div className="flex items-center gap-0.5 flex-wrap">
-                                  <p className="text-left text-[10px] font-bold text-yellow-500">
+                                  <p className="text-left text-[10px] font-bold text-yellow-400">
                                     {formatPrice(produto.preco ? produto.preco * (1 - (desconto / 100)) : 0)}
                                   </p>
-                                  <p className="text-left text-[7px] font-semibold text-green-600 leading-tight">
+                                  <p className="text-left text-[7px] font-semibold text-green-400 leading-tight">
                                     Desconto aplicado
                                   </p>
                                 </div>
@@ -820,7 +829,7 @@ export default function ExperimentarPage() {
                             )
                           }
                           return (
-                            <p className="text-left text-[10px] font-bold text-blue-600">
+                            <p className="text-left text-[10px] font-bold text-gradient-orange">
                               {formatPrice(produto.preco)}
                             </p>
                           )
@@ -849,9 +858,9 @@ export default function ExperimentarPage() {
           )}
 
           {/* Caixa de Redes Sociais e Desconto */}
-          <div className="mb-6 rounded-lg border border-white/20 bg-white/5 backdrop-blur-sm px-4 py-3 shadow-lg">
+          <div className="mb-6 neo-card px-4 py-3 rounded-lg">
             <div className="flex flex-col items-center gap-3">
-              <div className="rounded-md border border-white/30 bg-red-500/80 px-3 py-1.5">
+              <div className="rounded-md border border-glass-border/30 bg-gradient-to-r from-gradient-orange to-red-600 px-3 py-1.5">
                 <p className="text-xs font-medium text-white text-center">
                   Siga, Curta ou Compartilhe !!!
                 </p>
@@ -945,7 +954,7 @@ export default function ExperimentarPage() {
           </div>
 
           {/* Card Principal */}
-          <div className="rounded-3xl border border-white/20 bg-white/10 backdrop-blur-lg p-6 md:p-8 shadow-2xl">
+          <div className="rounded-3xl neo-card p-6 md:p-8">
 
             {/* Abas de Categoria */}
             <div className="mb-4 sm:mb-6 overflow-x-auto pb-2 -mx-2 sm:mx-0">
@@ -956,8 +965,8 @@ export default function ExperimentarPage() {
                     onClick={() => setActiveCategory(category)}
                     className={`rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold transition whitespace-nowrap flex-shrink-0 ${
                       activeCategory === category
-                        ? "bg-green-500 text-white border-2 border-white shadow-lg"
-                        : "bg-white/5 text-white/70 hover:bg-white/10 border-2 border-transparent"
+                        ? "gradient-button"
+                        : "neo-button"
                     }`}
                   >
                     {category}
@@ -990,8 +999,8 @@ export default function ExperimentarPage() {
                       onClick={() => toggleProductSelection(produto)}
                       className={`group relative overflow-hidden rounded-xl border-2 transition ${
                         isSelected
-                          ? "border-teal-400 bg-teal-50 shadow-lg shadow-teal-500/30"
-                          : "border-gray-200 bg-white hover:border-gray-300"
+                          ? "border-gradient-orange bg-gradient-orange/10 shadow-glow-orange ring-2 ring-gradient-orange"
+                          : "border-glass-border/30 neo-card hover:border-glass-border/50"
                       }`}
                     >
                       {produto.imagemUrl && (
@@ -1004,8 +1013,8 @@ export default function ExperimentarPage() {
                           />
                         </div>
                       )}
-                      <div className="p-3 bg-white">
-                        <h3 className="text-left text-sm font-semibold text-gray-900 line-clamp-2">
+                      <div className="p-3 bg-card-bg">
+                        <h3 className="text-left text-sm font-semibold text-white line-clamp-2">
                           {produto.nome}
                         </h3>
                         <div className="mt-1 flex flex-col gap-0.5">
@@ -1017,14 +1026,14 @@ export default function ExperimentarPage() {
                             if (descontoAplicado && descontoValido) {
                               return (
                                 <>
-                                  <p className="text-left text-xs text-gray-400 line-through">
+                                  <p className="text-left text-xs text-white/50 line-through">
                                     {formatPrice(produto.preco)}
                                   </p>
                                   <div className="flex items-center gap-2">
-                                    <p className="text-left text-sm font-bold text-yellow-500">
+                                    <p className="text-left text-sm font-bold text-yellow-400">
                                       {formatPrice(produto.preco ? produto.preco * (1 - (desconto / 100)) : 0)}
                                     </p>
-                                    <p className="text-left text-[10px] font-semibold text-green-600">
+                                    <p className="text-left text-[10px] font-semibold text-green-400">
                                       Desconto aplicado
                                     </p>
                                   </div>
@@ -1032,7 +1041,7 @@ export default function ExperimentarPage() {
                               )
                             }
                             return (
-                              <p className="text-left text-sm font-bold text-blue-600">
+                              <p className="text-left text-sm font-bold text-gradient-orange">
                                 {formatPrice(produto.preco)}
                               </p>
                             )
@@ -1040,7 +1049,7 @@ export default function ExperimentarPage() {
                         </div>
                       </div>
                       {isSelected && (
-                        <div className="absolute right-2 top-2 rounded-full bg-teal-500 p-1.5 shadow-lg">
+                        <div className="absolute right-2 top-2 rounded-full bg-gradient-orange p-1.5 shadow-lg">
                           <Check className="h-4 w-4 text-white" />
                         </div>
                       )}
@@ -1055,11 +1064,11 @@ export default function ExperimentarPage() {
 
       {/* Botão FAB - Visualize */}
       {(userPhoto || userPhotoUrl) && selectedProducts.length > 0 && (
-        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 p-0.5 sm:p-1 rounded-full shadow-2xl" style={{ background: 'linear-gradient(to right, #facc15, #ec4899, #a855f7, #3b82f6, #10b981)' }}>
+        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 p-0.5 sm:p-1 rounded-full shadow-glow-orange">
           <button
             onClick={handleVisualize}
             disabled={isGenerating}
-            className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-teal-600 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base md:text-lg font-bold text-white transition hover:bg-teal-700 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed w-full h-full"
+            className="flex items-center gap-1.5 sm:gap-2 rounded-full gradient-button px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base md:text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed w-full h-full"
           >
             {isGenerating ? (
               <>
@@ -1089,7 +1098,7 @@ export default function ExperimentarPage() {
       {/* Modal de Favoritos */}
       {showFavoritesModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-4xl rounded-xl border border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="w-full max-w-4xl rounded-xl neo-card p-6 max-h-[90vh] overflow-y-auto">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">Meus Favoritos</h2>
               <button
@@ -1128,7 +1137,7 @@ export default function ExperimentarPage() {
                       // Navegar para Tela 3
                       router.push(`/${lojistaId}/resultado?from=favoritos`)
                     }}
-                    className="group relative overflow-hidden rounded-lg border border-white/20 bg-white/5 transition hover:bg-white/10 cursor-pointer"
+                    className="group relative overflow-hidden rounded-lg neo-card transition hover:shadow-glass cursor-pointer"
                   >
                     {favorito.imagemUrl && (
                       <div className="relative aspect-square w-full">
