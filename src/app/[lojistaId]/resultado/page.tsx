@@ -623,10 +623,10 @@ export default function ResultadoPage() {
         )}
 
         {/* Logo e Nome da Loja com Redes Sociais - Sempre visível */}
-        <div className="mb-4 flex items-center justify-center gap-3 px-4">
-          <div className="rounded-xl border border-white/30 bg-white/10 backdrop-blur-lg px-4 py-3 shadow-xl flex items-center gap-3 flex-wrap justify-center">
+        <div className="mb-3 sm:mb-4 flex items-center justify-center gap-2 sm:gap-3 px-3 sm:px-4">
+          <div className="rounded-xl border border-white/30 bg-white/10 backdrop-blur-lg px-3 sm:px-4 py-2 sm:py-3 shadow-xl flex items-center gap-2 sm:gap-3 flex-wrap justify-center">
             {lojistaData?.logoUrl && (
-              <div className="h-10 w-10 overflow-hidden rounded-full border-2 border-white/30">
+              <div className="h-8 w-8 sm:h-10 sm:w-10 overflow-hidden rounded-full border-2 border-white/30 flex-shrink-0">
                 <Image
                   src={lojistaData.logoUrl}
                   alt={lojistaData.nome || "Logo"}
@@ -636,20 +636,20 @@ export default function ResultadoPage() {
                 />
               </div>
             )}
-            <h3 className="text-lg font-bold text-white" translate="no">
+            <h3 className="text-base sm:text-lg md:text-xl font-bold text-white" translate="no">
               {lojistaData?.nome || "Loja"}
             </h3>
             
             {/* Botões das Redes Sociais */}
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-center">
               {/* Instagram */}
               {lojistaData?.redesSociais?.instagram && (
                 <button
                   onClick={() => window.open(lojistaData.redesSociais.instagram!.startsWith('http') ? lojistaData.redesSociais.instagram! : `https://instagram.com/${lojistaData.redesSociais.instagram!.replace('@', '')}`, '_blank', 'noopener,noreferrer')}
-                  className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:scale-105"
+                  className="flex items-center gap-1 sm:gap-1.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-semibold text-white transition hover:scale-105"
                 >
-                  <Instagram className="h-4 w-4" />
-                  <span>Instagram</span>
+                  <Instagram className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Instagram</span>
                 </button>
               )}
               
@@ -657,10 +657,10 @@ export default function ResultadoPage() {
               {lojistaData?.redesSociais?.facebook && (
                 <button
                   onClick={() => window.open(lojistaData.redesSociais.facebook!.startsWith('http') ? lojistaData.redesSociais.facebook! : `https://facebook.com/${lojistaData.redesSociais.facebook!}`, '_blank', 'noopener,noreferrer')}
-                  className="flex items-center gap-1.5 rounded-full bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:scale-105"
+                  className="flex items-center gap-1 sm:gap-1.5 rounded-full bg-blue-600 px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-semibold text-white transition hover:scale-105"
                 >
-                  <Facebook className="h-4 w-4" />
-                  <span>Facebook</span>
+                  <Facebook className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Facebook</span>
                 </button>
               )}
               
@@ -668,10 +668,10 @@ export default function ResultadoPage() {
               {lojistaData?.redesSociais?.tiktok && (
                 <button
                   onClick={() => window.open(lojistaData.redesSociais.tiktok!.startsWith('http') ? lojistaData.redesSociais.tiktok! : `https://tiktok.com/@${lojistaData.redesSociais.tiktok!.replace('@', '')}`, '_blank', 'noopener,noreferrer')}
-                  className="flex items-center gap-1.5 rounded-full bg-black px-3 py-1.5 text-xs font-semibold text-white transition hover:scale-105"
+                  className="flex items-center gap-1 sm:gap-1.5 rounded-full bg-black px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-semibold text-white transition hover:scale-105"
                 >
-                  <Music2 className="h-4 w-4" />
-                  <span>TikTok</span>
+                  <Music2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">TikTok</span>
                 </button>
               )}
               
@@ -679,10 +679,10 @@ export default function ResultadoPage() {
               {(lojistaData?.redesSociais?.whatsapp || lojistaData?.salesConfig?.whatsappLink) && (
                 <button
                   onClick={() => window.open(lojistaData?.redesSociais?.whatsapp ? `https://wa.me/${lojistaData.redesSociais.whatsapp.replace(/\D/g, '')}` : lojistaData?.salesConfig?.whatsappLink || '#', '_blank', 'noopener,noreferrer')}
-                  className="flex items-center gap-1.5 rounded-full bg-green-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:scale-105"
+                  className="flex items-center gap-1 sm:gap-1.5 rounded-full bg-green-500 px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-semibold text-white transition hover:scale-105"
                 >
-                  <MessageCircle className="h-4 w-4" />
-                  <span>WhatsApp</span>
+                  <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">WhatsApp</span>
                 </button>
               )}
             </div>
@@ -690,22 +690,22 @@ export default function ResultadoPage() {
         </div>
 
         {/* Imagem Gerada - Com Borda Dupla e Produtos no Canto Inferior Direito */}
-        <div className="flex items-start justify-center px-4 pt-4 pb-6">
+        <div className="flex items-start justify-center px-3 sm:px-4 pt-3 sm:pt-4 pb-4 sm:pb-6">
           <div className="w-full max-w-2xl relative">
-            <div className="relative inline-block">
+            <div className="relative inline-block w-full">
               {/* Moldura Externa - Contínua */}
-              <div className="relative rounded-2xl border-2 border-white/50 p-3 shadow-xl inline-block">
+              <div className="relative rounded-xl sm:rounded-2xl border-2 border-white/50 p-2 sm:p-3 shadow-xl inline-block w-full">
                 {/* Moldura Interna - Pontilhada */}
-                <div className="relative border-2 border-dashed border-white/30 rounded-xl p-2 inline-block">
+                <div className="relative border-2 border-dashed border-white/30 rounded-lg sm:rounded-xl p-1.5 sm:p-2 inline-block w-full">
                   <img
                     src={currentLook.imagemUrl}
                     alt={currentLook.titulo}
-                    className="h-auto w-auto max-w-full object-contain block rounded-lg"
+                    className="h-auto w-full max-w-full object-contain object-top block rounded-lg"
                   />
                   
                   {/* Miniaturas dos Produtos - Canto Inferior Direito */}
                   {selectedProducts.length > 0 && (
-                    <div className="absolute bottom-2 right-2 flex flex-col gap-1.5 z-10">
+                    <div className="absolute bottom-1 sm:bottom-2 right-1 sm:right-2 flex flex-col gap-1 sm:gap-1.5 z-10">
                       {selectedProducts.map((produto, index) => (
                         <div key={produto.id || index} className="relative">
                           {/* Moldura Externa - Contínua - Justa à imagem */}
@@ -714,29 +714,29 @@ export default function ResultadoPage() {
                             <div className="relative border-2 border-dashed border-white/30 rounded bg-white overflow-hidden">
                               {/* Imagem do Produto */}
                               {produto.imagemUrl ? (
-                                <div className="relative w-12 h-12">
+                                <div className="relative w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12">
                                   <Image
                                     src={produto.imagemUrl}
                                     alt={produto.nome || `Produto ${index + 1}`}
                                     width={48}
                                     height={48}
-                                    className="object-cover"
+                                    className="object-cover w-full h-full"
                                   />
                                 </div>
                               ) : (
-                                <div className="relative w-12 h-12 bg-gray-200 flex items-center justify-center">
-                                  <span className="text-[6px] text-gray-500">Sem imagem</span>
+                                <div className="relative w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gray-200 flex items-center justify-center">
+                                  <span className="text-[6px] sm:text-[8px] text-gray-500">Sem imagem</span>
                                 </div>
                               )}
                               {/* Informações do Produto - Reduzidas e truncadas */}
                               <div className="px-0.5 py-0.5 bg-white">
-                                <h3 className="text-left text-[4px] font-semibold text-gray-900 line-clamp-1 mb-0 leading-tight truncate" title={produto.nome || `Produto ${index + 1}`}>
-                                  {produto.nome && produto.nome.length > 12 
-                                    ? `${produto.nome.substring(0, 12)}...` 
+                                <h3 className="text-left text-[6px] sm:text-[8px] md:text-[10px] font-semibold text-gray-900 line-clamp-1 mb-0 leading-tight truncate" title={produto.nome || `Produto ${index + 1}`}>
+                                  {produto.nome && produto.nome.length > 10 
+                                    ? `${produto.nome.substring(0, 10)}...` 
                                     : produto.nome || `Produto ${index + 1}`}
                                 </h3>
                                 {produto.preco && (
-                                  <p className="text-left text-[4px] font-bold text-blue-600 truncate">
+                                  <p className="text-left text-[6px] sm:text-[8px] md:text-[10px] font-bold text-blue-600 truncate">
                                     {formatPrice(produto.preco).length > 8 
                                       ? `${formatPrice(produto.preco).substring(0, 8)}...` 
                                       : formatPrice(produto.preco)}
@@ -757,48 +757,48 @@ export default function ResultadoPage() {
 
         {/* Botões Comprar Agora e Adicionar ao Carrinho - Só aparecem após votação */}
         {hasVoted && (
-          <div className="px-4 pb-4 space-y-3">
+          <div className="px-3 sm:px-4 pb-3 sm:pb-4 space-y-2 sm:space-y-3">
             <button
               onClick={handleCheckout}
-              className="w-full max-w-2xl mx-auto rounded-lg border-2 border-blue-600 bg-blue-600 px-6 py-4 text-lg font-bold text-white transition hover:bg-blue-700"
+              className="w-full max-w-2xl mx-auto rounded-lg border-2 border-blue-600 bg-blue-600 px-4 sm:px-6 py-3 sm:py-4 text-base sm:text-lg font-bold text-white transition hover:bg-blue-700"
             >
               Comprar agora
             </button>
             <button
               onClick={handleCheckout}
-              className="w-full max-w-2xl mx-auto rounded-lg bg-gray-200 px-6 py-4 text-lg font-semibold text-blue-600 transition hover:bg-gray-300"
+              className="w-full max-w-2xl mx-auto rounded-lg bg-gray-200 px-4 sm:px-6 py-3 sm:py-4 text-base sm:text-lg font-semibold text-blue-600 transition hover:bg-gray-300"
             >
               <div className="flex items-center justify-center gap-2">
-                <ShoppingCart className="h-5 w-5" />
-                <span>Adicionar ao carrinho</span>
+                <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="text-sm sm:text-base">Adicionar ao carrinho</span>
               </div>
             </button>
           </div>
         )}
 
         {/* Painel Inferior - Separado */}
-        <div className="px-4 pb-6 space-y-4">
+        <div className="px-3 sm:px-4 pb-4 sm:pb-6 space-y-3 sm:space-y-4">
           {/* Caixa 1: Feedback Like/Dislike */}
           {!hasVoted && (
-            <div className="rounded-2xl border border-white/30 bg-white/10 backdrop-blur-lg p-6 shadow-xl text-center">
-              <p className="mb-4 text-lg font-semibold text-white drop-shadow-lg">
+            <div className="rounded-xl sm:rounded-2xl border border-white/30 bg-white/10 backdrop-blur-lg p-4 sm:p-6 shadow-xl text-center">
+              <p className="mb-3 sm:mb-4 text-base sm:text-lg font-semibold text-white drop-shadow-lg">
                 Curtiu o Look?
               </p>
-              <div className="flex justify-center gap-4">
+              <div className="flex justify-center gap-3 sm:gap-4">
                 <button
                   onClick={handleDislike}
                   disabled={loadingAction === "dislike"}
-                  className="flex items-center gap-2 rounded-full bg-red-500/80 px-6 py-3 text-white transition hover:bg-red-600 disabled:opacity-50"
+                  className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-red-500/80 px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base text-white transition hover:bg-red-600 disabled:opacity-50"
                 >
-                  <ThumbsDown className="h-5 w-5" />
+                  <ThumbsDown className="h-4 w-4 sm:h-5 sm:w-5" />
                   Não
                 </button>
                 <button
                   onClick={handleLike}
                   disabled={loadingAction === "like"}
-                  className="flex items-center gap-2 rounded-full bg-green-500/80 px-6 py-3 text-white transition hover:bg-green-600 disabled:opacity-50"
+                  className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-green-500/80 px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base text-white transition hover:bg-green-600 disabled:opacity-50"
                 >
-                  <ThumbsUp className="h-5 w-5" />
+                  <ThumbsUp className="h-4 w-4 sm:h-5 sm:w-5" />
                   Sim
                 </button>
               </div>
@@ -807,25 +807,25 @@ export default function ResultadoPage() {
 
           {/* Botões de Ação após votação */}
           {hasVoted && (
-            <div className="rounded-2xl border border-white/30 bg-white/10 backdrop-blur-lg p-6 shadow-xl">
-              <div className="flex flex-col gap-3">
-                <div className="flex gap-3">
+            <div className="rounded-xl sm:rounded-2xl border border-white/30 bg-white/10 backdrop-blur-lg p-4 sm:p-6 shadow-xl">
+              <div className="flex flex-col gap-2 sm:gap-3">
+                <div className="flex gap-2 sm:gap-3">
                   <button
                     onClick={handleShare}
-                    className="flex-1 rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700"
+                    className="flex-1 rounded-lg bg-blue-600 px-3 sm:px-4 py-2.5 sm:py-3 font-semibold text-white transition hover:bg-blue-700"
                   >
-                    <Share2 className="mx-auto h-5 w-5" />
+                    <Share2 className="mx-auto h-4 w-4 sm:h-5 sm:w-5" />
                   </button>
                   <button
                     onClick={() => {
                       setShowFavoritesModal(true)
                       // loadFavorites será chamado automaticamente pelo useEffect quando o modal abrir
                     }}
-                    className="flex-1 rounded-lg bg-pink-500 px-4 py-3 font-semibold text-white transition hover:bg-pink-600"
+                    className="flex-1 rounded-lg bg-pink-500 px-3 sm:px-4 py-2.5 sm:py-3 font-semibold text-white transition hover:bg-pink-600"
                   >
-                    <div className="flex items-center justify-center gap-2">
-                      <Heart className="h-5 w-5" />
-                      <span>Favoritos</span>
+                    <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+                      <Heart className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <span className="text-sm sm:text-base">Favoritos</span>
                     </div>
                   </button>
                 </div>
@@ -835,34 +835,34 @@ export default function ResultadoPage() {
 
           {/* Botões de Navegação */}
           {hasVoted && (
-            <div className="rounded-2xl border border-white/30 bg-white/10 backdrop-blur-lg p-6 shadow-xl">
-              <div className="flex flex-col gap-3">
+            <div className="rounded-xl sm:rounded-2xl border border-white/30 bg-white/10 backdrop-blur-lg p-4 sm:p-6 shadow-xl">
+              <div className="flex flex-col gap-2 sm:gap-3">
                 <button
                   onClick={handleAddAccessory}
-                  className="w-full rounded-lg bg-purple-600 px-4 py-3 font-semibold text-white transition hover:bg-purple-700"
+                  className="w-full rounded-lg bg-purple-600 px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base font-semibold text-white transition hover:bg-purple-700"
                 >
-                  <div className="flex items-center justify-center gap-2">
-                    <Sparkles className="h-5 w-5" />
-                    Adicionar Acessório
+                  <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+                    <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <span className="text-xs sm:text-base">Adicionar Acessório</span>
                   </div>
                 </button>
                 <button
                   onClick={handleRegenerate}
                   disabled={loadingAction === "remix"}
-                  className="w-full rounded-lg bg-teal-600 px-4 py-3 font-semibold text-white transition hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full rounded-lg bg-teal-600 px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base font-semibold text-white transition hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <div className="flex items-center justify-center gap-2">
-                    <RefreshCw className={`h-5 w-5 ${loadingAction === "remix" ? "animate-spin" : ""}`} />
-                    {loadingAction === "remix" ? "Gerando novo look..." : "Remixar esse Look"}
+                  <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+                    <RefreshCw className={`h-4 w-4 sm:h-5 sm:w-5 ${loadingAction === "remix" ? "animate-spin" : ""}`} />
+                    <span className="text-xs sm:text-base">{loadingAction === "remix" ? "Gerando novo look..." : "Remixar esse Look"}</span>
                   </div>
                 </button>
                 <button
                   onClick={handleGoHome}
-                  className="w-full rounded-lg bg-gray-600 px-4 py-3 font-semibold text-white transition hover:bg-gray-700"
+                  className="w-full rounded-lg bg-gray-600 px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base font-semibold text-white transition hover:bg-gray-700"
                 >
-                  <div className="flex items-center justify-center gap-2">
-                    <Home className="h-5 w-5" />
-                    Criar outro Look
+                  <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+                    <Home className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <span className="text-xs sm:text-base">Criar outro Look</span>
                   </div>
                 </button>
               </div>

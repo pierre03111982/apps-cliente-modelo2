@@ -595,13 +595,13 @@ export default function ExperimentarPage() {
       </div>
 
       {/* 2. Conteúdo Principal */}
-      <div className="relative z-10 min-h-screen p-4 md:p-8">
+      <div className="relative z-10 min-h-screen p-3 sm:p-4 md:p-6 lg:p-8 pb-24 sm:pb-6">
         <div className="mx-auto max-w-6xl">
           {/* Caixa com Logo e Nome da Loja */}
-          <div className="mb-4 flex items-center justify-center gap-3">
-            <div className="rounded-xl border border-white/30 bg-white/10 backdrop-blur-lg px-4 py-3 shadow-xl flex items-center gap-3">
+          <div className="mb-3 sm:mb-4 flex items-center justify-center gap-2 sm:gap-3">
+            <div className="rounded-xl border border-white/30 bg-white/10 backdrop-blur-lg px-3 sm:px-4 py-2 sm:py-3 shadow-xl flex items-center gap-2 sm:gap-3">
               {lojistaData?.logoUrl && (
-                <div className="h-16 w-16 overflow-hidden rounded-full border-2 border-white/30 flex-shrink-0">
+                <div className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 overflow-hidden rounded-full border-2 border-white/30 flex-shrink-0">
                   <Image
                     src={lojistaData.logoUrl}
                     alt={lojistaData.nome || "Logo"}
@@ -611,16 +611,16 @@ export default function ExperimentarPage() {
                   />
                 </div>
               )}
-              <h3 className="text-lg font-bold text-white" translate="no">
+              <h3 className="text-base sm:text-lg md:text-xl font-bold text-white" translate="no">
                 {lojistaData?.nome || "Loja"}
               </h3>
             </div>
           </div>
 
           {/* Upload de Foto e Área Personalize o seu Look */}
-          <div className={`mb-6 flex items-stretch gap-4 ${userPhotoUrl ? 'justify-center' : 'justify-center'}`}>
+          <div className={`mb-4 sm:mb-6 flex flex-col sm:flex-row items-stretch gap-3 sm:gap-4 ${userPhotoUrl ? 'justify-center' : 'justify-center'}`}>
             {/* Upload de Foto - Sem caixa externa, apenas moldura dupla */}
-            <div className={`${userPhotoUrl ? 'max-w-[42%]' : 'w-full'}`}>
+            <div className={`${userPhotoUrl ? 'w-full sm:max-w-[48%] md:max-w-[42%]' : 'w-full'}`}>
               {userPhotoUrl && !isRefineMode ? (
                 <div className="relative inline-block">
                   {/* Moldura Externa - Contínua */}
@@ -679,13 +679,13 @@ export default function ExperimentarPage() {
               ) : (
                 <label
                   htmlFor="photo-upload"
-                  className="flex cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-white/30 bg-white/5 p-12 transition hover:border-white/50 hover:bg-white/10"
+                  className="flex cursor-pointer flex-col items-center justify-center gap-3 sm:gap-4 rounded-2xl border-2 border-dashed border-white/30 bg-white/5 p-8 sm:p-10 md:p-12 transition hover:border-white/50 hover:bg-white/10"
                 >
-                  <Camera className="h-16 w-16 text-white/70" />
-                  <span className="text-lg font-semibold text-white">
+                  <Camera className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 text-white/70" />
+                  <span className="text-base sm:text-lg font-semibold text-white text-center px-2">
                     Faça upload da sua foto
                   </span>
-                  <span className="text-sm text-white/70">PNG ou JPG até 10MB</span>
+                  <span className="text-xs sm:text-sm text-white/70 text-center px-2">PNG ou JPG até 10MB</span>
                   <input
                     id="photo-upload"
                     type="file"
@@ -699,10 +699,10 @@ export default function ExperimentarPage() {
 
             {/* Área: Personalize o seu Look - Ao lado da foto */}
             {userPhotoUrl && (
-              <div className="flex-1 self-stretch rounded-xl border border-white/20 bg-white/10 backdrop-blur-lg p-4 md:p-5 shadow-xl flex flex-col min-h-0 max-w-[42%]">
-                <div className="mb-4 shrink-0">
-                  <div className="rounded-lg border-2 border-white/50 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 p-3 shadow-lg">
-                    <h2 className="text-center text-xs md:text-sm font-black text-white uppercase tracking-wide" style={{ fontFamily: 'Inter, sans-serif', textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}>
+              <div className="w-full sm:flex-1 self-stretch rounded-xl border border-white/20 bg-white/10 backdrop-blur-lg p-3 sm:p-4 md:p-5 shadow-xl flex flex-col min-h-0 sm:max-w-[48%] md:max-w-[42%]">
+                <div className="mb-3 sm:mb-4 shrink-0">
+                  <div className="rounded-lg border-2 border-white/50 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 p-2 sm:p-3 shadow-lg">
+                    <h2 className="text-center text-[10px] sm:text-xs md:text-sm font-black text-white uppercase tracking-wide" style={{ fontFamily: 'Inter, sans-serif', textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}>
                       Provador virtual com IA
                     </h2>
                   </div>
@@ -760,13 +760,13 @@ export default function ExperimentarPage() {
             )}
           </div>
 
-          {/* Caixa com Produtos Selecionados - Abaixo da Foto Upload - Reduzida 30% */}
+          {/* Caixa com Produtos Selecionados - Abaixo da Foto Upload */}
           {userPhotoUrl && selectedProducts.length > 0 && (
-            <div className="mb-6 rounded-xl border border-white/30 bg-white/10 backdrop-blur-lg p-2.5 shadow-xl" style={{ width: '70%', maxWidth: '70%', marginLeft: 'auto', marginRight: 'auto' }}>
-              <h3 className="mb-2 text-center text-xs font-bold text-white">
+            <div className="mb-4 sm:mb-6 rounded-xl border border-white/30 bg-white/10 backdrop-blur-lg p-2 sm:p-2.5 shadow-xl w-full sm:w-[90%] md:w-[80%] lg:w-[70%] mx-auto">
+              <h3 className="mb-2 text-center text-xs sm:text-sm font-bold text-white">
                 Produtos Selecionados
               </h3>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 {selectedProducts.map((produto, index) => (
                   <div key={produto.id || index} className="rounded-lg border-2 border-white/30 bg-white overflow-hidden shadow-lg relative">
                     {/* Botão para remover produto */}
@@ -945,20 +945,22 @@ export default function ExperimentarPage() {
           <div className="rounded-3xl border border-white/20 bg-white/10 backdrop-blur-lg p-6 md:p-8 shadow-2xl">
 
             {/* Abas de Categoria */}
-            <div className="mb-6 flex flex-wrap gap-2 justify-center">
-              {categories.map((category) => (
-                <button
-                  key={category}
-                  onClick={() => setActiveCategory(category)}
-                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                    activeCategory === category
-                      ? "bg-green-500 text-white border-2 border-white shadow-lg"
-                      : "bg-white/5 text-white/70 hover:bg-white/10 border-2 border-transparent"
-                  }`}
-                >
-                  {category}
-                </button>
-              ))}
+            <div className="mb-4 sm:mb-6 overflow-x-auto pb-2 -mx-2 sm:mx-0">
+              <div className="flex gap-2 justify-start sm:justify-center px-2 sm:px-0 min-w-max sm:min-w-0 flex-wrap sm:flex-nowrap">
+                {categories.map((category) => (
+                  <button
+                    key={category}
+                    onClick={() => setActiveCategory(category)}
+                    className={`rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold transition whitespace-nowrap flex-shrink-0 ${
+                      activeCategory === category
+                        ? "bg-green-500 text-white border-2 border-white shadow-lg"
+                        : "bg-white/5 text-white/70 hover:bg-white/10 border-2 border-transparent"
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Aviso de categoria */}
@@ -976,7 +978,7 @@ export default function ExperimentarPage() {
                 Nenhum produto encontrado nesta categoria.
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pb-4 pr-2 custom-scrollbar">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 max-h-[50vh] sm:max-h-[60vh] overflow-y-auto pb-4 pr-2 custom-scrollbar">
                 {filteredCatalog.map((produto) => {
                   const isSelected = selectedProducts.some((p) => p.id === produto.id)
                   return (
@@ -1050,21 +1052,23 @@ export default function ExperimentarPage() {
 
       {/* Botão FAB - Visualize */}
       {(userPhoto || userPhotoUrl) && selectedProducts.length > 0 && (
-        <div className="fixed bottom-6 right-6 z-50 p-1 rounded-full shadow-2xl" style={{ background: 'linear-gradient(to right, #facc15, #ec4899, #a855f7, #3b82f6, #10b981)' }}>
+        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 p-0.5 sm:p-1 rounded-full shadow-2xl" style={{ background: 'linear-gradient(to right, #facc15, #ec4899, #a855f7, #3b82f6, #10b981)' }}>
           <button
             onClick={handleVisualize}
             disabled={isGenerating}
-            className="flex items-center gap-2 rounded-full bg-teal-600 px-6 py-4 text-lg font-bold text-white transition hover:bg-teal-700 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed w-full h-full"
+            className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-teal-600 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base md:text-lg font-bold text-white transition hover:bg-teal-700 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed w-full h-full"
           >
             {isGenerating ? (
               <>
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                Gerando...
+                <div className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                <span className="hidden sm:inline">Gerando...</span>
+                <span className="sm:hidden">...</span>
               </>
             ) : (
               <>
-                <Wand2 className="h-6 w-6" />
-                CRIAR LOOK
+                <Wand2 className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
+                <span className="hidden sm:inline">CRIAR LOOK</span>
+                <span className="sm:hidden">CRIAR</span>
               </>
             )}
           </button>

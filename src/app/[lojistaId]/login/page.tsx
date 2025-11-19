@@ -219,26 +219,26 @@ export default function LoginPage() {
       </div>
 
       {/* 2. Conteúdo do Formulário Sobreposto */}
-      <div className="relative z-10 flex h-full flex-col items-center justify-center px-4 py-6 text-white">
-        {/* Card com moldura - proporções para celular */}
-        <div className="w-full max-w-[90%] sm:max-w-sm rounded-2xl border border-white/30 bg-white/10 backdrop-blur-sm p-5 sm:p-6 md:p-8 shadow-2xl text-center">
+      <div className="relative z-10 flex h-full flex-col items-center justify-center px-3 sm:px-4 py-4 sm:py-6 text-white overflow-y-auto">
+        {/* Card com moldura - proporções responsivas */}
+        <div className="w-full max-w-[95%] sm:max-w-md md:max-w-lg lg:max-w-xl rounded-2xl border border-white/30 bg-white/10 backdrop-blur-sm p-4 sm:p-6 md:p-8 shadow-2xl text-center">
           {/* 3. Títulos */}
               <h1
-                className="mb-4 font-serif text-2xl md:text-3xl font-bold text-white drop-shadow-lg"
+                className="mb-3 sm:mb-4 font-serif text-xl sm:text-2xl md:text-3xl font-bold text-white drop-shadow-lg"
                 style={{ fontFamily: "Playfair Display, serif", textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}
                 translate="no"
               >
                 EXPERIMENTE AI
               </h1>
           <h2
-            className="mb-8 text-lg md:text-xl text-white"
+            className="mb-6 sm:mb-8 text-base sm:text-lg md:text-xl text-white"
             style={{ fontFamily: "Inter, sans-serif" }}
           >
             Desbloqueie Seu Estilo Perfeito
           </h2>
 
           {/* Tabs para alternar entre Login e Cadastro */}
-          <div className="flex gap-2 mb-6">
+          <div className="flex gap-2 mb-4 sm:mb-6">
             <button
               type="button"
               onClick={() => {
@@ -248,13 +248,13 @@ export default function LoginPage() {
                 setConfirmPassword("")
                 setNome("")
               }}
-              className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all ${
+              className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base font-semibold transition-all ${
                 mode === "login"
                   ? "bg-white/20 text-white shadow-lg"
                   : "bg-white/5 text-white/70 hover:bg-white/10"
               }`}
             >
-              <LogIn className="inline-block mr-2 h-4 w-4" />
+              <LogIn className="inline-block mr-1.5 sm:mr-2 h-3.5 sm:h-4 w-3.5 sm:w-4" />
               Entrar
             </button>
             <button
@@ -265,36 +265,37 @@ export default function LoginPage() {
                 setPassword("")
                 setConfirmPassword("")
               }}
-              className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all ${
+              className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base font-semibold transition-all ${
                 mode === "register"
                   ? "bg-white/20 text-white shadow-lg"
                   : "bg-white/5 text-white/70 hover:bg-white/10"
               }`}
             >
-              <UserPlus className="inline-block mr-2 h-4 w-4" />
-              Cadastrar conta
+              <UserPlus className="inline-block mr-1.5 sm:mr-2 h-3.5 sm:h-4 w-3.5 sm:w-4" />
+              <span className="hidden sm:inline">Cadastrar conta</span>
+              <span className="sm:hidden">Cadastrar</span>
             </button>
           </div>
 
           {/* 4. Formulário */}
-          <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-6">
             {mode === "register" && (
               <input
                 type="text"
                 placeholder="Nome completo"
                 value={nome}
                 onChange={(e) => handleNomeChange(e.target.value)}
-                className="border-b border-white/50 bg-transparent py-2 text-lg text-white placeholder-white/70 outline-none focus:border-white transition-colors"
+                className="border-b border-white/50 bg-transparent py-2 sm:py-2.5 text-base sm:text-lg text-white placeholder-white/70 outline-none focus:border-white transition-colors"
                 required
               />
             )}
 
             <input
               type="tel"
-              placeholder="WhatsApp com DDD (ex: (11) 99999-8888)"
+              placeholder="WhatsApp com DDD"
               value={whatsapp}
               onChange={(e) => handleWhatsAppChange(e.target.value)}
-              className="border-b border-white/50 bg-transparent py-2 text-lg text-white placeholder-white/70 outline-none focus:border-white transition-colors"
+              className="border-b border-white/50 bg-transparent py-2 sm:py-2.5 text-base sm:text-lg text-white placeholder-white/70 outline-none focus:border-white transition-colors"
               required
             />
 
@@ -303,7 +304,7 @@ export default function LoginPage() {
               placeholder="Senha"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="border-b border-white/50 bg-transparent py-2 text-lg text-white placeholder-white/70 outline-none focus:border-white transition-colors"
+              className="border-b border-white/50 bg-transparent py-2 sm:py-2.5 text-base sm:text-lg text-white placeholder-white/70 outline-none focus:border-white transition-colors"
               required
             />
 
@@ -313,19 +314,19 @@ export default function LoginPage() {
                 placeholder="Confirmar senha"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="border-b border-white/50 bg-transparent py-2 text-lg text-white placeholder-white/70 outline-none focus:border-white transition-colors"
+                className="border-b border-white/50 bg-transparent py-2 sm:py-2.5 text-base sm:text-lg text-white placeholder-white/70 outline-none focus:border-white transition-colors"
                 required
               />
             )}
 
             {error && (
-              <p className="text-sm text-red-300 text-left">{error}</p>
+              <p className="text-xs sm:text-sm text-red-300 text-left">{error}</p>
             )}
 
             <button
               type="submit"
               disabled={isSubmitting || !isFormValid()}
-              className="mt-4 rounded-lg bg-teal-700 py-3 text-lg font-bold text-white transition hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="mt-2 sm:mt-4 rounded-lg bg-teal-700 py-2.5 sm:py-3 text-base sm:text-lg font-bold text-white transition hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
                 <>
@@ -347,17 +348,17 @@ export default function LoginPage() {
 
           {/* 5. Login Social e Rodapé */}
           {mode === "login" && (
-            <div className="mt-8">
-              <p className="text-sm text-white/80 mb-4">Continuar com...</p>
-              <div className="flex justify-center gap-6">
-                <FaGoogle className="h-6 w-6 cursor-pointer transition hover:text-white/80 hover:scale-110" />
-                <FaApple className="h-6 w-6 cursor-pointer transition hover:text-white/80 hover:scale-110" />
-                <FaFacebook className="h-6 w-6 cursor-pointer transition hover:text-white/80 hover:scale-110" />
+            <div className="mt-6 sm:mt-8">
+              <p className="text-xs sm:text-sm text-white/80 mb-3 sm:mb-4">Continuar com...</p>
+              <div className="flex justify-center gap-4 sm:gap-6">
+                <FaGoogle className="h-5 w-5 sm:h-6 sm:w-6 cursor-pointer transition hover:text-white/80 hover:scale-110" />
+                <FaApple className="h-5 w-5 sm:h-6 sm:w-6 cursor-pointer transition hover:text-white/80 hover:scale-110" />
+                <FaFacebook className="h-5 w-5 sm:h-6 sm:w-6 cursor-pointer transition hover:text-white/80 hover:scale-110" />
               </div>
             </div>
           )}
 
-          <p className="mt-8 text-sm text-white/80">
+          <p className="mt-6 sm:mt-8 text-xs sm:text-sm text-white/80">
             {mode === "login" ? (
               <>
                 Não tem uma conta?{" "}
