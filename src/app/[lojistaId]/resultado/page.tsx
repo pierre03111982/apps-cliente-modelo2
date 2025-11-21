@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
-import { ArrowLeft, ThumbsUp, ThumbsDown, Share2, ShoppingCart, Heart, RefreshCw, Home, Instagram, Facebook, Music2, MessageCircle, X, Sparkles } from "lucide-react"
+import { ArrowLeft, ThumbsUp, ThumbsDown, Share2, ShoppingCart, Heart, RefreshCw, Home, Instagram, Facebook, Music2, MessageCircle, X, Sparkles, ArrowLeftCircle } from "lucide-react"
 import { CLOSET_BACKGROUND_IMAGE } from "@/lib/constants"
 import { fetchLojistaData } from "@/lib/firebaseQueries"
 import type { LojistaData, GeneratedLook } from "@/lib/types"
@@ -593,298 +593,158 @@ export default function ResultadoPage() {
   }
 
   return (
-    <div className="relative min-h-screen w-screen overflow-hidden bg-dark-bg">
-      {/* Imagem de Fundo Futurista com Linhas Neon - Fixa */}
+    <div className="relative min-h-screen w-screen overflow-hidden">
+      {/* Imagem de Fundo Fixa */}
       <div className="fixed inset-0 z-0 overflow-hidden">
         <img
-          src={CLOSET_BACKGROUND_IMAGE}
-          alt="Fundo futurista digital"
+          src="/background.jpg"
+          alt="Fundo"
           className="absolute inset-0 h-full w-full object-cover"
-          style={{ 
-            objectFit: 'cover', 
-            objectPosition: 'center', 
-            minHeight: '100vh', 
-            minWidth: '100vw',
-            filter: 'brightness(0.4) saturate(1.2)',
-            opacity: 0.6
-          }}
         />
-        {/* Overlay gradiente para melhorar contraste */}
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-blue-900/20 to-pink-900/20"></div>
       </div>
 
       {/* Conteúdo Principal */}
-      <div className="relative z-10 min-h-screen flex flex-col">
-        {/* Header com Botão Voltar - Só aparece após votação */}
-        {hasVoted && (
-          <div className="flex items-center justify-start p-4 md:p-6">
+      <div className="relative z-10 min-h-screen flex flex-col p-4 items-center justify-center space-y-3">
+        
+        {/* Caixa com Logo e Nome da Loja */}
+        <div className="w-full max-w-sm">
+          <div
+            className="rounded-xl border border-white/30 backdrop-blur px-3 sm:px-4 py-2 shadow-xl flex items-center justify-center gap-2 sm:gap-3 relative"
+            style={{
+              background:
+                "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
+            }}
+          >
             <button
-              onClick={() => {
-                // Limpar produtos selecionados do sessionStorage ao voltar
-                sessionStorage.removeItem(`products_${lojistaId}`)
-                router.back()
-              }}
-              className="rounded-full neo-button p-2 transition hover:shadow-glass"
+              onClick={() => router.push(`/${params.lojistaId}/experimentar`)}
+              className="absolute left-3 top-1/2 -translate-y-1/2 p-1 text-white hover:opacity-80 transition"
             >
-              <ArrowLeft className="h-6 w-6" />
+              <ArrowLeftCircle className="h-6 w-6" />
             </button>
-          </div>
-        )}
 
-        {/* Logo e Nome da Loja com Redes Sociais - Sempre visível */}
-        <div className="mb-3 sm:mb-4 flex items-center justify-center px-3 sm:px-4">
-          <div className="w-full max-w-2xl neo-card px-3 sm:px-4 py-2 sm:py-3 flex items-center gap-2 sm:gap-3 flex-wrap justify-center rounded-xl">
             {lojistaData?.logoUrl && (
-              <div className="h-8 w-8 sm:h-10 sm:w-10 overflow-hidden rounded-full border-2 border-white/30 flex-shrink-0">
+              <div className="h-12 w-12 sm:h-14 sm:w-14 overflow-hidden rounded-full border-2 border-white/30 flex-shrink-0">
                 <Image
                   src={lojistaData.logoUrl}
                   alt={lojistaData.nome || "Logo"}
-                  width={40}
-                  height={40}
-                  className="h-full w-full object-cover"
+                  width={64}
+                  height={64}
+                  className="h-full w-full object-contain"
                 />
               </div>
             )}
-            <h3 className="text-base sm:text-lg md:text-xl font-bold text-white" translate="no">
+            <h3
+              className="text-base sm:text-lg md:text-xl font-bold text-white"
+              style={{ textShadow: "0px 1px 3px black, 0px 1px 3px black" }}
+              translate="no"
+            >
               {lojistaData?.nome || "Loja"}
             </h3>
-            
-            {/* Botões das Redes Sociais */}
-            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-center">
-              {/* Instagram */}
-              {lojistaData?.redesSociais?.instagram && (
-                <button
-                  onClick={() => window.open(lojistaData.redesSociais.instagram!.startsWith('http') ? lojistaData.redesSociais.instagram! : `https://instagram.com/${lojistaData.redesSociais.instagram!.replace('@', '')}`, '_blank', 'noopener,noreferrer')}
-                  className="flex items-center gap-1 sm:gap-1.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-semibold text-white transition hover:scale-105"
-                >
-                  <Instagram className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Instagram</span>
-                </button>
-              )}
-              
-              {/* Facebook */}
-              {lojistaData?.redesSociais?.facebook && (
-                <button
-                  onClick={() => window.open(lojistaData.redesSociais.facebook!.startsWith('http') ? lojistaData.redesSociais.facebook! : `https://facebook.com/${lojistaData.redesSociais.facebook!}`, '_blank', 'noopener,noreferrer')}
-                  className="flex items-center gap-1 sm:gap-1.5 rounded-full bg-blue-600 px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-semibold text-white transition hover:scale-105"
-                >
-                  <Facebook className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Facebook</span>
-                </button>
-              )}
-              
-              {/* TikTok */}
-              {lojistaData?.redesSociais?.tiktok && (
-                <button
-                  onClick={() => window.open(lojistaData.redesSociais.tiktok!.startsWith('http') ? lojistaData.redesSociais.tiktok! : `https://tiktok.com/@${lojistaData.redesSociais.tiktok!.replace('@', '')}`, '_blank', 'noopener,noreferrer')}
-                  className="flex items-center gap-1 sm:gap-1.5 rounded-full bg-black px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-semibold text-white transition hover:scale-105"
-                >
-                  <Music2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">TikTok</span>
-                </button>
-              )}
-              
-              {/* WhatsApp */}
-              {(lojistaData?.redesSociais?.whatsapp || lojistaData?.salesConfig?.whatsappLink) && (
-                <button
-                  onClick={() => window.open(lojistaData?.redesSociais?.whatsapp ? `https://wa.me/${lojistaData.redesSociais.whatsapp.replace(/\D/g, '')}` : lojistaData?.salesConfig?.whatsappLink || '#', '_blank', 'noopener,noreferrer')}
-                  className="flex items-center gap-1 sm:gap-1.5 rounded-full bg-green-500 px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-semibold text-white transition hover:scale-105"
-                >
-                  <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">WhatsApp</span>
-                </button>
-              )}
-            </div>
           </div>
         </div>
-
-            {/* Imagem Gerada - Com Borda Dupla e Produtos no Canto Inferior Direito */}
-        <div className="flex items-start justify-center px-3 sm:px-4 pt-3 sm:pt-4 pb-4 sm:pb-6">
-          <div className="w-full max-w-2xl relative">
-            <div className="relative inline-block w-full">
-              {/* Moldura Externa - Contínua */}
-              <div className="relative rounded-xl sm:rounded-2xl border-2 border-glass-border/50 p-2 sm:p-3 shadow-glass inline-block w-full">
-                {/* Moldura Interna - Pontilhada */}
-                <div className="relative border-2 border-dashed border-glass-border/30 rounded-lg sm:rounded-xl p-1.5 sm:p-2 inline-block w-full">
-                  <img
-                    src={currentLook.imagemUrl}
-                    alt={currentLook.titulo}
-                    className="h-auto w-full max-w-full object-contain object-top block rounded-lg"
-                  />
-                  
-                  {/* Miniaturas dos Produtos - Canto Inferior Direito */}
-                  {selectedProducts.length > 0 && (
-                    <div className="absolute bottom-1 sm:bottom-2 right-1 sm:right-2 flex flex-col gap-1 sm:gap-1.5 z-10">
-                      {selectedProducts.map((produto, index) => (
-                        <div key={produto.id || index} className="relative">
-                          {/* Moldura Externa - Contínua - Justa à imagem */}
-                          <div className="relative rounded border-2 border-glass-border/50 shadow-glass neo-card">
-                            {/* Moldura Interna - Pontilhada - Justa à imagem */}
-                            <div className="relative border-2 border-dashed border-glass-border/30 rounded bg-card-bg overflow-hidden">
-                              {/* Imagem do Produto */}
-                              {produto.imagemUrl ? (
-                                <div className="relative w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12">
-                                  <Image
-                                    src={produto.imagemUrl}
-                                    alt={produto.nome || `Produto ${index + 1}`}
-                                    width={48}
-                                    height={48}
-                                    className="object-cover w-full h-full"
-                                  />
-                                </div>
-                              ) : (
-                                <div className="relative w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-card-bg flex items-center justify-center">
-                                  <span className="text-[6px] sm:text-[8px] text-white/50">Sem imagem</span>
-                                </div>
-                              )}
-                              {/* Informações do Produto - Reduzidas e truncadas */}
-                              <div className="px-0.5 py-0.5 bg-card-bg">
-                                <h3 className="text-left text-[6px] sm:text-[8px] md:text-[10px] font-semibold text-white line-clamp-1 mb-0 leading-tight truncate" title={produto.nome || `Produto ${index + 1}`}>
-                                  {produto.nome && produto.nome.length > 10 
-                                    ? `${produto.nome.substring(0, 10)}...` 
-                                    : produto.nome || `Produto ${index + 1}`}
-                                </h3>
-                                {produto.preco && (
-                                  <p className="text-left text-[6px] sm:text-[8px] md:text-[10px] font-bold text-gradient-orange truncate">
-                                    {formatPrice(produto.preco).length > 8 
-                                      ? `${formatPrice(produto.preco).substring(0, 8)}...` 
-                                      : formatPrice(produto.preco)}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+        
+        <div 
+          className="relative w-full max-w-sm space-y-4 rounded-2xl border-2 border-white/30 backdrop-blur p-4 shadow-2xl"
+          style={{
+            background:
+              "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
+          }}
+        >
+            <div className="absolute top-4 right-4 z-10">
+                <span 
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium border-2 border-white/50 text-white"
+                  style={{
+                    background:
+                      "linear-gradient(45deg, rgba(37,99,235,1), rgba(147,51,234,1), rgba(249,115,22,1), rgba(34,197,94,1))",
+                  }}
+                >
+                    <Sparkles className="h-4 w-4 text-white" style={{ filter: "drop-shadow(0 0 2px white)"}} />
+                    Look Criativo IA
+                </span>
+            </div>
+            {/* Imagem Gerada */}
+            <div className="w-full rounded-xl overflow-hidden">
+              <div className="relative rounded-2xl border-2 border-white/50 p-2 shadow-lg bg-white/10 inline-block w-full">
+                <div className="relative border-2 border-dashed border-white/30 rounded-xl p-1 inline-block w-full">
+                    <img
+                      src={currentLook.imagemUrl}
+                      alt={currentLook.titulo}
+                      className="h-auto w-full object-cover rounded-lg"
+                    />
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Botões Comprar Agora e Adicionar ao Carrinho - Só aparecem após votação */}
-        {hasVoted && (
-          <div className="flex items-center justify-center px-3 sm:px-4 pb-3 sm:pb-4">
-            <div className="w-full max-w-2xl space-y-2 sm:space-y-3">
-              <button
-                onClick={handleCheckout}
-                className="w-full rounded-lg gradient-button px-4 sm:px-6 py-3 sm:py-4 text-base sm:text-lg font-bold"
-              >
-                Comprar agora
-              </button>
-              <button
-                onClick={handleCheckout}
-                className="w-full rounded-lg neo-button px-4 sm:px-6 py-3 sm:py-4 text-base sm:text-lg font-semibold transition hover:shadow-glass"
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
-                  <span className="text-sm sm:text-base">Adicionar ao carrinho</span>
-                </div>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Painel Inferior - Separado */}
-        <div className="flex items-center justify-center px-3 sm:px-4 pb-4 sm:pb-6">
-          <div className="w-full max-w-2xl space-y-3 sm:space-y-4">
-            {/* Caixa 1: Feedback Like/Dislike */}
-            {!hasVoted && (
-              <div className="rounded-xl sm:rounded-2xl neo-card p-4 sm:p-6 text-center">
-                <p className="mb-3 sm:mb-4 text-base sm:text-lg font-semibold text-white drop-shadow-lg">
-                  Curtiu o Look?
-                </p>
-                <div className="flex justify-center gap-3 sm:gap-4">
-                  <button
-                    onClick={handleDislike}
-                    disabled={loadingAction === "dislike"}
-                    className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-gradient-to-r from-gradient-orange to-red-600 px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base text-white transition hover:shadow-glow-orange disabled:opacity-50"
-                  >
-                    <ThumbsDown className="h-4 w-4 sm:h-5 sm:w-5" />
-                    Não
-                  </button>
-                  <button
-                    onClick={handleLike}
-                    disabled={loadingAction === "like"}
-                    className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-gradient-to-r from-gradient-green to-green-600 px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base text-white transition hover:shadow-glow-cyan disabled:opacity-50"
-                  >
-                    <ThumbsUp className="h-4 w-4 sm:h-5 sm:w-5" />
-                    Sim
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Botões de Ação após votação */}
-            {hasVoted && (
-              <div className="rounded-xl sm:rounded-2xl neo-card p-4 sm:p-6">
-                <div className="flex flex-col gap-2 sm:gap-3">
-                  <div className="flex gap-2 sm:gap-3">
-                    <button
-                      onClick={handleShare}
-                      className="flex-1 rounded-lg bg-gradient-to-r from-gradient-orange to-gradient-orange/80 px-3 sm:px-4 py-2.5 sm:py-3 font-semibold text-white transition hover:shadow-glow-orange"
-                    >
-                      <Share2 className="mx-auto h-4 w-4 sm:h-5 sm:w-5" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowFavoritesModal(true)
-                        // loadFavorites será chamado automaticamente pelo useEffect quando o modal abrir
-                      }}
-                      className="flex-1 rounded-lg bg-gradient-to-r from-gradient-pink to-gradient-pink/80 px-3 sm:px-4 py-2.5 sm:py-3 font-semibold text-white transition hover:shadow-glow-orange"
-                    >
-                      <div className="flex items-center justify-center gap-1.5 sm:gap-2">
-                        <Heart className="h-4 w-4 sm:h-5 sm:w-5" />
-                        <span className="text-sm sm:text-base">Favoritos</span>
-                      </div>
-                    </button>
+            {/* Ações e Feedback */}
+            <div className="space-y-2">
+              {!hasVoted ? (
+                <div 
+                  className="text-center rounded-2xl border border-white/30 backdrop-blur p-4 shadow-2xl"
+                  style={{
+                    background:
+                      "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
+                  }}
+                >
+                  <p className="mb-3 font-semibold text-white">Curtiu o Look?</p>
+                  <div className="flex justify-center gap-4">
+                    <button onClick={handleDislike} className="flex flex-1 items-center justify-center gap-2 rounded-full bg-red-500/80 px-6 py-2 text-white"><ThumbsDown className="h-5 w-5" /> Não</button>
+                    <button onClick={handleLike} className="flex flex-1 items-center justify-center gap-2 rounded-full bg-green-500/80 px-6 py-2 text-white"><ThumbsUp className="h-5 w-5" /> Sim</button>
                   </div>
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="space-y-2">
+                    <div className="text-center">
+                        {votedType === 'like' ? (
+                          <>
+                            <h2 className="text-xl font-bold text-white">Look Salvo!</h2>
+                            <p className="text-sm text-gray-300">O que fazer agora?</p>
+                          </>
+                        ) : (
+                          <>
+                            <h2 className="text-xl font-bold text-white">Que pena!</h2>
+                            <p className="text-sm text-gray-300">Vamos tentar um novo look?</p>
+                          </>
+                        )}
+                    </div>
 
-            {/* Botões de Navegação */}
-            {hasVoted && (
-              <div className="rounded-xl sm:rounded-2xl neo-card p-4 sm:p-6">
-                <div className="flex flex-col gap-2 sm:gap-3">
-                  <button
-                    onClick={handleAddAccessory}
-                    className="w-full rounded-lg gradient-button px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base font-semibold"
-                  >
-                    <div className="flex items-center justify-center gap-1.5 sm:gap-2">
-                      <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />
-                      <span className="text-xs sm:text-base">Adicionar Acessório</span>
+                    {/* Card 1: Ações Primárias de Compra */}
+                    <div className="space-y-2 rounded-2xl border border-white/30 backdrop-blur p-3 shadow-2xl" style={{ background: "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))" }}>
+                        <button 
+                            onClick={handleCheckout} 
+                            className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-semibold text-white shadow-lg text-sm"
+                            style={{ background: "linear-gradient(to right, #1e3a8a, #3b82f6, #1e3a8a)"}}
+                        >
+                            <ShoppingCart className="h-4 w-4" /> Comprar Agora
+                        </button>
+                        <button onClick={handleCheckout} className="w-full flex items-center justify-center gap-2 rounded-xl bg-white/20 py-3 font-semibold text-white text-sm">
+                            <ShoppingCart className="h-4 w-4" /> Adicionar ao Carrinho
+                        </button>
                     </div>
-                  </button>
-                  <button
-                    onClick={handleRegenerate}
-                    disabled={loadingAction === "remix"}
-                    className="w-full rounded-lg bg-gradient-to-r from-gradient-blue to-gradient-blue/80 px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base font-semibold text-white transition hover:shadow-glow-orange disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <div className="flex items-center justify-center gap-1.5 sm:gap-2">
-                      <RefreshCw className={`h-4 w-4 sm:h-5 sm:w-5 ${loadingAction === "remix" ? "animate-spin" : ""}`} />
-                      <span className="text-xs sm:text-base">{loadingAction === "remix" ? "Gerando novo look..." : "Remixar esse Look"}</span>
+
+                    {/* Card 2: Ações Secundárias */}
+                    <div className="rounded-2xl border border-white/30 backdrop-blur p-3 shadow-2xl" style={{ background: "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))" }}>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button onClick={handleShare} className="flex items-center justify-center gap-2 rounded-xl bg-blue-600/80 py-3 font-semibold text-white text-sm"><Share2 className="h-4 w-4" /></button>
+                        <button onClick={() => setShowFavoritesModal(true)} className="flex items-center justify-center gap-2 rounded-xl bg-pink-600/80 py-3 font-semibold text-white text-sm"><Heart className="h-4 w-4" /> Favoritos</button>
+                      </div>
                     </div>
-                  </button>
-                  <button
-                    onClick={handleGoHome}
-                    className="w-full rounded-lg neo-button px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base font-semibold transition hover:shadow-glass"
-                  >
-                    <div className="flex items-center justify-center gap-1.5 sm:gap-2">
-                      <Home className="h-4 w-4 sm:h-5 sm:w-5" />
-                      <span className="text-xs sm:text-base">Criar outro Look</span>
+
+                    {/* Card 3: Ações de Navegação e Geração */}
+                    <div className="space-y-2 rounded-2xl border border-white/30 backdrop-blur p-3 shadow-2xl" style={{ background: "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))" }}>
+                      <button onClick={handleAddAccessory} className="w-full flex items-center justify-center gap-2 rounded-xl bg-purple-600/80 py-3 font-semibold text-white text-sm"><Sparkles className="h-4 w-4" /> Adicionar Acessório</button>
+                      <button onClick={handleRegenerate} disabled={loadingAction === "remix"} className="w-full flex items-center justify-center gap-2 rounded-xl bg-green-600/80 py-3 font-semibold text-white disabled:opacity-50 text-sm">
+                        <RefreshCw className={`h-4 w-4 ${loadingAction === "remix" ? "animate-spin" : ""}`} /> 
+                        {loadingAction === "remix" ? "Gerando..." : "Remixar Look"}
+                      </button>
+                      <button onClick={handleGoHome} className="w-full flex items-center justify-center gap-2 rounded-xl bg-white/20 py-3 font-semibold text-white text-sm"><Home className="h-4 w-4" /> Criar outro</button>
                     </div>
-                  </button>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
         </div>
       </div>
 
-      {/* Modal de Favoritos */}
+      {/* Modal de Favoritos (mantido como está) */}
       {showFavoritesModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
           <div className="w-full max-w-4xl rounded-xl neo-card p-6 max-h-[90vh] overflow-y-auto">

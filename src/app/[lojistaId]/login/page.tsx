@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
+import Image from "next/image"
 import { FaApple, FaFacebook, FaGoogle } from "react-icons/fa"
 import { LogIn, UserPlus } from "lucide-react"
 import { fetchLojistaData } from "@/lib/firebaseQueries"
@@ -11,9 +12,11 @@ import { CLOSET_BACKGROUND_IMAGE } from "@/lib/constants"
 export default function LoginPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const lojistaId = params?.lojistaId as string
 
   const [lojistaData, setLojistaData] = useState<LojistaData | null>(null)
+
   const [isLoading, setIsLoading] = useState(false)
   const [mode, setMode] = useState<"login" | "register">("login")
   const [password, setPassword] = useState("")
@@ -85,6 +88,11 @@ export default function LoginPage() {
   useEffect(() => {
     if (!lojistaId) return
 
+    // Se estiver em modo preview, não redirecionar
+    if (searchParams.get("preview") === "true") {
+      return
+    }
+
     const checkExistingClient = async () => {
       try {
         const stored = localStorage.getItem(`cliente_${lojistaId}`)
@@ -97,7 +105,7 @@ export default function LoginPage() {
 
           if (daysDiff < 30) {
             // Cliente já logado, redirecionar para workspace
-            router.push(`/${lojistaId}/experimentar`)
+            // router.push(`/${lojistaId}/experimentar`)
             return
           }
         }
@@ -208,201 +216,179 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden">
-      {/* 1. Imagem de Fundo Futurista com Linhas Neon */}
-      <div className="absolute inset-0 z-0">
+    <div className="relative min-h-screen w-screen overflow-hidden">
+      {/* 1. Imagem de Fundo - Fixa */}
+      <div className="fixed inset-0 z-0 overflow-hidden">
         <img
-          src={CLOSET_BACKGROUND_IMAGE}
-          alt="Fundo futurista digital"
-          className="h-full w-full object-cover"
-          style={{ 
-            filter: 'brightness(0.4) saturate(1.2)',
-            opacity: 0.6
-          }}
+          src="/background.jpg"
+          alt="Fundo"
+          className="absolute inset-0 h-full w-full object-cover"
         />
-        {/* Overlay gradiente para melhorar contraste */}
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-blue-900/20 to-pink-900/20"></div>
       </div>
 
-      {/* 2. Conteúdo do Formulário Sobreposto */}
-      <div className="relative z-10 flex h-full flex-col items-center justify-center px-3 sm:px-4 py-4 sm:py-6 text-white overflow-y-auto">
-        {/* Card com moldura neomorfista - proporções responsivas */}
-        <div className="w-full max-w-[95%] sm:max-w-md md:max-w-lg lg:max-w-xl neo-card p-4 sm:p-6 md:p-8 text-center rounded-3xl">
-          {/* 3. Títulos */}
-          <h1
-            className="mb-3 sm:mb-4 font-serif text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-gradient-orange via-gradient-pink to-gradient-purple bg-clip-text text-transparent"
-            style={{ fontFamily: "Playfair Display, serif" }}
-            translate="no"
+      {/* 2. Conteúdo do Formulário */}
+      <div className="relative z-10 flex h-full flex-col items-center justify-center px-4 space-y-3">
+        {/* Caixa com Logo e Nome da Loja */}
+        <div className="w-full max-w-md">
+          <div
+            className="rounded-xl border-2 border-white/30 backdrop-blur px-3 sm:px-4 py-2 shadow-xl flex items-center justify-center gap-2 sm:gap-3"
+            style={{
+              background:
+                "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
+            }}
           >
-            EXPERIMENTE AI
-          </h1>
-          <h2
-            className="mb-6 sm:mb-8 text-base sm:text-lg md:text-xl text-white/90"
-            style={{ fontFamily: "Inter, sans-serif" }}
-          >
-            Desbloqueie Seu Estilo Perfeito
-          </h2>
+            {lojistaData?.logoUrl && (
+              <div className="h-12 w-12 sm:h-14 sm:w-14 overflow-hidden rounded-full border-2 border-white/30 flex-shrink-0">
+                <Image
+                  src={lojistaData.logoUrl}
+                  alt={lojistaData.nome || "Logo"}
+                  width={64}
+                  height={64}
+                  className="h-full w-full object-contain"
+                />
+              </div>
+            )}
+            <h3
+              className="text-base sm:text-lg md:text-xl font-bold text-white"
+              style={{ textShadow: "0px 1px 3px black, 0px 1px 3px black" }}
+              translate="no"
+            >
+              {lojistaData?.nome || "Loja"}
+            </h3>
+          </div>
+        </div>
 
-          {/* Tabs para alternar entre Login e Cadastro */}
-          <div className="flex gap-2 mb-4 sm:mb-6">
-            <button
-              type="button"
-              onClick={() => {
-                setMode("login")
-                setError(null)
-                setPassword("")
-                setConfirmPassword("")
-                setNome("")
-              }}
-              className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-sm sm:text-base font-semibold transition-all ${
-                mode === "login"
-                  ? "gradient-button"
-                  : "neo-button"
-              }`}
-            >
-              <LogIn className="inline-block mr-1.5 sm:mr-2 h-3.5 sm:h-4 w-3.5 sm:w-4" />
-              Entrar
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMode("register")
-                setError(null)
-                setPassword("")
-                setConfirmPassword("")
-              }}
-              className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-sm sm:text-base font-semibold transition-all ${
-                mode === "register"
-                  ? "gradient-button"
-                  : "neo-button"
-              }`}
-            >
-              <UserPlus className="inline-block mr-1.5 sm:mr-2 h-3.5 sm:h-4 w-3.5 sm:w-4" />
-              <span className="hidden sm:inline">Cadastrar conta</span>
-              <span className="sm:hidden">Cadastrar</span>
-            </button>
+        <div
+          className="w-full max-w-md space-y-5 rounded-2xl border-2 border-white/30 p-6 backdrop-blur shadow-2xl"
+          style={{
+            background:
+              "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
+          }}
+        >
+          {/* Cabeçalho */}
+          <div className="text-center">
+            <h1 className="text-base sm:text-lg font-bold tracking-tight text-white">
+              Bem-vindo(a) à nova era <br /> da Moda Digital
+            </h1>
+            <p className="text-xs sm:text-sm text-gray-300 mt-1">
+              (Provador Virtual IA)
+            </p>
           </div>
 
-          {/* 4. Formulário */}
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-6">
+          {/* Botão de Ação Único */}
+          {mode === 'login' ? (
+            <button
+              onClick={() => setMode("register")}
+              className="w-full flex items-center justify-center gap-2 rounded-lg bg-blue-500/90 border-2 border-white/30 py-2.5 font-semibold text-white transition-all hover:bg-blue-600 text-xs sm:text-sm"
+            >
+              <UserPlus className="h-4 w-4" />
+              Cadastrar conta
+            </button>
+          ) : (
+             <button
+              onClick={() => setMode("login")}
+              className="w-full flex items-center justify-center gap-2 rounded-lg bg-gray-700/90 border-2 border-white/30 py-2.5 font-semibold text-white transition-all hover:bg-gray-600 text-xs sm:text-sm"
+            >
+              <LogIn className="h-4 w-4" />
+              Já tenho uma conta? Entrar
+            </button>
+          )}
+
+          {/* Formulário */}
+          <form onSubmit={handleSubmit} className="space-y-3">
             {mode === "register" && (
-              <input
-                type="text"
-                placeholder="Nome completo"
-                value={nome}
-                onChange={(e) => handleNomeChange(e.target.value)}
-                className="neo-input px-4 py-3 text-base sm:text-lg"
-                required
-              />
+              <div>
+                <input
+                  type="text"
+                  placeholder="Nome completo"
+                  value={nome}
+                  onChange={(e) => handleNomeChange(e.target.value)}
+                  className="w-full rounded-lg border-2 border-white/20 bg-black/20 px-4 py-2.5 text-white placeholder-gray-400 focus:border-white focus:outline-none focus:ring-1 focus:ring-white transition-all text-sm"
+                  required
+                />
+              </div>
             )}
 
-            <input
-              type="tel"
-              placeholder="WhatsApp com DDD"
-              value={whatsapp}
-              onChange={(e) => handleWhatsAppChange(e.target.value)}
-              className="neo-input px-4 py-3 text-base sm:text-lg"
-              required
-            />
-
-            <input
-              type="password"
-              placeholder="Senha"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="neo-input px-4 py-3 text-base sm:text-lg"
-              required
-            />
-
-            {mode === "register" && (
+            <div>
               <input
-                type="password"
-                placeholder="Confirmar senha"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="neo-input px-4 py-3 text-base sm:text-lg"
+                type="tel"
+                placeholder="WhatsApp com DDD"
+                value={whatsapp}
+                onChange={(e) => handleWhatsAppChange(e.target.value)}
+                className="w-full rounded-lg border-2 border-white/20 bg-black/20 px-4 py-2.5 text-white placeholder-gray-400 focus:border-white focus:outline-none focus:ring-1 focus:ring-white transition-all text-sm"
                 required
               />
+            </div>
+
+            <div>
+              <input
+                type="password"
+                placeholder="Senha"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-lg border-2 border-white/20 bg-black/20 px-4 py-2.5 text-white placeholder-gray-400 focus:border-white focus:outline-none focus:ring-1 focus:ring-white transition-all text-sm"
+                required
+              />
+            </div>
+
+            {mode === "register" && (
+              <div>
+                <input
+                  type="password"
+                  placeholder="Confirmar senha"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full rounded-lg border-2 border-white/20 bg-black/20 px-4 py-2.5 text-white placeholder-gray-400 focus:border-white focus:outline-none focus:ring-1 focus:ring-white transition-all text-sm"
+                  required
+                />
+              </div>
             )}
 
             {error && (
-              <p className="text-xs sm:text-sm text-red-400 text-left">{error}</p>
+              <div className="rounded-lg bg-red-500/10 p-3 text-xs text-red-400 text-center">
+                {error}
+              </div>
             )}
 
             <button
               type="submit"
               disabled={isSubmitting || !isFormValid()}
-              className="mt-2 sm:mt-4 gradient-button py-2.5 sm:py-3 text-base sm:text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full flex items-center justify-center gap-2 rounded-lg bg-teal-600/80 border-2 border-white/30 py-3 font-bold text-white transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
-              {isSubmitting ? (
-                <>
-                  <span className="mr-2">Processando...</span>
-                </>
-              ) : mode === "login" ? (
-                <>
-                  <LogIn className="h-5 w-5" />
-                  Entrar
-                </>
-              ) : (
-                <>
-                  <UserPlus className="h-5 w-5" />
-                  Cadastrar conta
-                </>
-              )}
+              <LogIn className="h-4 w-4" />
+              {mode === "login" ? "Entrar" : "Cadastrar"}
             </button>
           </form>
 
-          {/* 5. Login Social e Rodapé */}
-          {mode === "login" && (
-            <div className="mt-6 sm:mt-8">
-              <p className="text-xs sm:text-sm text-white/80 mb-3 sm:mb-4">Continuar com...</p>
-              <div className="flex justify-center gap-4 sm:gap-6">
-                <FaGoogle className="h-5 w-5 sm:h-6 sm:w-6 cursor-pointer transition text-white/80 hover:text-gradient-orange hover:scale-110" />
-                <FaApple className="h-5 w-5 sm:h-6 sm:w-6 cursor-pointer transition text-white/80 hover:text-gradient-orange hover:scale-110" />
-                <FaFacebook className="h-5 w-5 sm:h-6 sm:w-6 cursor-pointer transition text-white/80 hover:text-gradient-orange hover:scale-110" />
-              </div>
+          {/* Divisor e Social Login */}
+          <div className="space-y-3 text-center">
+            <p className="text-xs text-gray-400">Continuar com...</p>
+            <div className="flex justify-center gap-4">
+              <button className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-800/80 border-2 border-white/30 text-white transition hover:bg-gray-700">
+                <FaGoogle />
+              </button>
+              <button className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-800/80 border-2 border-white/30 text-white transition hover:bg-gray-700">
+                <FaApple />
+              </button>
+              <button className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-800/80 border-2 border-white/30 text-white transition hover:bg-gray-700">
+                <FaFacebook />
+              </button>
             </div>
-          )}
+          </div>
+          
+          {/* Link de Cadastro */}
+          <div className="text-center text-xs text-gray-400">
+            {mode === 'login' ? 'Não tem uma conta?' : 'Já tem uma conta?'}
+            <button 
+              onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
+              className="font-semibold text-white underline ml-1"
+            >
+              {mode === 'login' ? 'Cadastre-se' : 'Faça login'}
+            </button>
+          </div>
 
-          <p className="mt-6 sm:mt-8 text-xs sm:text-sm text-white/80">
-            {mode === "login" ? (
-              <>
-                Não tem uma conta?{" "}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode("register")
-                    setError(null)
-                    setPassword("")
-                    setConfirmPassword("")
-                  }}
-                  className="font-bold text-gradient-orange hover:text-gradient-pink transition"
-                >
-                  Cadastre-se
-                </button>
-              </>
-            ) : (
-              <>
-                Já tem uma conta?{" "}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode("login")
-                    setError(null)
-                    setPassword("")
-                    setConfirmPassword("")
-                    setNome("")
-                  }}
-                  className="font-bold text-gradient-orange hover:text-gradient-pink transition"
-                >
-                  Entrar
-                </button>
-              </>
-            )}
-          </p>
         </div>
       </div>
     </div>
   )
 }
-

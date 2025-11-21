@@ -1,0 +1,507 @@
+"use client"
+
+import Image from "next/image"
+import {
+  Upload,
+  Camera,
+  Wand2,
+  Heart,
+  X,
+  Check,
+  Filter,
+  ThumbsUp,
+  Instagram,
+  Facebook,
+  Music2,
+  Share2,
+  ArrowLeftCircle,
+} from "lucide-react"
+import { CLOSET_BACKGROUND_IMAGE } from "@/lib/constants" // Esta constante não será mais usada
+import type { LojistaData, Produto, GeneratedLook } from "@/lib/types"
+
+export interface ExperimentarViewProps {
+  lojistaData: LojistaData | null
+  isLoadingCatalog: boolean
+  filteredCatalog: Produto[]
+  categories: string[]
+  activeCategory: string
+  setActiveCategory: (category: string) => void
+  userPhotoUrl: string | null
+  isRefineMode: boolean
+  refineBaseImageUrl: string | null
+  handleChangePhoto: () => void
+  handleRemovePhoto: () => void
+  handlePhotoUpload: (event: React.ChangeEvent<HTMLInputElement>) => void
+  selectedProducts: Produto[]
+  toggleProductSelection: (produto: Produto) => void
+  categoryWarning: string | null
+  handleSocialClick: (url: string) => void
+  handleShareApp: () => void
+  descontoAplicado: boolean
+  formatPrice: (value?: number | null) => string
+  handleVisualize: () => void
+  isGenerating: boolean
+  generationError: string | null
+  showFavoritesModal: boolean
+  setShowFavoritesModal: (show: boolean) => void
+  isLoadingFavorites: boolean
+  favorites: any[]
+  router: any
+  lojistaId: string
+}
+
+export function ExperimentarView({
+  lojistaData,
+  isLoadingCatalog,
+  filteredCatalog,
+  categories,
+  activeCategory,
+  setActiveCategory,
+  userPhotoUrl,
+  isRefineMode,
+  refineBaseImageUrl,
+  handleChangePhoto,
+  handleRemovePhoto,
+  handlePhotoUpload,
+  selectedProducts,
+  toggleProductSelection,
+  categoryWarning,
+  handleSocialClick,
+  handleShareApp,
+  descontoAplicado,
+  formatPrice,
+  handleVisualize,
+  isGenerating,
+  generationError,
+  showFavoritesModal,
+  setShowFavoritesModal,
+  isLoadingFavorites,
+  favorites,
+  router,
+  lojistaId
+}: ExperimentarViewProps) {
+  return (
+    // Estilo geral do Modelo 2: fundo claro e texto escuro
+    <div className="relative min-h-screen w-full overflow-x-hidden overflow-y-auto text-zinc-800 antialiased">
+      {/* 1. Imagem de Fundo - Fixa */}
+      <div className="fixed inset-0 z-0 overflow-hidden">
+        <img
+          src="/background.jpg"
+          alt="Closet de fundo"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      </div>
+
+      {/* 2. Conteúdo Principal */}
+      <div className="relative z-10 min-h-screen p-4 pb-24">
+        <div className="mx-auto max-w-6xl space-y-3">
+          {/* Caixa com Logo e Nome da Loja */}
+          <div>
+            <div
+              className="rounded-xl border border-white/30 backdrop-blur px-3 sm:px-4 py-2 shadow-xl flex items-center justify-center gap-2 sm:gap-3 relative"
+              style={{
+                background:
+                  "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
+              }}
+            >
+              <button
+                onClick={() => router.push(`/${lojistaId}/login`)}
+                className="absolute left-3 top-1/2 -translate-y-1/2 p-1 text-white hover:opacity-80 transition"
+              >
+                <ArrowLeftCircle className="h-6 w-6" />
+              </button>
+              {lojistaData?.logoUrl && (
+                <div className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 overflow-hidden rounded-full border-2 border-white/30 flex-shrink-0">
+                  <Image
+                    src={lojistaData.logoUrl}
+                    alt={lojistaData.nome || "Logo"}
+                    width={64}
+                    height={64}
+                    className="h-full w-full object-contain"
+                  />
+                </div>
+              )}
+              <h3
+                className="text-base sm:text-lg md:text-xl font-bold text-white"
+                style={{ textShadow: "0px 1px 3px black, 0px 1px 3px black" }}
+                translate="no"
+              >
+                {lojistaData?.nome || "Loja"}
+              </h3>
+            </div>
+          </div>
+
+          {/* Upload de Foto e Área Personalize o seu Look */}
+          <div
+            className={`flex flex-col sm:flex-row items-stretch gap-3 ${
+              userPhotoUrl ? "justify-center" : "justify-center"
+            }`}
+          >
+            {/* Upload de Foto */}
+            <div className={`${userPhotoUrl ? 'w-full sm:max-w-[48%] md:max-w-[42%]' : 'w-full'}`}>
+              {userPhotoUrl && !isRefineMode ? (
+                <div className="relative inline-block">
+                  <div className="relative rounded-2xl border-2 border-zinc-200 p-2 shadow-lg bg-white/50 inline-block">
+                    <div className="relative border-2 border-dashed border-zinc-300 rounded-xl p-1 inline-block">
+                      <img
+                        src={userPhotoUrl}
+                        alt="Sua foto"
+                        className="h-auto w-auto max-w-full object-contain block rounded-lg cursor-pointer"
+                        onClick={handleChangePhoto}
+                        title="Clique para trocar a foto"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleRemovePhoto}
+                    className="absolute right-3 top-3 rounded-full bg-red-500/80 p-2 text-white transition hover:bg-red-600 z-10"
+                    title="Remover foto"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={() => setShowFavoritesModal(true)}
+                    className="absolute left-3 bottom-3 rounded-full bg-pink-500/80 p-2 text-white transition hover:bg-pink-600 z-10"
+                    title="Ver favoritos"
+                  >
+                    <Heart className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={handleChangePhoto}
+                    className="absolute right-3 bottom-3 rounded-full bg-blue-500/80 p-2 text-white transition hover:bg-blue-600 z-10"
+                    title="Trocar foto"
+                  >
+                    <Camera className="h-5 w-5" />
+                  </button>
+                  <input
+                    id="photo-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    className="hidden"
+                  />
+                </div>
+              ) : isRefineMode ? (
+                <div className="relative inline-block">
+                  <div className="relative rounded-2xl border-2 border-zinc-200 p-2 shadow-lg bg-white/50 inline-block">
+                    <div className="relative border-2 border-dashed border-zinc-300 rounded-xl p-1 inline-block">
+                      {refineBaseImageUrl && (
+                        <img
+                          src={refineBaseImageUrl}
+                          alt="Look base para refinamento"
+                          className="h-auto w-auto max-w-full object-contain block rounded-lg"
+                        />
+                      )}
+                    </div>
+                  </div>
+                  <div className="absolute top-2 left-2 bg-purple-600/90 text-white px-3 py-1 rounded-lg text-xs font-semibold">
+                    Modo Refinamento
+                  </div>
+                </div>
+              ) : (
+                <label
+                  htmlFor="photo-upload"
+                  className="flex cursor-pointer flex-col items-center justify-center gap-3 sm:gap-4 rounded-2xl border-2 border-dashed border-white/30 p-8 sm:p-10 md:p-12 transition hover:border-white/50 backdrop-blur"
+                  style={{
+                    background:
+                      "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
+                  }}
+                >
+                  <Camera className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 text-rose-500" />
+                  <span className="text-base sm:text-lg font-bold text-white text-center px-2">
+                    Faça upload da sua foto
+                  </span>
+                  <span className="text-xs sm:text-sm font-semibold text-zinc-600 text-center px-2">PNG ou JPG até 10MB</span>
+                  <input
+                    id="photo-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
+
+            {/* Área: Personalize o seu Look */}
+            {userPhotoUrl && (
+              <div
+                className="w-full sm:flex-1 self-stretch rounded-xl border border-white/30 backdrop-blur p-3 sm:p-4 md:p-5 shadow-xl flex flex-col min-h-0 sm:max-w-[48%] md:max-w-[42%]"
+                style={{
+                  background:
+                    "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
+                }}
+              >
+                <div className="mb-3 sm:mb-4 shrink-0">
+                  <div className="rounded-lg border-2 border-white/50 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 p-2 sm:p-3 shadow-lg">
+                    <h2 className="text-center text-[10px] sm:text-xs md:text-sm font-black text-white uppercase tracking-wide" style={{ fontFamily: 'Inter, sans-serif', textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}>
+                      Provador virtual com IA
+                    </h2>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col gap-4 flex-1 justify-between min-h-0">
+                  <div className="flex flex-col gap-3 shrink-0">
+                    {/* Passos com texto branco */}
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-500/80 text-sm font-bold text-white shadow-lg">1</div>
+                      <div className="flex flex-1 flex-col">
+                        <span className="text-xs md:text-sm font-semibold text-white">Carregue sua Foto</span>
+                        {userPhotoUrl && (<div className="mt-1 h-1 w-full rounded-full bg-green-500"></div>)}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-lg ${selectedProducts.length > 0 ? 'bg-teal-500/80' : 'bg-zinc-300'}`}>2</div>
+                      <div className="flex flex-1 flex-col">
+                        <span className="text-xs md:text-sm font-semibold text-white">Escolha um Produto</span>
+                        {selectedProducts.length > 0 && (<div className="mt-1 h-1 w-full rounded-full bg-green-500"></div>)}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-lg ${userPhotoUrl && selectedProducts.length > 0 ? 'bg-teal-500/80' : 'bg-zinc-300'}`}>3</div>
+                      <div className="flex flex-1 flex-col">
+                        <span className="text-xs md:text-sm font-semibold text-white">Crie o seu Look</span>
+                        {userPhotoUrl && selectedProducts.length > 0 && (<div className="mt-1 h-1 w-full rounded-full bg-green-500"></div>)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Caixa com Produtos Selecionados */}
+          {userPhotoUrl && selectedProducts.length > 0 && (
+            <div
+              className="rounded-xl border border-white/30 backdrop-blur p-2 sm:p-2.5 shadow-xl w-full sm:w-[90%] md:w-[80%] lg:w-[70%] mx-auto"
+              style={{
+                background:
+                  "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
+              }}
+            >
+              <h3 className="mb-2 text-center text-xs sm:text-sm font-bold text-white">
+                Produtos Selecionados
+              </h3>
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                {selectedProducts.map((produto, index) => (
+                  <div key={produto.id || index} className="rounded-lg border-2 border-purple-500 bg-white overflow-hidden shadow-lg relative">
+                    {/* Botão para remover produto */}
+                    <button
+                      onClick={() => toggleProductSelection(produto)}
+                      className="absolute right-1 top-1 z-10 rounded-full bg-red-500/80 p-1 text-white transition hover:bg-red-600"
+                      title="Remover produto"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                    {/* Imagem do Produto */}
+                    {produto.imagemUrl && (
+                      <div className="relative aspect-square w-full">
+                        <Image
+                          src={produto.imagemUrl}
+                          alt={produto.nome}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                    )}
+                    {/* Informações do Produto */}
+                    <div className="p-1.5 bg-purple-900">
+                      <h3 className="text-left text-[10px] font-semibold text-white line-clamp-2 mb-0.5 leading-tight h-7">
+                        {produto.nome}
+                      </h3>
+                      <div className="flex flex-col gap-0.5">
+                        {(() => {
+                          const desconto = lojistaData?.descontoRedesSociais;
+                          const expiraEm = lojistaData?.descontoRedesSociaisExpiraEm;
+                          const descontoValido =
+                            desconto &&
+                            desconto > 0 &&
+                            (!expiraEm || new Date(expiraEm) >= new Date());
+                          if (descontoAplicado && descontoValido) {
+                            return (
+                              <>
+                                <p className="text-left text-[9px] text-purple-300 line-through">
+                                  {formatPrice(produto.preco)}
+                                </p>
+                                <div className="flex items-center gap-0.5 flex-wrap">
+                                  <p className="text-left text-[10px] font-bold text-amber-300">
+                                    {formatPrice(
+                                      produto.preco
+                                        ? produto.preco * (1 - desconto / 100)
+                                        : 0
+                                    )}
+                                  </p>
+                                  <p className="text-left text-[7px] font-semibold text-green-400 leading-tight">
+                                    Desconto aplicado
+                                  </p>
+                                </div>
+                              </>
+                            );
+                          }
+                          return (
+                            <p className="text-left text-[10px] font-bold text-amber-300">
+                              {formatPrice(produto.preco)}
+                            </p>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Aviso sobre seleção de produtos */}
+          {userPhotoUrl && (
+            <div
+              className="rounded-xl border border-white/30 backdrop-blur p-4 shadow-xl"
+              style={{
+                background:
+                  "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
+              }}
+            >
+              {isRefineMode ? (
+                <p className="text-xs font-medium text-white text-center">
+                  ✨ <span className="font-bold">Modo Refinamento:</span> Adicione até <span className="font-bold">2 acessórios leves</span>.
+                </p>
+              ) : (
+                <p className="text-xs font-medium text-white text-center">
+                  💡 Você pode selecionar até <span className="font-bold">2 produtos</span> de <span className="font-bold">categorias diferentes</span>
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Caixa de Redes Sociais e Desconto */}
+          <div
+            className="rounded-lg border border-white/30 backdrop-blur px-4 py-3 shadow-lg"
+            style={{
+              background:
+                "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
+            }}
+          >
+            <div className="flex flex-col items-center gap-3">
+              <div className="rounded-md border border-white/30 bg-red-500/80 px-3 py-1.5">
+                <p className="text-xs font-medium text-white text-center">Siga, Curta ou Compartilhe !!!<br/>Aplique o seu Desconto agora!</p>
+              </div>
+              <div className="flex items-center justify-center gap-3 flex-wrap">
+                {lojistaData?.redesSociais?.instagram ? (<button onClick={() => handleSocialClick(lojistaData.redesSociais.instagram!.startsWith('http') ? lojistaData.redesSociais.instagram! : `https://instagram.com/${lojistaData.redesSociais.instagram!.replace('@', '')}`)} className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white transition hover:scale-110 cursor-pointer"><Instagram className="h-5 w-5" /></button>) : (<div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white opacity-50"><Instagram className="h-5 w-5" /></div>)}
+                {lojistaData?.redesSociais?.facebook ? (<button onClick={() => handleSocialClick(lojistaData.redesSociais.facebook!.startsWith('http') ? lojistaData.redesSociais.facebook! : `https://facebook.com/${lojistaData.redesSociais.facebook!}`)} className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white transition hover:scale-110 cursor-pointer"><Facebook className="h-5 w-5" /></button>) : (<div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white opacity-50"><Facebook className="h-5 w-5" /></div>)}
+                {lojistaData?.redesSociais?.tiktok ? (<button onClick={() => handleSocialClick(lojistaData.redesSociais.tiktok!.startsWith('http') ? lojistaData.redesSociais.tiktok! : `https://tiktok.com/@${lojistaData.redesSociais.tiktok!.replace('@', '')}`)} className="flex items-center justify-center w-10 h-10 rounded-full bg-black text-white transition hover:scale-110 cursor-pointer"><Music2 className="h-5 w-5" /></button>) : (<div className="flex items-center justify-center w-10 h-10 rounded-full bg-black text-white opacity-50"><Music2 className="h-5 w-5" /></div>)}
+                <button onClick={handleShareApp} className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 text-white transition hover:scale-110 cursor-pointer" title="Compartilhar aplicativo"><Share2 className="h-5 w-5" /></button>
+              </div>
+              {(() => { const desconto = lojistaData?.descontoRedesSociais; const expiraEm = lojistaData?.descontoRedesSociaisExpiraEm; if (!desconto || desconto <= 0) { return null } if (expiraEm) { const dataExpiracao = new Date(expiraEm); const agora = new Date(); if (dataExpiracao < agora) { return null } } return (
+                <>
+                  <p className="text-base font-semibold text-white text-center flex items-center justify-center gap-1.5">
+                    <span className="font-bold text-amber-300 text-base">GANHE</span>
+                    <span className="text-xl md:text-2xl font-black text-amber-300 drop-shadow-lg">{desconto}%</span>
+                    <span className="font-semibold text-white text-base">de</span>
+                    <span className="font-bold text-amber-300 text-base">DESCONTO!</span>
+                  </p>
+                  {descontoAplicado && (<p className="text-xs font-semibold text-green-400 text-center animate-pulse">✓ Desconto aplicado!</p>)}
+                </>
+              )})()}
+            </div>
+          </div>
+
+          {/* Card Principal */}
+          <div
+            className="rounded-3xl border border-white/30 backdrop-blur p-6 md:p-8 shadow-2xl"
+            style={{
+              background:
+                "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
+            }}
+          >
+            {/* Abas de Categoria */}
+            <div className="mb-4 sm:mb-6 overflow-x-auto pb-2 -mx-2 sm:mx-0">
+              <div className="flex gap-2 justify-start sm:justify-center px-2 sm:px-0 min-w-max sm:min-w-0 flex-wrap sm:flex-nowrap">
+                {categories.map((category) => (
+                  <button
+                    key={category}
+                    onClick={() => setActiveCategory(category)}
+                    className={`rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold transition whitespace-nowrap flex-shrink-0 ${
+                      activeCategory === category
+                        ? "bg-green-500 text-white border-2 border-white shadow-lg"
+                        : "bg-purple-600 text-white border-2 border-white/80 hover:bg-purple-700"
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Aviso de categoria */}
+            {categoryWarning && (<div className="mb-4 rounded-lg border border-yellow-500/50 bg-yellow-500/10 px-4 py-3"><p className="text-sm font-medium text-yellow-700">{categoryWarning}</p></div>)}
+
+            {/* Grid de Produtos */}
+            {isLoadingCatalog ? (<div className="py-12 text-center text-zinc-600">Carregando produtos...</div>) : filteredCatalog.length === 0 ? (<div className="py-12 text-center text-zinc-500">Nenhum produto encontrado.</div>) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 max-h-[50vh] sm:max-h-[60vh] overflow-y-auto pb-4 pr-2 custom-scrollbar justify-items-center">
+                {filteredCatalog.map((produto) => { const isSelected = selectedProducts.some((p) => p.id === produto.id); return (
+                  <button
+                    key={produto.id}
+                    onClick={() => toggleProductSelection(produto)}
+                    className={`group relative overflow-hidden rounded-xl border-2 transition w-full ${
+                      isSelected
+                        ? "border-teal-400 bg-teal-50 shadow-lg shadow-teal-500/30"
+                        : "border-purple-500 bg-white hover:border-purple-400"
+                    }`}
+                  >
+                    {produto.imagemUrl && (<div className="relative aspect-square w-full"><Image src={produto.imagemUrl} alt={produto.nome} fill className="object-cover" /></div>)}
+                    <div className="p-2 bg-purple-900">
+                      <h3 className="text-left text-xs font-semibold text-white line-clamp-2 h-8">
+                        {produto.nome}
+                      </h3>
+                      <div className="mt-1 flex flex-col gap-0.5">{(() => { const desconto = lojistaData?.descontoRedesSociais; const expiraEm = lojistaData?.descontoRedesSociaisExpiraEm; const descontoValido = desconto && desconto > 0 && (!expiraEm || new Date(expiraEm) >= new Date()); if (descontoAplicado && descontoValido) { return (<><p className="text-left text-xs text-purple-300 line-through">{formatPrice(produto.preco)}</p><div className="flex items-center gap-2"><p className="text-left text-sm font-bold text-amber-300">{formatPrice(produto.preco ? produto.preco * (1 - (desconto / 100)) : 0)}</p><p className="text-left text-[10px] font-semibold text-green-400">Desconto aplicado</p></div></>) } return (
+                        <p className="text-left text-sm font-bold text-amber-300">
+                          {formatPrice(produto.preco)}
+                        </p>
+                      )})()}</div>
+                    </div>
+                    {isSelected && (<div className="absolute right-2 top-2 rounded-full bg-teal-500 p-1.5 shadow-lg"><Check className="h-4 w-4 text-white" /></div>)}
+                  </button>
+                )})}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Botão FAB - Visualize */}
+      {(userPhotoUrl) && selectedProducts.length > 0 && (
+        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 p-0.5 sm:p-1 rounded-full shadow-2xl" style={{ background: 'linear-gradient(to right, #facc15, #ec4899, #a855f7, #3b82f6, #10b981)' }}>
+          <button onClick={handleVisualize} disabled={isGenerating} className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-teal-600 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base md:text-lg font-bold text-white transition hover:bg-teal-700 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed w-full h-full">
+            {isGenerating ? (<><div className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 animate-spin rounded-full border-2 border-white border-t-transparent" /> <span className="hidden sm:inline">Gerando...</span><span className="sm:hidden">...</span></>) : (<><Wand2 className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" /> <span className="hidden sm:inline">CRIAR LOOK</span><span className="sm:hidden">CRIAR</span></>)}
+          </button>
+        </div>
+      )}
+
+      {/* Mensagem de erro */}
+      {generationError && (<div className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-3 backdrop-blur"><p className="text-sm font-medium text-red-200">{generationError}</p></div>)}
+
+      {/* Modal de Favoritos */}
+      {showFavoritesModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-4xl rounded-xl border border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-white">Meus Favoritos</h2>
+              <button onClick={() => setShowFavoritesModal(false)} className="text-white/70 hover:text-white transition"><X className="h-6 w-6" /></button>
+            </div>
+            {isLoadingFavorites ? (<div className="py-12 text-center text-white">Carregando...</div>) : favorites.length === 0 ? (<div className="py-12 text-center text-white/70"><Heart className="mx-auto mb-4 h-16 w-16 text-white/30" /><p>Você não tem favoritos.</p></div>) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {favorites.map((favorito) => (
+                  <div key={favorito.id} onClick={() => { const favoritoLook: GeneratedLook = { id: favorito.id || `favorito-${Date.now()}`, imagemUrl: favorito.imagemUrl, titulo: favorito.productName || "Look favorito", produtoNome: favorito.productName || "", produtoPreco: favorito.productPrice || null, compositionId: favorito.compositionId || null, jobId: favorito.jobId || null }; sessionStorage.setItem(`favorito_${lojistaId}`, JSON.stringify(favoritoLook)); sessionStorage.setItem(`from_favoritos_${lojistaId}`, "true"); router.push(`/${lojistaId}/resultado?from=favoritos`) }} className="group relative overflow-hidden rounded-lg border border-white/20 bg-white/5 transition hover:bg-white/10 cursor-pointer">
+                    {favorito.imagemUrl && (<div className="relative aspect-square w-full"><Image src={favorito.imagemUrl} alt={favorito.productName || "Look favorito"} fill className="object-cover" /></div>)}
+                    {favorito.productName && (<div className="p-3"><p className="text-sm font-semibold text-white line-clamp-2">{favorito.productName}</p>{favorito.productPrice && (<p className="mt-1 text-xs font-bold text-yellow-300">{formatPrice(favorito.productPrice)}</p>)}</div>)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+

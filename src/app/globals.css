@@ -3,16 +3,14 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark; /* Forçando dark mode */
+  color-scheme: light;
 }
 
 body {
-  background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-  @apply text-white antialiased;
+  @apply bg-surface text-slate-900 antialiased;
   font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  min-height: 100vh;
 }
 
 @layer base {
@@ -22,42 +20,17 @@ body {
   h4,
   h5,
   h6 {
-    @apply text-white;
+    @apply text-slate-900;
   }
 
   ::selection {
-    @apply bg-gradient-orange/40 text-white; /* Seleção com gradiente laranja */
+    @apply bg-accent-1/20 text-slate-900;
   }
 }
 
 @layer components {
-  /* Estilo Glassmorphism para Cards */
-  .neo-card {
-    @apply rounded-2xl bg-glass-bg border border-glass-border shadow-glass backdrop-blur-md;
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-  }
-
-  /* Estilo Glassmorphism para Inputs */
-  .neo-input {
-    @apply rounded-xl bg-glass-bg border border-glass-border text-white placeholder-white/50 shadow-glass-inset focus:outline-none focus:ring-2 focus:ring-gradient-orange focus:border-gradient-orange transition-all;
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-  }
-
-  /* Estilo Glassmorphism para Botões Secundários */
-  .neo-button {
-    @apply rounded-xl bg-glass-bg border border-glass-border text-white font-semibold shadow-glass transition-all hover:shadow-glow-cyan hover:border-gradient-blue;
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-  }
-
-  /* Botão com Gradiente Vibrante */
-  .gradient-button {
-    @apply rounded-xl bg-gradient-to-r from-gradient-orange via-gradient-pink to-gradient-purple text-white font-bold shadow-lg transition-all hover:scale-105 hover:shadow-glow-orange;
+  .shadow-soft {
+    box-shadow: 0 24px 60px -30px rgba(110, 121, 198, 0.45);
   }
 
   .custom-scrollbar::-webkit-scrollbar {
@@ -65,16 +38,18 @@ body {
   }
 
   .custom-scrollbar::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.1);
     border-radius: 4px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #ff6b6b 0%, #4ecdc4 100%);
+    background: rgba(255, 255, 255, 0.3);
     border-radius: 4px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #ff5252 0%, #26a69a 100%);
+    background: rgba(255, 255, 255, 0.5);
   }
 }
+
+
