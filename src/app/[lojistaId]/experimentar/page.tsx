@@ -131,40 +131,40 @@ export default function ExperimentarPage() {
     if (!lojistaId) return
 
     const checkAuthAndFinalize = () => {
-      const stored = localStorage.getItem(`cliente_${lojistaId}`)
-      if (!stored) {
-        router.push(`/${lojistaId}/login`)
+    const stored = localStorage.getItem(`cliente_${lojistaId}`)
+    if (!stored) {
+      router.push(`/${lojistaId}/login`)
         return // Não finaliza a inicialização, pois vai redirecionar
-      }
+    }
 
       // Se chegou aqui, está autenticado, pode finalizar a inicialização
       setIsInitializing(false);
 
-      // Verificar se está em modo de refinamento
-      const refineMode = sessionStorage.getItem(`refine_mode_${lojistaId}`)
-      const baseImageUrl = sessionStorage.getItem(`refine_baseImage_${lojistaId}`)
-      const compositionId = sessionStorage.getItem(`refine_compositionId_${lojistaId}`)
+    // Verificar se está em modo de refinamento
+    const refineMode = sessionStorage.getItem(`refine_mode_${lojistaId}`)
+    const baseImageUrl = sessionStorage.getItem(`refine_baseImage_${lojistaId}`)
+    const compositionId = sessionStorage.getItem(`refine_compositionId_${lojistaId}`)
 
-      if (refineMode === "true" && baseImageUrl) {
-        setIsRefineMode(true)
-        setRefineBaseImageUrl(baseImageUrl)
-        if (compositionId) {
-          setRefineCompositionId(compositionId)
-        }
-        // Em modo refinamento, mostrar a imagem base ao invés de permitir upload
-        setUserPhotoUrl(baseImageUrl)
-      } else {
-        // Carregar foto do sessionStorage quando volta da Tela 3 (modo normal)
-        const savedPhotoUrl = sessionStorage.getItem(`photo_${lojistaId}`)
-        if (savedPhotoUrl && !userPhotoUrl) {
-          setUserPhotoUrl(savedPhotoUrl)
-        }
-
-        // Limpar produtos selecionados quando volta da Tela 3
-        // Os produtos precisam ser selecionados novamente
-        sessionStorage.removeItem(`products_${lojistaId}`)
-        setSelectedProducts([])
+    if (refineMode === "true" && baseImageUrl) {
+      setIsRefineMode(true)
+      setRefineBaseImageUrl(baseImageUrl)
+      if (compositionId) {
+        setRefineCompositionId(compositionId)
       }
+      // Em modo refinamento, mostrar a imagem base ao invés de permitir upload
+      setUserPhotoUrl(baseImageUrl)
+    } else {
+      // Carregar foto do sessionStorage quando volta da Tela 3 (modo normal)
+      const savedPhotoUrl = sessionStorage.getItem(`photo_${lojistaId}`)
+      if (savedPhotoUrl && !userPhotoUrl) {
+        setUserPhotoUrl(savedPhotoUrl)
+      }
+
+      // Limpar produtos selecionados quando volta da Tela 3
+      // Os produtos precisam ser selecionados novamente
+      sessionStorage.removeItem(`products_${lojistaId}`)
+      setSelectedProducts([])
+    }
     }
     
     // Adiciona um pequeno delay para garantir que os dados da loja comecem a carregar primeiro
@@ -600,29 +600,29 @@ export default function ExperimentarPage() {
 
   // TELA DE CARREGAMENTO
   if (isInitializing) {
-    return (
+  return (
       <div className="relative min-h-screen w-full overflow-hidden">
-        <div className="fixed inset-0 z-0 overflow-hidden">
-          <img
+      <div className="fixed inset-0 z-0 overflow-hidden">
+        <img
             src="/background.jpg"
             alt="Fundo"
             className="absolute inset-0 h-full w-full object-cover"
-          />
-        </div>
+        />
+      </div>
         <div className="relative z-10 flex h-screen flex-col items-center justify-center text-white">
-          {lojistaData?.logoUrl && (
+              {lojistaData?.logoUrl && (
             <div className="mb-4 h-24 w-24 overflow-hidden rounded-full border-2 border-white/30">
               <img src={lojistaData.logoUrl} alt="Logo" className="h-full w-full object-contain" />
-            </div>
-          )}
+                </div>
+              )}
           <p className="font-semibold">Carregando sua experiência...</p>
           <div className="mt-4 h-6 w-6 animate-spin rounded-full border-4 border-white/20 border-t-white" />
-        </div>
-      </div>
+            </div>
+          </div>
     );
   }
 
-  return (
+                return (
     <ExperimentarView
       lojistaData={lojistaData}
       isLoadingCatalog={isLoadingCatalog}
