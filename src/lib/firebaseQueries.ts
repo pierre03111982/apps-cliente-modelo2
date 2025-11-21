@@ -45,7 +45,6 @@ export async function fetchLojistaData(
       if (data && (data.nome || data.descricao)) {
         return {
           id: lojistaId,
-          lojaNome: data.nome || "Loja", // Mapeando nome para lojaNome (compatibilidade)
           nome: data.nome || "Loja",
           logoUrl: data.logoUrl || null,
           descricao: data.descricao || null,
