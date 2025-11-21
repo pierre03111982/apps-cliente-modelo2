@@ -16,11 +16,16 @@ export default function RootLayout({
       <head>
         <meta name="google" content="notranslate" />
         <meta name="google-translate-customization" content="false" />
-        {/* Barra de navegação inferior preta - Android */}
-        <meta name="theme-color" content="#000000" />
+        {/* Viewport com suporte para safe areas */}
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+        {/* Barra superior preta - Android */}
+        <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#000000" media="(prefers-color-scheme: light)" />
+        {/* Barra inferior preta - Android */}
         <meta name="msapplication-navbutton-color" content="#000000" />
-        {/* Barra de navegação inferior preta - iOS/Mac */}
+        {/* Barra superior preta - iOS/Mac */}
         <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
