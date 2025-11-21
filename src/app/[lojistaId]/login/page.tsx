@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import { FaApple, FaFacebook, FaGoogle } from "react-icons/fa"
@@ -9,7 +9,7 @@ import { fetchLojistaData } from "@/lib/firebaseQueries"
 import type { LojistaData } from "@/lib/types"
 import { CLOSET_BACKGROUND_IMAGE } from "@/lib/constants"
 
-export default function LoginPage() {
+function LoginPageContent() {
   const params = useParams()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -390,5 +390,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Carregando...</div>}>
+      <LoginPageContent />
+    </Suspense>
   )
 }

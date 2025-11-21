@@ -1,13 +1,14 @@
 "use client"
 
 import { useSearchParams } from "next/navigation"
+import { Suspense } from "react"
 import { Camera, Upload, User, Sparkles, Share2, ShoppingCart, Heart, RefreshCw, Home, ArrowLeftCircle } from "lucide-react"
 import { FaWhatsapp } from "react-icons/fa"
 import { ExperimentarView } from "@/components/views/ExperimentarView"
 import { useState } from "react"
 import { Produto } from "@/lib/types"
 
-export default function DemoPage() {
+function DemoPageContent() {
   const searchParams = useSearchParams()
   const tela = searchParams.get("tela") || "1"
 
@@ -215,4 +216,12 @@ export default function DemoPage() {
   }
 
   return <div>Selecione uma tela</div>
+}
+
+export default function DemoPage() {
+  return (
+    <Suspense fallback={<div>Carregando...</div>}>
+      <DemoPageContent />
+    </Suspense>
+  )
 }
