@@ -16,6 +16,11 @@ export default function RootLayout({
       <head>
         <meta name="google" content="notranslate" />
         <meta name="google-translate-customization" content="false" />
+        {/* Barra de navegação inferior preta - Android */}
+        <meta name="theme-color" content="#000000" />
+        <meta name="msapplication-navbutton-color" content="#000000" />
+        {/* Barra de navegação inferior preta - iOS/Mac */}
+        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
