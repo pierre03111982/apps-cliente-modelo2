@@ -594,13 +594,19 @@ export default function ResultadoPage() {
 
   return (
     <div className="relative min-h-screen w-screen overflow-hidden">
-      {/* Imagem de Fundo Fixa */}
+      {/* Vídeo de Fundo Fixo */}
       <div className="fixed inset-0 z-0 overflow-hidden">
-        <img
-          src="/background.jpg"
-          alt="Fundo"
+        <video
+          src="/video2tela2.mp4"
+          loop
+          muted
+          autoPlay
+          playsInline
           className="absolute inset-0 h-full w-full object-cover"
-        />
+        >
+          <source src="/video2tela2.mp4" type="video/mp4" />
+          Seu navegador não suporta a tag de vídeo.
+        </video>
       </div>
 
       {/* Conteúdo Principal */}
@@ -609,10 +615,12 @@ export default function ResultadoPage() {
         {/* Caixa com Logo e Nome da Loja */}
         <div className="w-full max-w-sm">
           <div
-            className="rounded-xl border border-white/30 backdrop-blur px-3 sm:px-4 py-2 shadow-xl flex items-center justify-center gap-2 sm:gap-3 relative"
+            className="rounded-xl border-2 border-white/30 backdrop-blur-md px-3 sm:px-4 py-2 shadow-xl flex items-center justify-center gap-2 sm:gap-3 relative"
             style={{
               background:
-                "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
+                "linear-gradient(to right, rgba(0,0,0,0.5), rgba(147,51,234,0.5), rgba(59,130,246,0.5), rgba(147,51,234,0.5), rgba(0,0,0,0.5))",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
             }}
           >
             <button
@@ -687,8 +695,8 @@ export default function ResultadoPage() {
                 >
                   <p className="mb-3 font-semibold text-white">Curtiu o Look?</p>
                   <div className="flex justify-center gap-4">
-                    <button onClick={handleDislike} className="flex flex-1 items-center justify-center gap-2 rounded-full bg-red-500/80 px-6 py-2 text-white"><ThumbsDown className="h-5 w-5" /> Não</button>
-                    <button onClick={handleLike} className="flex flex-1 items-center justify-center gap-2 rounded-full bg-green-500/80 px-6 py-2 text-white"><ThumbsUp className="h-5 w-5" /> Sim</button>
+                    <button onClick={handleDislike} className="flex flex-1 items-center justify-center gap-2 rounded-full bg-red-600 hover:bg-red-700 px-6 py-2 text-white font-semibold shadow-lg transition"><ThumbsDown className="h-5 w-5" /> Não</button>
+                    <button onClick={handleLike} className="flex flex-1 items-center justify-center gap-2 rounded-full bg-green-600 hover:bg-green-700 px-6 py-2 text-white font-semibold shadow-lg transition"><ThumbsUp className="h-5 w-5" /> Sim</button>
                   </div>
                 </div>
               ) : (
@@ -711,12 +719,15 @@ export default function ResultadoPage() {
                     <div className="space-y-2 rounded-2xl border border-white/30 backdrop-blur p-3 shadow-2xl" style={{ background: "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))" }}>
                         <button 
                             onClick={handleCheckout} 
-                            className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-semibold text-white shadow-lg text-sm"
-                            style={{ background: "linear-gradient(to right, #1e3a8a, #3b82f6, #1e3a8a)"}}
+                            className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-bold text-white text-base hover:opacity-90 transition relative overflow-hidden"
+                            style={{ 
+                              background: "linear-gradient(to right, #1e3a8a, #3b82f6, #60a5fa, #3b82f6, #1e3a8a)",
+                              animation: "pulse-glow-strong 1.5s ease-in-out infinite"
+                            }}
                         >
-                            <ShoppingCart className="h-4 w-4" /> Comprar Agora
+                            <ShoppingCart className="h-5 w-5" /> Comprar Agora
                         </button>
-                        <button onClick={handleCheckout} className="w-full flex items-center justify-center gap-2 rounded-xl bg-white/20 py-3 font-semibold text-white text-sm">
+                        <button onClick={handleCheckout} className="w-full flex items-center justify-center gap-2 rounded-xl bg-white hover:bg-gray-100 py-2 font-semibold text-gray-800 text-sm transition shadow-md">
                             <ShoppingCart className="h-4 w-4" /> Adicionar ao Carrinho
                         </button>
                     </div>
@@ -724,19 +735,19 @@ export default function ResultadoPage() {
                     {/* Card 2: Ações Secundárias */}
                     <div className="rounded-2xl border border-white/30 backdrop-blur p-3 shadow-2xl" style={{ background: "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))" }}>
                       <div className="grid grid-cols-2 gap-3">
-                        <button onClick={handleShare} className="flex items-center justify-center gap-2 rounded-xl bg-blue-600/80 py-3 font-semibold text-white text-sm"><Share2 className="h-4 w-4" /></button>
-                        <button onClick={() => setShowFavoritesModal(true)} className="flex items-center justify-center gap-2 rounded-xl bg-pink-600/80 py-3 font-semibold text-white text-sm"><Heart className="h-4 w-4" /> Favoritos</button>
+                        <button onClick={handleShare} className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 py-3 font-semibold text-white text-sm transition shadow-md"><Share2 className="h-4 w-4" /></button>
+                        <button onClick={() => setShowFavoritesModal(true)} className="flex items-center justify-center gap-2 rounded-xl bg-pink-600 hover:bg-pink-700 py-3 font-semibold text-white text-sm transition shadow-md"><Heart className="h-4 w-4" /> Favoritos</button>
                       </div>
                     </div>
 
                     {/* Card 3: Ações de Navegação e Geração */}
                     <div className="space-y-2 rounded-2xl border border-white/30 backdrop-blur p-3 shadow-2xl" style={{ background: "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))" }}>
-                      <button onClick={handleAddAccessory} className="w-full flex items-center justify-center gap-2 rounded-xl bg-purple-600/80 py-3 font-semibold text-white text-sm"><Sparkles className="h-4 w-4" /> Adicionar Acessório</button>
-                      <button onClick={handleRegenerate} disabled={loadingAction === "remix"} className="w-full flex items-center justify-center gap-2 rounded-xl bg-green-600/80 py-3 font-semibold text-white disabled:opacity-50 text-sm">
+                      <button onClick={handleAddAccessory} className="w-full flex items-center justify-center gap-2 rounded-xl bg-purple-600 hover:bg-purple-700 py-3 font-semibold text-white text-sm transition shadow-md"><Sparkles className="h-4 w-4" /> Adicionar Acessório</button>
+                      <button onClick={handleRegenerate} disabled={loadingAction === "remix"} className="w-full flex items-center justify-center gap-2 rounded-xl bg-green-600 hover:bg-green-700 py-3 font-semibold text-white disabled:opacity-50 text-sm transition shadow-md">
                         <RefreshCw className={`h-4 w-4 ${loadingAction === "remix" ? "animate-spin" : ""}`} /> 
                         {loadingAction === "remix" ? "Gerando..." : "Remixar Look"}
                       </button>
-                      <button onClick={handleGoHome} className="w-full flex items-center justify-center gap-2 rounded-xl bg-white/20 py-3 font-semibold text-white text-sm"><Home className="h-4 w-4" /> Criar outro</button>
+                      <button onClick={handleGoHome} className="w-full flex items-center justify-center gap-2 rounded-xl bg-orange-600 hover:bg-orange-700 py-3 font-semibold text-white text-sm transition shadow-md"><Home className="h-4 w-4" /> Voltar as Compras</button>
                     </div>
                 </div>
               )}
