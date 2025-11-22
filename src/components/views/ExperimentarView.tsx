@@ -347,7 +347,7 @@ export function ExperimentarView({
                   htmlFor="photo-upload"
                   className="flex cursor-pointer flex-col items-center justify-center gap-3 sm:gap-4 rounded-2xl p-8 sm:p-10 md:p-12 transition hover:opacity-90 backdrop-blur"
                   style={{
-                    background: "#1e3a8a", // Azul escuro
+                    background: "rgba(30, 58, 138, 0.15)", // Azul escuro com 15% de transparência
                     border: '4px double #3b82f6',
                     borderWidth: '4px',
                     borderStyle: 'double',
@@ -900,14 +900,14 @@ export function ExperimentarView({
                         <Image src={favorito.imagemUrl} alt={favorito.productName || "Look favorito"} fill className="object-cover" />
                         {/* Marca d'água com logo da loja no canto superior esquerdo */}
                         {lojistaData?.logoUrl && (
-                          <div className="absolute top-2 left-2 z-10">
-                            <div className="h-8 w-8 sm:h-10 sm:w-10 overflow-hidden rounded-full border border-white/50 bg-white/90 p-0.5 shadow-lg">
+                          <div className="absolute top-2 left-2 z-10 opacity-60">
+                            <div className="h-6 w-6 sm:h-8 sm:w-8 overflow-hidden rounded-full border border-white/30 bg-white/40 p-0.5">
                               <Image
                                 src={lojistaData.logoUrl}
                                 alt={lojistaData.nome || "Logo"}
-                                width={40}
-                                height={40}
-                                className="h-full w-full object-contain"
+                                width={32}
+                                height={32}
+                                className="h-full w-full object-contain opacity-80"
                               />
                             </div>
                           </div>
@@ -956,14 +956,14 @@ export function ExperimentarView({
                   />
                   {/* Marca d'água com logo da loja no canto superior esquerdo */}
                   {lojistaData?.logoUrl && (
-                    <div className="absolute top-4 left-4 z-10">
-                      <div className="h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-full border-2 border-white/50 bg-white/90 p-1 shadow-lg">
+                    <div className="absolute top-4 left-4 z-10 opacity-60">
+                      <div className="h-12 w-12 sm:h-14 sm:w-14 overflow-hidden rounded-full border border-white/30 bg-white/40 p-0.5">
                         <Image
                           src={lojistaData.logoUrl}
                           alt={lojistaData.nome || "Logo"}
-                          width={80}
-                          height={80}
-                          className="h-full w-full object-contain"
+                          width={56}
+                          height={56}
+                          className="h-full w-full object-contain opacity-80"
                         />
                       </div>
                     </div>
