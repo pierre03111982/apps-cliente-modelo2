@@ -332,7 +332,7 @@ export function ExperimentarView({
                     </div>
                   </div>
                   <div className="absolute top-2 left-2 bg-purple-600/90 text-white px-3 py-1 rounded-lg text-xs font-semibold">
-                    Modo Refinamento
+                    Adicionar Acessório
                   </div>
                   <button
                     onClick={() => setShowFavoritesModal(true)}
@@ -510,7 +510,7 @@ export function ExperimentarView({
             >
               {isRefineMode ? (
                 <p className="text-xs font-medium text-white text-center">
-                  ✨ <span className="font-bold">Modo Refinamento:</span> Adicione até <span className="font-bold">2 acessórios leves</span>.
+                  ✨ <span className="font-bold">Adicionar Acessório:</span> Selecione <span className="font-bold">1 produto</span> para adicionar ao look.
                 </p>
               ) : (
                 <p className="text-xs font-medium text-white text-center">

@@ -346,30 +346,8 @@ export default function ExperimentarPage() {
     sessionStorage.removeItem(`products_${lojistaId}`)
   }
 
-  // Categorias permitidas em modo refinamento (apenas acessórios leves)
-  const REFINEMENT_ALLOWED_CATEGORIES = [
-    "joias", "jóias", "acessórios", "acessorios", "óculos", "oculos", 
-    "relógios", "relogios", "cosméticos", "cosmeticos", "tintura", "perfumes"
-  ]
-
-  // Verificar se uma categoria é permitida em modo refinamento
-  const isCategoryAllowedForRefinement = (categoria: string | null | undefined): boolean => {
-    if (!categoria) return false
-    const categoriaLower = categoria.toLowerCase()
-    return REFINEMENT_ALLOWED_CATEGORIES.some(allowed => categoriaLower.includes(allowed))
-  }
-
-  // Toggle seleção de produto - permite até 2 produtos de categorias diferentes
+  // Toggle seleção de produto
   const toggleProductSelection = (produto: Produto) => {
-    // Em modo refinamento, só permitir categorias leves
-    if (isRefineMode && !isCategoryAllowedForRefinement(produto.categoria)) {
-      setCategoryWarning(
-        "Em modo de refinamento, você só pode adicionar acessórios leves (Jóias, Óculos, Cosméticos, Tintura, etc.). Roupas e Calçados não são permitidos."
-      )
-      setTimeout(() => setCategoryWarning(null), 5000)
-      return
-    }
-
     const isAlreadySelected = selectedProducts.some((p) => p.id === produto.id)
 
     if (isAlreadySelected) {
@@ -382,26 +360,37 @@ export default function ExperimentarPage() {
       return
     }
 
-    // Verificar se já existe produto da mesma categoria
-    const existingProductInCategory = selectedProducts.find(
-      (p) => p.categoria === produto.categoria && p.categoria
-    )
-
-    if (existingProductInCategory) {
-      setCategoryWarning(
-        `Você já selecionou um produto da categoria "${produto.categoria}". Selecione produtos de categorias diferentes.`
+    // Em modo refinamento, permitir apenas 1 produto (qualquer categoria)
+    if (isRefineMode) {
+      if (selectedProducts.length >= 1) {
+        setCategoryWarning(
+          "Em modo de refinamento, você pode selecionar apenas 1 produto. Remova o produto selecionado antes de escolher outro."
+        )
+        setTimeout(() => setCategoryWarning(null), 5000)
+        return
+      }
+    } else {
+      // Modo normal: verificar se já existe produto da mesma categoria
+      const existingProductInCategory = selectedProducts.find(
+        (p) => p.categoria === produto.categoria && p.categoria
       )
-      setTimeout(() => setCategoryWarning(null), 5000)
-      return
-    }
 
-    // Verificar se já tem 2 produtos selecionados
-    if (selectedProducts.length >= 2) {
-      setCategoryWarning(
-        "Você pode selecionar até 2 produtos de categorias diferentes. Remova um produto antes de selecionar outro."
-      )
-      setTimeout(() => setCategoryWarning(null), 5000)
-      return
+      if (existingProductInCategory) {
+        setCategoryWarning(
+          `Você já selecionou um produto da categoria "${produto.categoria}". Selecione produtos de categorias diferentes.`
+        )
+        setTimeout(() => setCategoryWarning(null), 5000)
+        return
+      }
+
+      // Verificar se já tem 2 produtos selecionados
+      if (selectedProducts.length >= 2) {
+        setCategoryWarning(
+          "Você pode selecionar até 2 produtos de categorias diferentes. Remova um produto antes de selecionar outro."
+        )
+        setTimeout(() => setCategoryWarning(null), 5000)
+        return
+      }
     }
 
     const updated = [...selectedProducts, produto]
@@ -436,12 +425,12 @@ export default function ExperimentarPage() {
   // Refinar look (adicionar acessórios)
   const handleRefine = async () => {
     if (!refineBaseImageUrl || selectedProducts.length === 0) {
-      alert("Selecione pelo menos um acessório para adicionar ao look")
+      alert("Selecione um produto para adicionar ao look")
       return
     }
 
-    if (selectedProducts.length > 2) {
-      alert("Você pode selecionar no máximo 2 acessórios")
+    if (selectedProducts.length > 1) {
+      alert("Em modo de refinamento, você pode selecionar apenas 1 produto.")
       return
     }
 

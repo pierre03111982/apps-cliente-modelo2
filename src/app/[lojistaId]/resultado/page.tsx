@@ -415,6 +415,116 @@ export default function ResultadoPage() {
     }
   }
 
+  // Função para adicionar marca d'água na imagem
+  const addWatermarkToImage = async (imageUrl: string, logoUrl: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      // Tentar carregar com CORS, mas se falhar, tentar sem
+      img.crossOrigin = 'anonymous'
+      
+      const tryLoadImage = (useCors: boolean) => {
+        if (!useCors) {
+          img.crossOrigin = undefined as any
+        }
+        
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          canvas.width = img.width
+          canvas.height = img.height
+          const ctx = canvas.getContext('2d')
+          
+          if (!ctx) {
+            reject(new Error('Não foi possível criar contexto do canvas'))
+            return
+          }
+          
+          // Desenhar imagem original
+          ctx.drawImage(img, 0, 0)
+          
+          // Carregar logo
+          const logo = new Image()
+          logo.crossOrigin = useCors ? 'anonymous' : undefined as any
+          
+          const tryLoadLogo = (logoUseCors: boolean) => {
+            if (!logoUseCors) {
+              logo.crossOrigin = undefined as any
+            }
+            
+            logo.onload = () => {
+              // Tamanho da logo (15% da largura da imagem)
+              const logoSize = Math.min(img.width, img.height) * 0.15
+              const logoX = logoSize * 0.1 // 10% da margem
+              const logoY = logoSize * 0.1 // 10% da margem
+              
+              // Desenhar círculo branco semi-transparente atrás da logo
+              ctx.save()
+              ctx.globalAlpha = 0.4
+              ctx.fillStyle = 'white'
+              ctx.beginPath()
+              ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2)
+              ctx.fill()
+              ctx.restore()
+              
+              // Desenhar logo
+              ctx.save()
+              ctx.globalAlpha = 0.6
+              ctx.beginPath()
+              ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2 - 2, 0, Math.PI * 2)
+              ctx.clip()
+              ctx.drawImage(logo, logoX, logoY, logoSize, logoSize)
+              ctx.restore()
+              
+              // Converter para blob e criar URL
+              canvas.toBlob((blob) => {
+                if (blob) {
+                  const url = URL.createObjectURL(blob)
+                  resolve(url)
+                } else {
+                  reject(new Error('Erro ao criar blob'))
+                }
+              }, 'image/jpeg', 0.9)
+            }
+            
+            logo.onerror = () => {
+              // Se a logo não carregar, ainda criar imagem com marca d'água vazia ou retornar original
+              if (logoUseCors) {
+                // Tentar sem CORS
+                tryLoadLogo(false)
+              } else {
+                // Se falhar mesmo sem CORS, retornar imagem original sem marca d'água
+                canvas.toBlob((blob) => {
+                  if (blob) {
+                    const url = URL.createObjectURL(blob)
+                    resolve(url)
+                  } else {
+                    resolve(imageUrl)
+                  }
+                }, 'image/jpeg', 0.9)
+              }
+            }
+            
+            logo.src = logoUrl
+          }
+          
+          tryLoadLogo(true)
+        }
+        
+        img.onerror = () => {
+          if (useCors) {
+            // Tentar sem CORS
+            tryLoadImage(false)
+          } else {
+            reject(new Error('Erro ao carregar imagem'))
+          }
+        }
+        
+        img.src = imageUrl
+      }
+      
+      tryLoadImage(true)
+    })
+  }
+
   // Handle like
   const handleLike = useCallback(async () => {
     if (hasVoted) return
@@ -441,6 +551,42 @@ export default function ResultadoPage() {
         compositionId = `refined-${imageHash}`
       }
 
+      // Adicionar marca d'água se houver logo e fazer upload
+      let imagemUrlComWatermark = currentLook.imagemUrl
+      if (lojistaData?.logoUrl && currentLook.imagemUrl) {
+        try {
+          const watermarkedBlobUrl = await addWatermarkToImage(currentLook.imagemUrl, lojistaData.logoUrl)
+          
+          // Converter blob URL para File e fazer upload
+          const response = await fetch(watermarkedBlobUrl)
+          const blob = await response.blob()
+          const file = new File([blob], `look-watermarked-${Date.now()}.jpg`, { type: 'image/jpeg' })
+          
+          // Fazer upload da imagem com marca d'água
+          const formData = new FormData()
+          formData.append('photo', file)
+          
+          const uploadResponse = await fetch('/api/upload-photo', {
+            method: 'POST',
+            body: formData,
+          })
+          
+          if (uploadResponse.ok) {
+            const uploadData = await uploadResponse.json()
+            imagemUrlComWatermark = uploadData.url || uploadData.imageUrl || watermarkedBlobUrl
+            // Limpar blob URL temporário
+            URL.revokeObjectURL(watermarkedBlobUrl)
+          } else {
+            // Se upload falhar, usar blob URL temporário
+            imagemUrlComWatermark = watermarkedBlobUrl
+          }
+        } catch (error) {
+          console.error("[ResultadoPage] Erro ao adicionar marca d'água, usando imagem original:", error)
+          // Se falhar, usar imagem original
+          imagemUrlComWatermark = currentLook.imagemUrl
+        }
+      }
+
       const response = await fetch("/api/actions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -453,7 +599,7 @@ export default function ResultadoPage() {
           customerName: clienteNome,
           productName: currentLook.produtoNome,
           productPrice: currentLook.produtoPreco || null,
-          imagemUrl: currentLook.imagemUrl,
+          imagemUrl: imagemUrlComWatermark,
         }),
       })
 
@@ -477,7 +623,7 @@ export default function ResultadoPage() {
     } finally {
       setLoadingAction(null)
     }
-  }, [hasVoted, currentLookIndex, looks, lojistaId, loadFavorites])
+  }, [hasVoted, currentLookIndex, looks, lojistaId, lojistaData, loadFavorites])
 
   // Handle dislike
   const handleDislike = useCallback(async () => {
