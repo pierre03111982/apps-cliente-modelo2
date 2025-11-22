@@ -33,6 +33,18 @@ export default function ResultadoPage() {
   const [isLoadingFavorites, setIsLoadingFavorites] = useState(false)
   const [selectedProducts, setSelectedProducts] = useState<any[]>([])
   const [fromFavoritos, setFromFavoritos] = useState(false)
+  const [isRemixing, setIsRemixing] = useState(false)
+  const [remixPhraseIndex, setRemixPhraseIndex] = useState(0)
+
+  // Frases para remixar (preparando surpresa)
+  const remixPhrases = [
+    "🎁 Preparando uma surpresa especial...",
+    "✨ Criando uma nova versão incrível...",
+    "🎨 Aplicando transformações mágicas...",
+    "💫 Gerando algo único para você...",
+    "🌟 Quase pronto, aguarde...",
+    "🎯 Finalizando os últimos detalhes...",
+  ]
 
   // Carregar dados da loja
   useEffect(() => {
@@ -506,12 +518,40 @@ export default function ResultadoPage() {
     if (checkoutLink) {
       window.open(checkoutLink, "_blank", "noopener,noreferrer")
     }
+  }, [lojistaData, registerAction])
+
+  // Handle WhatsApp
+  const handleWhatsApp = useCallback(() => {
+    const whatsappLink = lojistaData?.redesSociais?.whatsapp || lojistaData?.salesConfig?.whatsappLink
+    if (whatsappLink) {
+      // Se não começar com http, adicionar https://wa.me/
+      const url = whatsappLink.startsWith('http') 
+        ? whatsappLink 
+        : `https://wa.me/${whatsappLink.replace(/\D/g, '')}`
+      window.open(url, "_blank", "noopener,noreferrer")
+    }
   }, [lojistaData])
 
   // Gerar novo look (remixar) com as mesmas foto e produtos
   const handleRegenerate = async () => {
+    let phraseInterval: NodeJS.Timeout | null = null
+    
     try {
       setLoadingAction("remix")
+      setIsRemixing(true)
+      setRemixPhraseIndex(0)
+      
+      // Iniciar animação de frases
+      let phraseIndex = 0
+      phraseInterval = setInterval(() => {
+        phraseIndex++
+        if (phraseIndex < remixPhrases.length) {
+          setRemixPhraseIndex(phraseIndex)
+        } else {
+          phraseIndex = 0
+          setRemixPhraseIndex(0)
+        }
+      }, 2500)
 
       // Se veio de favoritos, usar a imagem atual que está sendo exibida
       let personImageUrl: string
@@ -552,8 +592,9 @@ export default function ResultadoPage() {
 
       // Adicionar prompts para mudar cenário e pose quando remixar
       const scenePrompts = [
-        "Change the background scene to a different location",
-        "Change the person's pose to a different position"
+        "Change the background scene to a completely different location and environment",
+        "Change the person's pose to a different position and angle",
+        "Apply creative variations to the scene and pose"
       ]
 
       const payload = {
@@ -595,6 +636,11 @@ export default function ResultadoPage() {
         // Atualizar favoritos antes de recarregar (caso tenha dado like anteriormente)
         await loadFavorites()
         
+        // Limpar intervalo de frases antes de recarregar
+        if (phraseInterval) {
+          clearInterval(phraseInterval)
+        }
+        
         // Recarregar a página para mostrar o novo look
         window.location.reload()
       } else {
@@ -602,9 +648,18 @@ export default function ResultadoPage() {
       }
     } catch (error: any) {
       console.error("[handleRegenerate] Erro:", error)
+      if (phraseInterval) {
+        clearInterval(phraseInterval)
+      }
+      setIsRemixing(false)
+      setRemixPhraseIndex(0)
       alert(error.message || "Erro ao remixar look. Tente novamente.")
     } finally {
       setLoadingAction(null)
+      setIsRemixing(false)
+      if (phraseInterval) {
+        clearInterval(phraseInterval)
+      }
     }
   }
 
@@ -755,8 +810,24 @@ export default function ResultadoPage() {
                 >
                   <p className="mb-3 font-semibold text-white">Curtiu o Look?</p>
                   <div className="flex justify-center gap-4">
-                    <button onClick={handleDislike} className="flex flex-1 items-center justify-center gap-2 rounded-full bg-red-600 hover:bg-red-700 px-6 py-2 text-white font-semibold shadow-lg transition"><ThumbsDown className="h-5 w-5" /> Não</button>
-                    <button onClick={handleLike} className="flex flex-1 items-center justify-center gap-2 rounded-full bg-green-600 hover:bg-green-700 px-6 py-2 text-white font-semibold shadow-lg transition"><ThumbsUp className="h-5 w-5" /> Sim</button>
+                    <button 
+                        onClick={handleDislike} 
+                        disabled={isRemixing}
+                        className={`flex flex-1 items-center justify-center gap-2 rounded-full bg-red-600 px-6 py-2 text-white font-semibold shadow-lg transition ${
+                          isRemixing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-red-700'
+                        }`}
+                    >
+                        <ThumbsDown className="h-5 w-5" /> Não
+                    </button>
+                    <button 
+                        onClick={handleLike} 
+                        disabled={isRemixing}
+                        className={`flex flex-1 items-center justify-center gap-2 rounded-full bg-green-600 px-6 py-2 text-white font-semibold shadow-lg transition ${
+                          isRemixing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'
+                        }`}
+                    >
+                        <ThumbsUp className="h-5 w-5" /> Sim
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -794,20 +865,91 @@ export default function ResultadoPage() {
 
                     {/* Card 2: Ações Secundárias */}
                     <div className="rounded-2xl border border-white/30 backdrop-blur p-3 shadow-2xl" style={{ background: "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))" }}>
-                      <div className="grid grid-cols-2 gap-3">
-                        <button onClick={handleShare} className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 py-3 font-semibold text-white text-sm transition shadow-md"><Share2 className="h-4 w-4" /></button>
-                        <button onClick={() => setShowFavoritesModal(true)} className="flex items-center justify-center gap-2 rounded-xl bg-pink-600 hover:bg-pink-700 py-3 font-semibold text-white text-sm transition shadow-md"><Heart className="h-4 w-4" /> Favoritos</button>
+                      <div className="grid grid-cols-3 gap-3">
+                        <button 
+                            onClick={handleShare} 
+                            disabled={isRemixing}
+                            className={`flex items-center justify-center rounded-xl bg-blue-600 py-3 font-semibold text-white text-sm transition shadow-md ${
+                              isRemixing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
+                            }`}
+                        >
+                            <Share2 className="h-6 w-6" />
+                        </button>
+                        <button 
+                            onClick={handleWhatsApp} 
+                            disabled={isRemixing || !lojistaData?.redesSociais?.whatsapp && !lojistaData?.salesConfig?.whatsappLink}
+                            className={`flex items-center justify-center rounded-xl bg-green-600 py-3 font-semibold text-white text-sm transition shadow-md ${
+                              isRemixing || (!lojistaData?.redesSociais?.whatsapp && !lojistaData?.salesConfig?.whatsappLink) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'
+                            }`}
+                        >
+                            <MessageCircle className="h-6 w-6" />
+                        </button>
+                        <button 
+                            onClick={() => setShowFavoritesModal(true)} 
+                            disabled={isRemixing}
+                            className={`flex items-center justify-center rounded-xl bg-pink-600 py-3 font-semibold text-white text-sm transition shadow-md ${
+                              isRemixing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-pink-700'
+                            }`}
+                        >
+                            <Heart className="h-6 w-6" />
+                        </button>
                       </div>
                     </div>
 
                     {/* Card 3: Ações de Navegação e Geração */}
                     <div className="space-y-2 rounded-2xl border border-white/30 backdrop-blur p-3 shadow-2xl" style={{ background: "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))" }}>
-                      <button onClick={handleAddAccessory} className="w-full flex items-center justify-center gap-2 rounded-xl bg-purple-600 hover:bg-purple-700 py-3 font-semibold text-white text-sm transition shadow-md"><Sparkles className="h-4 w-4" /> Adicionar Acessório</button>
-                      <button onClick={handleRegenerate} disabled={loadingAction === "remix"} className="w-full flex items-center justify-center gap-2 rounded-xl bg-green-600 hover:bg-green-700 py-3 font-semibold text-white disabled:opacity-50 text-sm transition shadow-md">
-                        <RefreshCw className={`h-4 w-4 ${loadingAction === "remix" ? "animate-spin" : ""}`} /> 
-                        {loadingAction === "remix" ? "Gerando..." : "Remixar Look"}
+                      <button 
+                          onClick={handleAddAccessory} 
+                          disabled={isRemixing}
+                          className={`w-full flex items-center justify-center gap-2 rounded-xl bg-purple-600 py-3 font-semibold text-white text-sm transition shadow-md ${
+                            isRemixing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-purple-700'
+                          }`}
+                      >
+                          <Sparkles className="h-4 w-4" /> Adicionar Acessório
                       </button>
-                      <button onClick={handleGoHome} className="w-full flex items-center justify-center gap-2 rounded-xl bg-orange-600 hover:bg-orange-700 py-3 font-semibold text-white text-sm transition shadow-md"><Home className="h-4 w-4" /> Voltar as Compras</button>
+                      <button 
+                        onClick={handleRegenerate} 
+                        disabled={loadingAction === "remix" || isRemixing} 
+                        className={`w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold text-white text-sm transition shadow-md ${
+                          isRemixing 
+                            ? 'bg-green-700' 
+                            : 'bg-green-600 hover:bg-green-700 disabled:opacity-50'
+                        }`}
+                        style={isRemixing ? {
+                          border: '4px solid white',
+                          borderWidth: '4px',
+                        } : {}}
+                      >
+                        {isRemixing ? (
+                          <div className="flex items-center justify-center gap-2 w-full overflow-hidden">
+                            <div className="flex-shrink-0">
+                              <RefreshCw className="h-4 w-4 animate-spin" />
+                            </div>
+                            <div className="flex-1 overflow-hidden text-center">
+                              <div 
+                                key={remixPhraseIndex}
+                                className="animate-slide-in text-white font-semibold whitespace-nowrap text-center"
+                              >
+                                {remixPhrases[remixPhraseIndex] || remixPhrases[0]}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <RefreshCw className={`h-4 w-4 ${loadingAction === "remix" ? "animate-spin" : ""}`} /> 
+                            {loadingAction === "remix" ? "Gerando..." : "Remixar Look"}
+                          </>
+                        )}
+                      </button>
+                      <button 
+                          onClick={handleGoHome} 
+                          disabled={isRemixing}
+                          className={`w-full flex items-center justify-center gap-2 rounded-xl bg-orange-600 py-3 font-semibold text-white text-sm transition shadow-md ${
+                            isRemixing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-orange-700'
+                          }`}
+                      >
+                          <Home className="h-4 w-4" /> Voltar as Compras
+                      </button>
                     </div>
                 </div>
               )}

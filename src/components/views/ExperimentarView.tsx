@@ -100,6 +100,16 @@ export function ExperimentarView({
     "🎯 Finalizando detalhes...",
   ]
 
+  // Frases para remixar (preparando surpresa)
+  const remixPhrases = [
+    "🎁 Preparando uma surpresa especial...",
+    "✨ Criando uma nova versão incrível...",
+    "🎨 Aplicando transformações mágicas...",
+    "💫 Gerando algo único para você...",
+    "🌟 Quase pronto, aguarde...",
+    "🎯 Finalizando os últimos detalhes...",
+  ]
+
   // Limpar intervalo quando componente desmontar
   useEffect(() => {
     return () => {
@@ -139,7 +149,7 @@ export function ExperimentarView({
       clearInterval(phraseIntervalRef.current)
     }
     
-    // Iniciar animação de frases
+    // Iniciar animação de frases (mais devagar)
     let phraseIndex = 0
     phraseIntervalRef.current = setInterval(() => {
       phraseIndex++
@@ -150,7 +160,7 @@ export function ExperimentarView({
         phraseIndex = 0
         setCurrentPhraseIndex(0)
       }
-    }, 1500)
+    }, 2500) // Aumentado de 1500ms para 2500ms (mais devagar)
     
     // Chamar função original
     handleVisualize()
@@ -661,17 +671,19 @@ export function ExperimentarView({
               background: isButtonExpanded
                 ? 'transparent'
                 : 'linear-gradient(45deg, rgba(37,99,235,1), rgba(147,51,234,1), rgba(249,115,22,1), rgba(34,197,94,1))',
+              border: '4px solid white',
+              borderWidth: '4px',
             }}
           >
             {isButtonExpanded ? (
-              <div className="flex items-center gap-3 w-full overflow-hidden">
+              <div className="flex items-center justify-center gap-3 w-full overflow-hidden">
                 <div className="flex-shrink-0">
                   <div className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 animate-spin rounded-full border-3 border-white border-t-transparent" />
                 </div>
-                <div className="flex-1 overflow-hidden">
+                <div className="flex-1 overflow-hidden text-center">
                   <div 
                     key={currentPhraseIndex}
-                    className="animate-slide-in text-white font-semibold whitespace-nowrap"
+                    className="animate-slide-in text-white font-semibold whitespace-nowrap text-center"
                   >
                     {creativePhrases[currentPhraseIndex] || creativePhrases[0]}
                   </div>
