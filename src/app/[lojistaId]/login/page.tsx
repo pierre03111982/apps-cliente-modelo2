@@ -69,14 +69,107 @@ function LoginPageContent() {
 
   // Carregar dados da loja (em background, sem bloquear a UI)
   useEffect(() => {
-    if (!lojistaId) return
+    if (!lojistaId) {
+      console.warn("[LoginPage] ⚠️ lojistaId não encontrado")
+      return
+    }
+
+    console.log("[LoginPage] 🔍 Iniciando busca de dados para lojistaId:", lojistaId)
 
     const loadLojistaData = async () => {
       try {
+        // Tentar buscar do backend primeiro (API interna do modelo 2)
+        try {
+          console.log("[LoginPage] 📡 Tentando buscar via API interna...")
+          const perfilResponse = await fetch(`/api/lojista/perfil?lojistaId=${encodeURIComponent(lojistaId)}`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+            cache: "no-store"
+          })
+          console.log("[LoginPage] 📡 Resposta da API:", perfilResponse.status, perfilResponse.ok)
+          if (perfilResponse.ok) {
+            const perfilData = await perfilResponse.json()
+            console.log("[LoginPage] 📡 Dados recebidos da API:", perfilData)
+            if (perfilData?.nome || perfilData?.error) {
+              if (perfilData?.nome) {
+                console.log("[LoginPage] ✅ Dados carregados via API:", perfilData.nome)
+                setLojistaData({
+                  id: lojistaId,
+                  nome: perfilData.nome,
+                  logoUrl: perfilData.logoUrl || null,
+                  descricao: perfilData.descricao || null,
+                  redesSociais: {
+                    instagram: perfilData.instagram || perfilData.redesSociais?.instagram || null,
+                    facebook: perfilData.facebook || perfilData.redesSociais?.facebook || null,
+                    tiktok: perfilData.tiktok || perfilData.redesSociais?.tiktok || null,
+                    whatsapp: perfilData.whatsapp || perfilData.redesSociais?.whatsapp || null,
+                  },
+                  salesConfig: perfilData.salesConfig || {
+                    whatsappLink: perfilData.salesWhatsapp || null,
+                    ecommerceUrl: perfilData.checkoutLink || null,
+                  },
+                  descontoRedesSociais: perfilData.descontoRedesSociais || null,
+                  descontoRedesSociaisExpiraEm: perfilData.descontoRedesSociaisExpiraEm || null,
+                })
+                return
+              }
+            }
+          } else {
+            console.warn("[LoginPage] ⚠️ API retornou status:", perfilResponse.status)
+          }
+        } catch (apiError: any) {
+          console.warn("[LoginPage] ❌ Erro ao buscar via API, tentando Firebase:", apiError?.message || apiError)
+        }
+
+        // Se não encontrou via API, tentar Firebase
+        console.log("[LoginPage] Tentando buscar via Firebase...")
         const data = await fetchLojistaData(lojistaId)
-        setLojistaData(data)
+        if (data) {
+          console.log("[LoginPage] ✅ Dados carregados via Firebase:", data.nome)
+          setLojistaData(data)
+        } else {
+          console.warn("[LoginPage] ⚠️ Nenhum dado encontrado para lojistaId:", lojistaId)
+          // Fallback: usar lojistaId como nome temporário
+          setLojistaData({
+            id: lojistaId,
+            nome: lojistaId,
+            logoUrl: null,
+            descricao: null,
+            redesSociais: {
+              instagram: null,
+              facebook: null,
+              tiktok: null,
+              whatsapp: null,
+            },
+            salesConfig: {
+              whatsappLink: null,
+              ecommerceUrl: null,
+            },
+            descontoRedesSociais: null,
+            descontoRedesSociaisExpiraEm: null,
+          })
+        }
       } catch (err) {
         console.error("[LoginPage] Erro ao carregar dados da loja:", err)
+        // Em caso de erro, ainda assim mostrar algo
+        setLojistaData({
+          id: lojistaId,
+          nome: lojistaId,
+          logoUrl: null,
+          descricao: null,
+          redesSociais: {
+            instagram: null,
+            facebook: null,
+            tiktok: null,
+            whatsapp: null,
+          },
+          salesConfig: {
+            whatsappLink: null,
+            ecommerceUrl: null,
+          },
+          descontoRedesSociais: null,
+          descontoRedesSociaisExpiraEm: null,
+        })
       }
     }
 
@@ -218,14 +311,24 @@ function LoginPageContent() {
   return (
     <div className="relative min-h-screen w-screen overflow-hidden">
       {/* 1. Vídeo de Fundo - Fixo */}
-      <div className="fixed inset-0 z-0 overflow-hidden">
+      <div className="fixed inset-0 z-0" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', overflow: 'hidden' }}>
         <video
           src="/video2.mp4"
           loop
           muted
           autoPlay
           playsInline
-          className="absolute inset-0 h-full w-full object-cover"
+          preload="auto"
+          style={{ 
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            objectFit: 'cover',
+            zIndex: 0,
+            pointerEvents: 'none'
+          }}
         >
           <source src="/video2.mp4" type="video/mp4" />
           Seu navegador não suporta a tag de vídeo.
@@ -233,11 +336,11 @@ function LoginPageContent() {
       </div>
 
       {/* 2. Conteúdo do Formulário */}
-      <div className="relative z-10 flex h-full flex-col items-center justify-center px-4 space-y-3 pt-4">
+      <div className="relative z-10 min-h-screen w-full flex flex-col items-center justify-center px-4 py-8">
         {/* Caixa com Logo e Nome da Loja */}
-        <div className="w-full max-w-sm">
+        <div className="w-full max-w-sm mb-4">
           <div
-            className="rounded-xl border-2 border-white/30 backdrop-blur-md px-3 sm:px-3 py-2 shadow-xl flex items-center justify-center gap-2 sm:gap-2"
+            className="rounded-xl border-2 border-white/30 backdrop-blur-md px-3 sm:px-3 py-2 shadow-xl flex flex-col items-center justify-center gap-2 sm:gap-2"
             style={{
               background:
                 "linear-gradient(to right, rgba(0,0,0,0.5), rgba(147,51,234,0.5), rgba(59,130,246,0.5), rgba(147,51,234,0.5), rgba(0,0,0,0.5))",
@@ -253,15 +356,16 @@ function LoginPageContent() {
                   width={64}
                   height={64}
                   className="h-full w-full object-contain"
+                  unoptimized
                 />
               </div>
             )}
             <h3
-              className="text-base sm:text-lg md:text-xl font-bold text-white"
+              className="text-base sm:text-lg md:text-xl font-bold text-white text-center"
               style={{ textShadow: "0px 1px 3px black, 0px 1px 3px black" }}
               translate="no"
             >
-              {lojistaData?.nome || "Loja"}
+              {lojistaData?.nome || lojistaId || "Loja"}
             </h3>
           </div>
         </div>

@@ -81,11 +81,33 @@ export async function fetchLojistaData(
       return null
     }
 
-    // ... (restante do código original de fallback omitido para brevidade, mas mantendo a lógica se precisar reverter)
-    // Por enquanto, vamos confiar na API. Se a API falhar, o código abaixo seria executado.
-    // Mas como o erro de permissão está bloqueando, vamos retornar null se a API falhar e evitar o erro de permissão.
+    const lojistaDoc = await getDoc(doc(db, "lojas", lojistaId))
     
-    return null; 
+    if (lojistaDoc.exists()) {
+      const data = lojistaDoc.data()
+      console.log("[fetchLojistaData] ✅ Dados encontrados no Firestore:", data.nome)
+      return {
+        id: lojistaId,
+        nome: data.nome || "Loja",
+        logoUrl: data.logoUrl || null,
+        descricao: data.descricao || null,
+        redesSociais: {
+          instagram: data.instagram || data.redesSociais?.instagram || null,
+          facebook: data.facebook || data.redesSociais?.facebook || null,
+          tiktok: data.tiktok || data.redesSociais?.tiktok || null,
+          whatsapp: data.whatsapp || data.redesSociais?.whatsapp || null,
+        },
+        salesConfig: data.salesConfig || {
+          whatsappLink: data.salesWhatsapp || null,
+          ecommerceUrl: data.checkoutLink || null,
+        },
+        descontoRedesSociais: data.descontoRedesSociais || null,
+        descontoRedesSociaisExpiraEm: data.descontoRedesSociaisExpiraEm || null,
+      }
+    }
+    
+    console.warn("[fetchLojistaData] Loja não encontrada no Firestore")
+    return null
 
   } catch (error: any) {
      console.error("[fetchLojistaData] Erro no fallback:", error);
