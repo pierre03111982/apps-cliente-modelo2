@@ -553,6 +553,28 @@ export default function ResultadoPage() {
   // Verificar se WhatsApp está disponível
   const hasWhatsApp = !!(lojistaData?.redesSociais?.whatsapp || lojistaData?.salesConfig?.whatsappLink)
 
+  // Handle download
+  const handleDownload = useCallback(async () => {
+    const currentLook = looks[currentLookIndex]
+    if (!currentLook?.imagemUrl) return
+
+    try {
+      const response = await fetch(currentLook.imagemUrl)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `look-${currentLook.id || Date.now()}.jpg`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (error) {
+      console.error("[ResultadoPage] Erro ao baixar imagem:", error)
+      alert("Erro ao baixar imagem. Tente novamente.")
+    }
+  }, [currentLookIndex, looks])
+
   // Gerar novo look (remixar) com as mesmas foto e produtos
   const handleRegenerate = async () => {
     let phraseInterval: NodeJS.Timeout | null = null
