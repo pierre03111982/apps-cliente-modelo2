@@ -585,7 +585,7 @@ export function ExperimentarView({
 
             {/* Grid de Produtos */}
             {isLoadingCatalog ? (<div className="py-12 text-center text-zinc-600">Carregando produtos...</div>) : filteredCatalog.length === 0 ? (<div className="py-12 text-center text-zinc-500">Nenhum produto encontrado.</div>) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 max-h-[50vh] sm:max-h-[60vh] overflow-y-auto pb-4 pr-2 custom-scrollbar justify-items-center">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4 overflow-y-auto pb-4 pr-2 custom-scrollbar justify-items-center" style={{ maxHeight: '900px' }}>
                 {filteredCatalog.map((produto) => { const isSelected = selectedProducts.some((p) => p.id === produto.id); return (
                   <div
                     key={produto.id}
@@ -713,9 +713,9 @@ export function ExperimentarView({
 
       {/* Modal de Detalhes do Produto */}
       {selectedProductDetail && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={() => setSelectedProductDetail(null)}>
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-8 sm:pt-12 backdrop-blur-sm overflow-y-auto" onClick={() => setSelectedProductDetail(null)}>
           <div 
-            className="w-full max-w-2xl rounded-xl border-2 border-white/30 bg-white/95 backdrop-blur-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
+            className="w-full max-w-2xl rounded-xl border-2 border-white/30 bg-white/95 backdrop-blur-lg p-6 shadow-2xl mb-8"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">
