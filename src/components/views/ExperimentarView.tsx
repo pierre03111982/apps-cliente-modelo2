@@ -16,6 +16,7 @@ import {
   Music2,
   Share2,
   ArrowLeftCircle,
+  ShoppingCart,
 } from "lucide-react"
 import { CLOSET_BACKGROUND_IMAGE } from "@/lib/constants" // Esta constante não será mais usada
 import type { LojistaData, Produto, GeneratedLook } from "@/lib/types"
@@ -88,6 +89,7 @@ export function ExperimentarView({
   const [isButtonExpanded, setIsButtonExpanded] = useState(false)
   const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0)
   const phraseIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const [selectedFavoriteDetail, setSelectedFavoriteDetail] = useState<any | null>(null)
 
   // Frases criativas animadas
   const creativePhrases = [
@@ -888,13 +890,151 @@ export function ExperimentarView({
             {isLoadingFavorites ? (<div className="py-12 text-center text-white">Carregando...</div>) : favorites.length === 0 ? (<div className="py-12 text-center text-white/70"><Heart className="mx-auto mb-4 h-16 w-16 text-white/30" /><p>Você não tem favoritos.</p></div>) : (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {favorites.map((favorito) => (
-                  <div key={favorito.id} onClick={() => { const favoritoLook: GeneratedLook = { id: favorito.id || `favorito-${Date.now()}`, imagemUrl: favorito.imagemUrl, titulo: favorito.productName || "Look favorito", produtoNome: favorito.productName || "", produtoPreco: favorito.productPrice || null, compositionId: favorito.compositionId || null, jobId: favorito.jobId || null }; sessionStorage.setItem(`favorito_${lojistaId}`, JSON.stringify(favoritoLook)); sessionStorage.setItem(`from_favoritos_${lojistaId}`, "true"); router.push(`/${lojistaId}/resultado?from=favoritos`) }} className="group relative overflow-hidden rounded-lg border-2 border-white/20 bg-white/5 transition hover:bg-white/10 cursor-pointer">
-                    {favorito.imagemUrl && (<div className="relative aspect-square w-full"><Image src={favorito.imagemUrl} alt={favorito.productName || "Look favorito"} fill className="object-cover" /></div>)}
-                    {favorito.productName && (<div className="p-3"><p className="text-sm font-semibold text-white line-clamp-2">{favorito.productName}</p>{favorito.productPrice && (<p className="mt-1 text-xs font-bold text-yellow-300">{formatPrice(favorito.productPrice)}</p>)}</div>)}
+                  <div 
+                    key={favorito.id} 
+                    onClick={() => setSelectedFavoriteDetail(favorito)} 
+                    className="group relative overflow-hidden rounded-lg border-2 border-white/20 bg-white/5 transition hover:bg-white/10 cursor-pointer"
+                  >
+                    {favorito.imagemUrl && (
+                      <div className="relative aspect-square w-full">
+                        <Image src={favorito.imagemUrl} alt={favorito.productName || "Look favorito"} fill className="object-cover" />
+                        {/* Marca d'água com logo da loja no canto superior esquerdo */}
+                        {lojistaData?.logoUrl && (
+                          <div className="absolute top-2 left-2 z-10">
+                            <div className="h-8 w-8 sm:h-10 sm:w-10 overflow-hidden rounded-full border border-white/50 bg-white/90 p-0.5 shadow-lg">
+                              <Image
+                                src={lojistaData.logoUrl}
+                                alt={lojistaData.nome || "Logo"}
+                                width={40}
+                                height={40}
+                                className="h-full w-full object-contain"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {favorito.productName && (
+                      <div className="p-3">
+                        <p className="text-sm font-semibold text-white line-clamp-2">{favorito.productName}</p>
+                        {favorito.productPrice && (
+                          <p className="mt-1 text-xs font-bold text-yellow-300">{formatPrice(favorito.productPrice)}</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Detalhes do Favorito */}
+      {selectedFavoriteDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-4xl rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-white">Detalhes do Look</h2>
+              <button 
+                onClick={() => setSelectedFavoriteDetail(null)} 
+                className="text-white/70 hover:text-white transition"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Imagem do Favorito */}
+            {selectedFavoriteDetail.imagemUrl && (
+              <div className="relative mb-6 rounded-xl overflow-hidden">
+                <div className="relative aspect-[3/4] w-full">
+                  <Image 
+                    src={selectedFavoriteDetail.imagemUrl} 
+                    alt={selectedFavoriteDetail.productName || "Look favorito"} 
+                    fill 
+                    className="object-contain bg-black/20" 
+                  />
+                  {/* Marca d'água com logo da loja no canto superior esquerdo */}
+                  {lojistaData?.logoUrl && (
+                    <div className="absolute top-4 left-4 z-10">
+                      <div className="h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-full border-2 border-white/50 bg-white/90 p-1 shadow-lg">
+                        <Image
+                          src={lojistaData.logoUrl}
+                          alt={lojistaData.nome || "Logo"}
+                          width={80}
+                          height={80}
+                          className="h-full w-full object-contain"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Informações do Produto */}
+            {selectedFavoriteDetail.productName && (
+              <div className="mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4">
+                <h3 className="text-xl font-bold text-white mb-2">{selectedFavoriteDetail.productName}</h3>
+                {selectedFavoriteDetail.productPrice && (
+                  <p className="text-2xl font-bold text-yellow-300">{formatPrice(selectedFavoriteDetail.productPrice)}</p>
+                )}
+                {selectedFavoriteDetail.descricao && (
+                  <p className="mt-2 text-sm text-white/80">{selectedFavoriteDetail.descricao}</p>
+                )}
+              </div>
+            )}
+
+            {/* Botões */}
+            <div className="space-y-3">
+              {/* Botão Comprar Agora */}
+              <button
+                onClick={() => {
+                  const checkoutLink = lojistaData?.salesConfig?.checkoutLink || lojistaData?.salesConfig?.whatsappLink
+                  if (checkoutLink) {
+                    window.open(checkoutLink, "_blank", "noopener,noreferrer")
+                  }
+                }}
+                className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-bold text-white text-base hover:opacity-90 transition relative overflow-hidden"
+                style={{ 
+                  background: "linear-gradient(to right, #1e3a8a, #3b82f6, #60a5fa, #3b82f6, #1e3a8a)",
+                  animation: "pulse-glow-strong 1.5s ease-in-out infinite"
+                }}
+              >
+                <ShoppingCart className="h-5 w-5" /> Comprar Agora
+              </button>
+
+              {/* Botões Selecionar e Voltar */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => {
+                    const favoritoLook: GeneratedLook = {
+                      id: selectedFavoriteDetail.id || `favorito-${Date.now()}`,
+                      imagemUrl: selectedFavoriteDetail.imagemUrl,
+                      titulo: selectedFavoriteDetail.productName || "Look favorito",
+                      produtoNome: selectedFavoriteDetail.productName || "",
+                      produtoPreco: selectedFavoriteDetail.productPrice || null,
+                      compositionId: selectedFavoriteDetail.compositionId || null,
+                      jobId: selectedFavoriteDetail.jobId || null,
+                    }
+                    sessionStorage.setItem(`favorito_${lojistaId}`, JSON.stringify(favoritoLook))
+                    sessionStorage.setItem(`from_favoritos_${lojistaId}`, "true")
+                    setSelectedFavoriteDetail(null)
+                    setShowFavoritesModal(false)
+                    router.push(`/${lojistaId}/resultado?from=favoritos`)
+                  }}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-green-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-green-700"
+                >
+                  <Check className="h-5 w-5" /> Selecionar
+                </button>
+                <button
+                  onClick={() => setSelectedFavoriteDetail(null)}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-gray-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-gray-700"
+                >
+                  <ArrowLeftCircle className="h-5 w-5" /> Voltar
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

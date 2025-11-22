@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
-import { ArrowLeft, ThumbsUp, ThumbsDown, Share2, ShoppingCart, Heart, RefreshCw, Home, Instagram, Facebook, Music2, MessageCircle, X, Sparkles, ArrowLeftCircle } from "lucide-react"
+import { ArrowLeft, ThumbsUp, ThumbsDown, Share2, ShoppingCart, Heart, RefreshCw, Home, Instagram, Facebook, Music2, MessageCircle, X, Sparkles, ArrowLeftCircle, Check, Download } from "lucide-react"
 import { CLOSET_BACKGROUND_IMAGE } from "@/lib/constants"
 import { fetchLojistaData } from "@/lib/firebaseQueries"
 import type { LojistaData, GeneratedLook } from "@/lib/types"
@@ -35,6 +35,8 @@ export default function ResultadoPage() {
   const [fromFavoritos, setFromFavoritos] = useState(false)
   const [isRemixing, setIsRemixing] = useState(false)
   const [remixPhraseIndex, setRemixPhraseIndex] = useState(0)
+  const [selectedFavoriteDetail, setSelectedFavoriteDetail] = useState<any | null>(null)
+  const [showImageDetailModal, setShowImageDetailModal] = useState(false)
 
   // Frases para remixar (preparando surpresa)
   const remixPhrases = [
@@ -164,12 +166,28 @@ export default function ResultadoPage() {
           const parsedLooks = JSON.parse(storedLooks)
           setLooks(parsedLooks)
           
-          // Verificar se já foi votado no primeiro look
-          if (parsedLooks.length > 0 && parsedLooks[0].compositionId) {
-            const voteStatus = await checkVoteStatus(parsedLooks[0].compositionId)
-            if (voteStatus) {
-              setHasVoted(true)
-              setVotedType(voteStatus === "like" ? "like" : "dislike")
+          // Verificar se uma nova imagem foi gerada
+          const newLooksGenerated = sessionStorage.getItem(`new_looks_generated_${lojistaId}`)
+          if (newLooksGenerated === "true") {
+            // Nova imagem gerada - sempre mostrar botões de like/dislike
+            setHasVoted(false)
+            setVotedType(null)
+            // Remover flag
+            sessionStorage.removeItem(`new_looks_generated_${lojistaId}`)
+          } else {
+            // Verificar se já foi votado no primeiro look (apenas se não for nova imagem)
+            if (parsedLooks.length > 0 && parsedLooks[0].compositionId) {
+              const voteStatus = await checkVoteStatus(parsedLooks[0].compositionId)
+              if (voteStatus) {
+                setHasVoted(true)
+                setVotedType(voteStatus === "like" ? "like" : "dislike")
+              } else {
+                setHasVoted(false)
+                setVotedType(null)
+              }
+            } else {
+              setHasVoted(false)
+              setVotedType(null)
             }
           }
         } catch (error) {
@@ -532,6 +550,9 @@ export default function ResultadoPage() {
     }
   }, [lojistaData])
 
+  // Verificar se WhatsApp está disponível
+  const hasWhatsApp = !!(lojistaData?.redesSociais?.whatsapp || lojistaData?.salesConfig?.whatsappLink)
+
   // Gerar novo look (remixar) com as mesmas foto e produtos
   const handleRegenerate = async () => {
     let phraseInterval: NodeJS.Timeout | null = null
@@ -627,6 +648,8 @@ export default function ResultadoPage() {
         // Manter foto e produtos salvos
         sessionStorage.setItem(`photo_${lojistaId}`, personImageUrl)
         sessionStorage.setItem(`products_${lojistaId}`, storedProducts)
+        // Marcar que uma nova imagem foi gerada (para resetar hasVoted na tela de resultado)
+        sessionStorage.setItem(`new_looks_generated_${lojistaId}`, "true")
         
         // Resetar votação para o novo look
         setHasVoted(false)
@@ -709,6 +732,11 @@ export default function ResultadoPage() {
 
   return (
     <div className="relative min-h-screen w-screen overflow-hidden">
+      {/* Overlay com blur quando remixando */}
+      {isRemixing && (
+        <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-md transition-opacity" />
+      )}
+      
       {/* Vídeo de Fundo Fixo */}
       <div className="fixed inset-0 z-0 overflow-hidden">
         <video
@@ -788,12 +816,29 @@ export default function ResultadoPage() {
             {/* Imagem Gerada */}
             <div className="w-full rounded-xl overflow-hidden">
               <div className="relative rounded-2xl border-2 border-white/50 p-2 shadow-lg bg-white/10 inline-block w-full">
-                <div className="relative border-2 border-dashed border-white/30 rounded-xl p-1 inline-block w-full">
+                <div 
+                  className="relative border-2 border-dashed border-white/30 rounded-xl p-1 inline-block w-full cursor-pointer"
+                  onClick={() => setShowImageDetailModal(true)}
+                >
                     <img
                       src={currentLook.imagemUrl}
                       alt={currentLook.titulo}
                       className="h-auto w-full object-cover rounded-lg"
                     />
+                    {/* Marca d'água com logo da loja no canto superior esquerdo */}
+                    {lojistaData?.logoUrl && (
+                      <div className="absolute top-2 left-2 z-10">
+                        <div className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 overflow-hidden rounded-full border-2 border-white/50 bg-white/90 p-1 shadow-lg">
+                          <Image
+                            src={lojistaData.logoUrl}
+                            alt={lojistaData.nome || "Logo"}
+                            width={64}
+                            height={64}
+                            className="h-full w-full object-contain"
+                          />
+                        </div>
+                      </div>
+                    )}
                 </div>
               </div>
             </div>
@@ -850,22 +895,31 @@ export default function ResultadoPage() {
                     <div className="space-y-2 rounded-2xl border border-white/30 backdrop-blur p-3 shadow-2xl" style={{ background: "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))" }}>
                         <button 
                             onClick={handleCheckout} 
-                            className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-bold text-white text-base hover:opacity-90 transition relative overflow-hidden"
+                            disabled={isRemixing}
+                            className={`w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-bold text-white text-base transition relative overflow-hidden ${
+                              isRemixing ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'
+                            }`}
                             style={{ 
                               background: "linear-gradient(to right, #1e3a8a, #3b82f6, #60a5fa, #3b82f6, #1e3a8a)",
-                              animation: "pulse-glow-strong 1.5s ease-in-out infinite"
+                              animation: isRemixing ? "none" : "pulse-glow-strong 1.5s ease-in-out infinite"
                             }}
                         >
                             <ShoppingCart className="h-5 w-5" /> Comprar Agora
                         </button>
-                        <button onClick={handleCheckout} className="w-full flex items-center justify-center gap-2 rounded-xl bg-white hover:bg-gray-100 py-2 font-semibold text-gray-800 text-sm transition shadow-md">
+                        <button 
+                            onClick={handleCheckout} 
+                            disabled={isRemixing}
+                            className={`w-full flex items-center justify-center gap-2 rounded-xl bg-white py-2 font-semibold text-gray-800 text-sm transition shadow-md ${
+                              isRemixing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'
+                            }`}
+                        >
                             <ShoppingCart className="h-4 w-4" /> Adicionar ao Carrinho
                         </button>
                     </div>
 
                     {/* Card 2: Ações Secundárias */}
                     <div className="rounded-2xl border border-white/30 backdrop-blur p-3 shadow-2xl" style={{ background: "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))" }}>
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-4 gap-3">
                         <button 
                             onClick={handleShare} 
                             disabled={isRemixing}
@@ -877,12 +931,20 @@ export default function ResultadoPage() {
                         </button>
                         <button 
                             onClick={handleWhatsApp} 
-                            disabled={isRemixing || !lojistaData?.redesSociais?.whatsapp && !lojistaData?.salesConfig?.whatsappLink}
+                            disabled={isRemixing || !hasWhatsApp}
                             className={`flex items-center justify-center rounded-xl bg-green-600 py-3 font-semibold text-white text-sm transition shadow-md ${
-                              isRemixing || (!lojistaData?.redesSociais?.whatsapp && !lojistaData?.salesConfig?.whatsappLink) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'
+                              isRemixing || !hasWhatsApp ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'
                             }`}
+                            title={hasWhatsApp ? "Abrir WhatsApp da loja" : "WhatsApp não disponível"}
                         >
-                            <MessageCircle className="h-6 w-6" />
+                            <svg 
+                                className="h-6 w-6" 
+                                fill="currentColor" 
+                                viewBox="0 0 24 24" 
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                            </svg>
                         </button>
                         <button 
                             onClick={() => setShowFavoritesModal(true)} 
@@ -892,6 +954,15 @@ export default function ResultadoPage() {
                             }`}
                         >
                             <Heart className="h-6 w-6" />
+                        </button>
+                        <button 
+                            onClick={handleDownload} 
+                            disabled={isRemixing}
+                            className={`flex items-center justify-center rounded-xl bg-purple-600 py-3 font-semibold text-white text-sm transition shadow-md ${
+                              isRemixing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-purple-700'
+                            }`}
+                        >
+                            <Download className="h-6 w-6" />
                         </button>
                       </div>
                     </div>
@@ -983,24 +1054,7 @@ export default function ResultadoPage() {
                 {favorites.map((favorito) => (
                   <div
                     key={favorito.id}
-                    onClick={() => {
-                      // Salvar dados do favorito no sessionStorage
-                      const favoritoLook: GeneratedLook = {
-                        id: favorito.id || `favorito-${Date.now()}`,
-                        imagemUrl: favorito.imagemUrl,
-                        titulo: favorito.productName || "Look favorito",
-                        produtoNome: favorito.productName || "",
-                        produtoPreco: favorito.productPrice || null,
-                        compositionId: favorito.compositionId || null,
-                        jobId: favorito.jobId || null,
-                      }
-                      sessionStorage.setItem(`favorito_${lojistaId}`, JSON.stringify(favoritoLook))
-                      sessionStorage.setItem(`from_favoritos_${lojistaId}`, "true")
-                      // Fechar modal e recarregar página
-                      setShowFavoritesModal(false)
-                      // Recarregar a página para aplicar as mudanças
-                      window.location.href = `/${lojistaId}/resultado?from=favoritos`
-                    }}
+                    onClick={() => setSelectedFavoriteDetail(favorito)}
                     className="group relative overflow-hidden rounded-lg neo-card transition hover:shadow-glass cursor-pointer"
                   >
                     {favorito.imagemUrl && (
@@ -1011,6 +1065,20 @@ export default function ResultadoPage() {
                           fill
                           className="object-cover"
                         />
+                        {/* Marca d'água com logo da loja no canto superior esquerdo */}
+                        {lojistaData?.logoUrl && (
+                          <div className="absolute top-2 left-2 z-10">
+                            <div className="h-8 w-8 sm:h-10 sm:w-10 overflow-hidden rounded-full border border-white/50 bg-white/90 p-0.5 shadow-lg">
+                              <Image
+                                src={lojistaData.logoUrl}
+                                alt={lojistaData.nome || "Logo"}
+                                width={40}
+                                height={40}
+                                className="h-full w-full object-contain"
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                     {favorito.productName && (
@@ -1029,6 +1097,244 @@ export default function ResultadoPage() {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Detalhes do Favorito */}
+      {selectedFavoriteDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-4xl rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-white">Detalhes do Look</h2>
+              <button 
+                onClick={() => setSelectedFavoriteDetail(null)} 
+                className="text-white/70 hover:text-white transition"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Imagem do Favorito */}
+            {selectedFavoriteDetail.imagemUrl && (
+              <div className="relative mb-6 rounded-xl overflow-hidden">
+                <div className="relative aspect-[3/4] w-full">
+                  <Image 
+                    src={selectedFavoriteDetail.imagemUrl} 
+                    alt={selectedFavoriteDetail.productName || "Look favorito"} 
+                    fill 
+                    className="object-contain bg-black/20" 
+                  />
+                  {/* Marca d'água com logo da loja no canto superior esquerdo */}
+                  {lojistaData?.logoUrl && (
+                    <div className="absolute top-4 left-4 z-10">
+                      <div className="h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-full border-2 border-white/50 bg-white/90 p-1 shadow-lg">
+                        <Image
+                          src={lojistaData.logoUrl}
+                          alt={lojistaData.nome || "Logo"}
+                          width={80}
+                          height={80}
+                          className="h-full w-full object-contain"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Informações do Produto */}
+            {selectedFavoriteDetail.productName && (
+              <div className="mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4">
+                <h3 className="text-xl font-bold text-white mb-2">{selectedFavoriteDetail.productName}</h3>
+                {selectedFavoriteDetail.productPrice && (
+                  <p className="text-2xl font-bold text-yellow-300">{formatPrice(selectedFavoriteDetail.productPrice)}</p>
+                )}
+                {selectedFavoriteDetail.descricao && (
+                  <p className="mt-2 text-sm text-white/80">{selectedFavoriteDetail.descricao}</p>
+                )}
+              </div>
+            )}
+
+            {/* Botões */}
+            <div className="space-y-3">
+              {/* Botão Comprar Agora */}
+              <button
+                onClick={handleCheckout}
+                className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-bold text-white text-base hover:opacity-90 transition relative overflow-hidden"
+                style={{ 
+                  background: "linear-gradient(to right, #1e3a8a, #3b82f6, #60a5fa, #3b82f6, #1e3a8a)",
+                  animation: "pulse-glow-strong 1.5s ease-in-out infinite"
+                }}
+              >
+                <ShoppingCart className="h-5 w-5" /> Comprar Agora
+              </button>
+
+              {/* Botões Selecionar e Voltar */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => {
+                    const favoritoLook: GeneratedLook = {
+                      id: selectedFavoriteDetail.id || `favorito-${Date.now()}`,
+                      imagemUrl: selectedFavoriteDetail.imagemUrl,
+                      titulo: selectedFavoriteDetail.productName || "Look favorito",
+                      produtoNome: selectedFavoriteDetail.productName || "",
+                      produtoPreco: selectedFavoriteDetail.productPrice || null,
+                      compositionId: selectedFavoriteDetail.compositionId || null,
+                      jobId: selectedFavoriteDetail.jobId || null,
+                    }
+                    sessionStorage.setItem(`favorito_${lojistaId}`, JSON.stringify(favoritoLook))
+                    sessionStorage.setItem(`from_favoritos_${lojistaId}`, "true")
+                    setSelectedFavoriteDetail(null)
+                    setShowFavoritesModal(false)
+                    window.location.href = `/${lojistaId}/resultado?from=favoritos`
+                  }}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-green-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-green-700"
+                >
+                  <Check className="h-5 w-5" /> Selecionar
+                </button>
+                <button
+                  onClick={() => setSelectedFavoriteDetail(null)}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-gray-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-gray-700"
+                >
+                  <ArrowLeft className="h-5 w-5" /> Voltar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Detalhes da Imagem Gerada */}
+      {showImageDetailModal && currentLook && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-4xl rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-white">Detalhes do Look</h2>
+              <button 
+                onClick={() => setShowImageDetailModal(false)} 
+                className="text-white/70 hover:text-white transition"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Imagem do Look */}
+            {currentLook.imagemUrl && (
+              <div className="relative mb-6 rounded-xl overflow-hidden">
+                <div className="relative aspect-[3/4] w-full">
+                  <Image 
+                    src={currentLook.imagemUrl} 
+                    alt={currentLook.titulo || "Look gerado"} 
+                    fill 
+                    className="object-contain bg-black/20" 
+                  />
+                  {/* Marca d'água com logo da loja no canto superior esquerdo */}
+                  {lojistaData?.logoUrl && (
+                    <div className="absolute top-4 left-4 z-10">
+                      <div className="h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-full border-2 border-white/50 bg-white/90 p-1 shadow-lg">
+                        <Image
+                          src={lojistaData.logoUrl}
+                          alt={lojistaData.nome || "Logo"}
+                          width={80}
+                          height={80}
+                          className="h-full w-full object-contain"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Informações do Produto */}
+            {currentLook.produtoNome && (
+              <div className="mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4">
+                <h3 className="text-xl font-bold text-white mb-2">{currentLook.produtoNome}</h3>
+                {currentLook.produtoPreco && (
+                  <p className="text-2xl font-bold text-yellow-300">{formatPrice(currentLook.produtoPreco)}</p>
+                )}
+                {currentLook.descricao && (
+                  <p className="mt-2 text-sm text-white/80">{currentLook.descricao}</p>
+                )}
+              </div>
+            )}
+
+            {/* Produtos Selecionados */}
+            {selectedProducts.length > 0 && (
+              <div className="mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4">
+                <h3 className="text-lg font-bold text-white mb-3">Produtos Selecionados</h3>
+                <div className="space-y-2">
+                  {selectedProducts.map((produto: any, index: number) => (
+                    <div key={produto.id || index} className="flex items-center justify-between p-2 rounded-lg bg-white/5">
+                      <span className="text-sm text-white">{produto.nome}</span>
+                      {produto.preco && (
+                        <span className="text-sm font-bold text-yellow-300">{formatPrice(produto.preco)}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Botões */}
+            <div className="space-y-3">
+              {/* Botão Comprar Agora */}
+              <button
+                onClick={handleCheckout}
+                className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-bold text-white text-base hover:opacity-90 transition relative overflow-hidden"
+                style={{ 
+                  background: "linear-gradient(to right, #1e3a8a, #3b82f6, #60a5fa, #3b82f6, #1e3a8a)",
+                  animation: "pulse-glow-strong 1.5s ease-in-out infinite"
+                }}
+              >
+                <ShoppingCart className="h-5 w-5" /> Comprar Agora
+              </button>
+
+              {/* Botões de Ação */}
+              <div className="grid grid-cols-4 gap-3">
+                <button
+                  onClick={handleShare}
+                  className="flex items-center justify-center rounded-xl bg-blue-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-blue-700"
+                >
+                  <Share2 className="h-6 w-6" />
+                </button>
+                <button
+                  onClick={handleWhatsApp}
+                  disabled={!hasWhatsApp}
+                  className={`flex items-center justify-center rounded-xl bg-green-600 py-3 font-semibold text-white text-sm transition shadow-md ${
+                    !hasWhatsApp ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'
+                  }`}
+                >
+                  <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                  </svg>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowImageDetailModal(false)
+                    setShowFavoritesModal(true)
+                  }}
+                  className="flex items-center justify-center rounded-xl bg-pink-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-pink-700"
+                >
+                  <Heart className="h-6 w-6" />
+                </button>
+                <button
+                  onClick={handleDownload}
+                  className="flex items-center justify-center rounded-xl bg-purple-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-purple-700"
+                >
+                  <Download className="h-6 w-6" />
+                </button>
+              </div>
+
+              {/* Botão Voltar */}
+              <button
+                onClick={() => setShowImageDetailModal(false)}
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-gray-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-gray-700"
+              >
+                <ArrowLeft className="h-5 w-5" /> Voltar
+              </button>
+            </div>
           </div>
         </div>
       )}

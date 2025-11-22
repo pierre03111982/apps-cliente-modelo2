@@ -256,6 +256,14 @@ export default function ExperimentarPage() {
     }
   }
 
+  // Carregar favoritos quando o modal for aberto
+  useEffect(() => {
+    if (showFavoritesModal && lojistaId) {
+      loadFavorites()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showFavoritesModal, lojistaId])
+
   // Categorias disponíveis
   const categories = useMemo(() => {
     const uniqueCategories = new Set<string>()
@@ -494,6 +502,8 @@ export default function ExperimentarPage() {
         sessionStorage.removeItem(`refine_baseImage_${lojistaId}`)
         sessionStorage.removeItem(`refine_compositionId_${lojistaId}`)
 
+        // Marcar que uma nova imagem foi gerada (para resetar hasVoted na tela de resultado)
+        sessionStorage.setItem(`new_looks_generated_${lojistaId}`, "true")
         // Navegar para resultado
         router.push(`/${lojistaId}/resultado`)
       } else {
@@ -575,6 +585,8 @@ export default function ExperimentarPage() {
         // Salvar a URL da foto que foi enviada ao backend (personImageUrl)
         sessionStorage.setItem(`photo_${lojistaId}`, personImageUrl || userPhotoUrl || "")
         sessionStorage.setItem(`products_${lojistaId}`, JSON.stringify(selectedProducts))
+        // Marcar que uma nova imagem foi gerada (para resetar hasVoted na tela de resultado)
+        sessionStorage.setItem(`new_looks_generated_${lojistaId}`, "true")
         router.push(`/${lojistaId}/resultado`)
       } else {
         throw new Error("Nenhum look foi gerado")
