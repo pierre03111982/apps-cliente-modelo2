@@ -199,7 +199,16 @@ export default function ResultadoPage() {
   useEffect(() => {
     if (!fromFavoritos && looks.length > 0 && looks[currentLookIndex]) {
       const checkVote = async () => {
-        const compositionId = looks[currentLookIndex].compositionId
+        const currentLook = looks[currentLookIndex]
+        let compositionId = currentLook.compositionId
+        
+        // Se não houver compositionId (look refinado), criar um ID único baseado na imagemUrl
+        if (!compositionId && currentLook.imagemUrl) {
+          const imageHash = currentLook.imagemUrl.split('/').pop()?.split('?')[0] || `refined-${Date.now()}`
+          compositionId = `refined-${imageHash}`
+        }
+        
+        // Verificar status de voto
         if (compositionId) {
           const voteStatus = await checkVoteStatus(compositionId)
           if (voteStatus) {
@@ -325,14 +334,25 @@ export default function ResultadoPage() {
     setLoadingAction(action)
 
     try {
+      // Para looks refinados sem compositionId, usar um ID único baseado na imagemUrl
+      let compositionId = currentLook.compositionId
+      let jobId = currentLook.jobId
+      
+      // Se não houver compositionId (look refinado), criar um ID único baseado na imagemUrl
+      if (!compositionId && currentLook.imagemUrl) {
+        // Usar hash da imagemUrl como compositionId para looks refinados
+        const imageHash = currentLook.imagemUrl.split('/').pop()?.split('?')[0] || `refined-${Date.now()}`
+        compositionId = `refined-${imageHash}`
+      }
+
       const response = await fetch("/api/actions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           lojistaId,
           action,
-          compositionId: currentLook.compositionId || null,
-          jobId: currentLook.jobId || null,
+          compositionId: compositionId || null,
+          jobId: jobId || null,
           customerId: clienteId,
           customerName: clienteNome,
           productName: currentLook.produtoNome,
@@ -365,14 +385,25 @@ export default function ResultadoPage() {
     setLoadingAction("like")
 
     try {
+      // Para looks refinados sem compositionId, usar um ID único baseado na imagemUrl
+      let compositionId = currentLook.compositionId
+      let jobId = currentLook.jobId
+      
+      // Se não houver compositionId (look refinado), criar um ID único baseado na imagemUrl
+      if (!compositionId && currentLook.imagemUrl) {
+        // Usar hash da imagemUrl como compositionId para looks refinados
+        const imageHash = currentLook.imagemUrl.split('/').pop()?.split('?')[0] || `refined-${Date.now()}`
+        compositionId = `refined-${imageHash}`
+      }
+
       const response = await fetch("/api/actions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           lojistaId,
           action: "like",
-          compositionId: currentLook.compositionId || null,
-          jobId: currentLook.jobId || null,
+          compositionId: compositionId || null,
+          jobId: jobId || null,
           customerId: clienteId,
           customerName: clienteNome,
           productName: currentLook.produtoNome,
@@ -388,9 +419,14 @@ export default function ResultadoPage() {
         setTimeout(async () => {
           await loadFavorites()
         }, 500)
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        console.error("[ResultadoPage] Erro ao registrar like:", errorData)
+        alert(errorData.error || "Erro ao salvar like. Tente novamente.")
       }
     } catch (error) {
       console.error("[ResultadoPage] Erro ao registrar like:", error)
+      alert("Erro ao salvar like. Tente novamente.")
     } finally {
       setLoadingAction(null)
     }
@@ -400,12 +436,22 @@ export default function ResultadoPage() {
   const handleDislike = useCallback(async () => {
     if (hasVoted) return
 
+    const currentLook = looks[currentLookIndex]
+    if (!currentLook) return
+
+    // Para looks refinados sem compositionId, usar um ID único baseado na imagemUrl
+    let compositionId = currentLook.compositionId
+    if (!compositionId && currentLook.imagemUrl) {
+      const imageHash = currentLook.imagemUrl.split('/').pop()?.split('?')[0] || `refined-${Date.now()}`
+      compositionId = `refined-${imageHash}`
+    }
+
     const success = await registerAction("dislike")
     if (success) {
       setHasVoted(true)
       setVotedType("dislike")
     }
-  }, [hasVoted, currentLookIndex, looks, lojistaId])
+  }, [hasVoted, currentLookIndex, looks, lojistaId, registerAction])
 
   // Handle share
   const handleShare = useCallback(async () => {
@@ -467,12 +513,23 @@ export default function ResultadoPage() {
     try {
       setLoadingAction("remix")
 
-      // Buscar dados anteriores do sessionStorage
-      const storedPhoto = sessionStorage.getItem(`photo_${lojistaId}`)
-      const storedProducts = sessionStorage.getItem(`products_${lojistaId}`)
+      // Se veio de favoritos, usar a imagem atual que está sendo exibida
+      let personImageUrl: string
+      if (fromFavoritos && currentLook && currentLook.imagemUrl) {
+        personImageUrl = currentLook.imagemUrl
+      } else {
+        // Buscar dados anteriores do sessionStorage
+        const storedPhoto = sessionStorage.getItem(`photo_${lojistaId}`)
+        if (!storedPhoto) {
+          // Se não houver dados salvos, redirecionar para experimentar
+          router.push(`/${lojistaId}/experimentar`)
+          return
+        }
+        personImageUrl = storedPhoto
+      }
 
-      if (!storedPhoto || !storedProducts) {
-        // Se não houver dados salvos, redirecionar para experimentar
+      const storedProducts = sessionStorage.getItem(`products_${lojistaId}`)
+      if (!storedProducts) {
         router.push(`/${lojistaId}/experimentar`)
         return
       }
@@ -489,19 +546,22 @@ export default function ResultadoPage() {
       const clienteData = stored ? JSON.parse(stored) : null
       const clienteId = clienteData?.clienteId || null
 
-      // Usar a URL da foto já salva (não precisa fazer upload novamente)
-      const personImageUrl = storedPhoto
-
       if (!personImageUrl) {
         throw new Error("Foto não encontrada")
       }
+
+      // Adicionar prompts para mudar cenário e pose quando remixar
+      const scenePrompts = [
+        "Change the background scene to a different location",
+        "Change the person's pose to a different position"
+      ]
 
       const payload = {
         personImageUrl,
         productIds,
         lojistaId,
         customerId: clienteId,
-        scenePrompts: [],
+        scenePrompts,
         options: { quality: "high", skipWatermark: true },
       }
 

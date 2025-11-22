@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import {
   Upload,
@@ -33,6 +33,7 @@ export interface ExperimentarViewProps {
   handleChangePhoto: () => void
   handleRemovePhoto: () => void
   handlePhotoUpload: (event: React.ChangeEvent<HTMLInputElement>) => void
+  handleBackFromRefinement?: () => void
   selectedProducts: Produto[]
   toggleProductSelection: (produto: Produto) => void
   categoryWarning: string | null
@@ -64,6 +65,7 @@ export function ExperimentarView({
   handleChangePhoto,
   handleRemovePhoto,
   handlePhotoUpload,
+  handleBackFromRefinement,
   selectedProducts,
   toggleProductSelection,
   categoryWarning,
@@ -83,6 +85,76 @@ export function ExperimentarView({
 }: ExperimentarViewProps) {
   const [selectedProductDetail, setSelectedProductDetail] = useState<Produto | null>(null)
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
+  const [isButtonExpanded, setIsButtonExpanded] = useState(false)
+  const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0)
+  const phraseIntervalRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Frases criativas animadas
+  const creativePhrases = [
+    "✨ Criando seu look perfeito...",
+    "🎨 Aplicando IA criativa...",
+    "👗 Combinando estilos únicos...",
+    "💫 Gerando magia da moda...",
+    "🌟 Transformando sua foto...",
+    "✨ Quase lá, aguarde...",
+    "🎯 Finalizando detalhes...",
+  ]
+
+  // Limpar intervalo quando componente desmontar
+  useEffect(() => {
+    return () => {
+      if (phraseIntervalRef.current) {
+        clearInterval(phraseIntervalRef.current)
+      }
+    }
+  }, [])
+
+  // Resetar estado quando geração terminar
+  useEffect(() => {
+    if (!isGenerating && isButtonExpanded) {
+      // Limpar intervalo
+      if (phraseIntervalRef.current) {
+        clearInterval(phraseIntervalRef.current)
+        phraseIntervalRef.current = null
+      }
+      // Resetar estado após um pequeno delay para permitir navegação
+      const timeout = setTimeout(() => {
+        setIsButtonExpanded(false)
+        setCurrentPhraseIndex(0)
+      }, 500)
+      return () => clearTimeout(timeout)
+    }
+  }, [isGenerating, isButtonExpanded])
+
+  // Função para lidar com o clique no botão
+  const handleCreateClick = () => {
+    if (isGenerating || isButtonExpanded) return
+    
+    // Expandir botão
+    setIsButtonExpanded(true)
+    setCurrentPhraseIndex(0)
+    
+    // Limpar intervalo anterior se existir
+    if (phraseIntervalRef.current) {
+      clearInterval(phraseIntervalRef.current)
+    }
+    
+    // Iniciar animação de frases
+    let phraseIndex = 0
+    phraseIntervalRef.current = setInterval(() => {
+      phraseIndex++
+      if (phraseIndex < creativePhrases.length) {
+        setCurrentPhraseIndex(phraseIndex)
+      } else {
+        // Reiniciar frases se ainda estiver gerando
+        phraseIndex = 0
+        setCurrentPhraseIndex(0)
+      }
+    }, 1500)
+    
+    // Chamar função original
+    handleVisualize()
+  }
 
   const handleProductCardClick = (produto: Produto, e: React.MouseEvent) => {
     // Se clicou no checkbox, não abre o modal
@@ -132,7 +204,13 @@ export function ExperimentarView({
               }}
             >
               <button
-                onClick={() => router.push(`/${lojistaId}/login`)}
+                onClick={() => {
+                  if (isRefineMode && handleBackFromRefinement) {
+                    handleBackFromRefinement()
+                  } else {
+                    router.push(`/${lojistaId}/login`)
+                  }
+                }}
                 className="absolute left-3 top-1/2 -translate-y-1/2 p-1 text-white hover:opacity-80 transition"
               >
                 <ArrowLeftCircle className="h-6 w-6" />
@@ -168,8 +246,18 @@ export function ExperimentarView({
             <div className={`${userPhotoUrl ? 'w-full sm:max-w-[48%] md:max-w-[42%]' : 'w-full'}`}>
               {userPhotoUrl && !isRefineMode ? (
                 <div className="relative inline-block">
-                  <div className="relative rounded-2xl border-2 border-zinc-200 p-2 shadow-lg bg-white/50 inline-block">
-                    <div className="relative border-2 border-dashed border-zinc-300 rounded-xl p-1 inline-block">
+                  <div className="relative rounded-2xl p-2 shadow-lg bg-white/50 inline-block" style={{ 
+                    border: '4px double #3b82f6',
+                    borderWidth: '4px',
+                    borderStyle: 'double',
+                    borderColor: '#3b82f6'
+                  }}>
+                    <div className="relative rounded-xl p-1 inline-block" style={{ 
+                      border: '4px double #60a5fa',
+                      borderWidth: '4px',
+                      borderStyle: 'double',
+                      borderColor: '#60a5fa'
+                    }}>
                       <img
                         src={userPhotoUrl}
                         alt="Sua foto"
@@ -210,8 +298,18 @@ export function ExperimentarView({
                 </div>
               ) : isRefineMode ? (
                 <div className="relative inline-block">
-                  <div className="relative rounded-2xl border-2 border-zinc-200 p-2 shadow-lg bg-white/50 inline-block">
-                    <div className="relative border-2 border-dashed border-zinc-300 rounded-xl p-1 inline-block">
+                  <div className="relative rounded-2xl p-2 shadow-lg bg-white/50 inline-block" style={{ 
+                    border: '4px double #3b82f6',
+                    borderWidth: '4px',
+                    borderStyle: 'double',
+                    borderColor: '#3b82f6'
+                  }}>
+                    <div className="relative rounded-xl p-1 inline-block" style={{ 
+                      border: '4px double #60a5fa',
+                      borderWidth: '4px',
+                      borderStyle: 'double',
+                      borderColor: '#60a5fa'
+                    }}>
                       {refineBaseImageUrl && (
                         <img
                           src={refineBaseImageUrl}
@@ -224,14 +322,24 @@ export function ExperimentarView({
                   <div className="absolute top-2 left-2 bg-purple-600/90 text-white px-3 py-1 rounded-lg text-xs font-semibold">
                     Modo Refinamento
                   </div>
+                  <button
+                    onClick={() => setShowFavoritesModal(true)}
+                    className="absolute left-3 bottom-3 rounded-full bg-pink-500/80 p-2 text-white transition hover:bg-pink-600 z-10"
+                    title="Ver favoritos"
+                  >
+                    <Heart className="h-5 w-5" />
+                  </button>
                 </div>
               ) : (
                 <label
                   htmlFor="photo-upload"
-                  className="flex cursor-pointer flex-col items-center justify-center gap-3 sm:gap-4 rounded-2xl border-2 border-dashed border-white/30 p-8 sm:p-10 md:p-12 transition hover:border-white/50 backdrop-blur"
+                  className="flex cursor-pointer flex-col items-center justify-center gap-3 sm:gap-4 rounded-2xl p-8 sm:p-10 md:p-12 transition hover:opacity-90 backdrop-blur"
                   style={{
-                    background:
-                      "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
+                    background: "#1e3a8a", // Azul escuro
+                    border: '4px double #3b82f6',
+                    borderWidth: '4px',
+                    borderStyle: 'double',
+                    borderColor: '#3b82f6',
                   }}
                 >
                   <Camera className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 text-rose-500" />
@@ -413,10 +521,10 @@ export function ExperimentarView({
                 <p className="text-xs font-medium text-white text-center">Siga, Curta ou Compartilhe !!!<br/>Aplique o seu Desconto agora!</p>
               </div>
               <div className="flex items-center justify-center gap-3 flex-wrap">
-                {lojistaData?.redesSociais?.instagram ? (<button onClick={() => handleSocialClick(lojistaData.redesSociais.instagram!.startsWith('http') ? lojistaData.redesSociais.instagram! : `https://instagram.com/${lojistaData.redesSociais.instagram!.replace('@', '')}`)} className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white transition hover:scale-110 cursor-pointer"><Instagram className="h-5 w-5" /></button>) : (<div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white opacity-50"><Instagram className="h-5 w-5" /></div>)}
-                {lojistaData?.redesSociais?.facebook ? (<button onClick={() => handleSocialClick(lojistaData.redesSociais.facebook!.startsWith('http') ? lojistaData.redesSociais.facebook! : `https://facebook.com/${lojistaData.redesSociais.facebook!}`)} className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white transition hover:scale-110 cursor-pointer"><Facebook className="h-5 w-5" /></button>) : (<div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white opacity-50"><Facebook className="h-5 w-5" /></div>)}
-                {lojistaData?.redesSociais?.tiktok ? (<button onClick={() => handleSocialClick(lojistaData.redesSociais.tiktok!.startsWith('http') ? lojistaData.redesSociais.tiktok! : `https://tiktok.com/@${lojistaData.redesSociais.tiktok!.replace('@', '')}`)} className="flex items-center justify-center w-10 h-10 rounded-full bg-black text-white transition hover:scale-110 cursor-pointer"><Music2 className="h-5 w-5" /></button>) : (<div className="flex items-center justify-center w-10 h-10 rounded-full bg-black text-white opacity-50"><Music2 className="h-5 w-5" /></div>)}
-                <button onClick={handleShareApp} className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 text-white transition hover:scale-110 cursor-pointer" title="Compartilhar aplicativo"><Share2 className="h-5 w-5" /></button>
+                {lojistaData?.redesSociais?.instagram ? (<button onClick={() => handleSocialClick(lojistaData.redesSociais.instagram!.startsWith('http') ? lojistaData.redesSociais.instagram! : `https://instagram.com/${lojistaData.redesSociais.instagram!.replace('@', '')}`)} disabled={isGenerating || isButtonExpanded} className={`flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white transition hover:scale-110 ${isGenerating || isButtonExpanded ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}><Instagram className="h-5 w-5" /></button>) : (<div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white opacity-50"><Instagram className="h-5 w-5" /></div>)}
+                {lojistaData?.redesSociais?.facebook ? (<button onClick={() => handleSocialClick(lojistaData.redesSociais.facebook!.startsWith('http') ? lojistaData.redesSociais.facebook! : `https://facebook.com/${lojistaData.redesSociais.facebook!}`)} disabled={isGenerating || isButtonExpanded} className={`flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white transition hover:scale-110 ${isGenerating || isButtonExpanded ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}><Facebook className="h-5 w-5" /></button>) : (<div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white opacity-50"><Facebook className="h-5 w-5" /></div>)}
+                {lojistaData?.redesSociais?.tiktok ? (<button onClick={() => handleSocialClick(lojistaData.redesSociais.tiktok!.startsWith('http') ? lojistaData.redesSociais.tiktok! : `https://tiktok.com/@${lojistaData.redesSociais.tiktok!.replace('@', '')}`)} disabled={isGenerating || isButtonExpanded} className={`flex items-center justify-center w-10 h-10 rounded-full bg-black text-white transition hover:scale-110 ${isGenerating || isButtonExpanded ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}><Music2 className="h-5 w-5" /></button>) : (<div className="flex items-center justify-center w-10 h-10 rounded-full bg-black text-white opacity-50"><Music2 className="h-5 w-5" /></div>)}
+                <button onClick={handleShareApp} disabled={isGenerating || isButtonExpanded} className={`flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 text-white transition hover:scale-110 ${isGenerating || isButtonExpanded ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`} title="Compartilhar aplicativo"><Share2 className="h-5 w-5" /></button>
               </div>
               {(() => { const desconto = lojistaData?.descontoRedesSociais; const expiraEm = lojistaData?.descontoRedesSociaisExpiraEm; if (!desconto || desconto <= 0) { return null } if (expiraEm) { const dataExpiracao = new Date(expiraEm); const agora = new Date(); if (dataExpiracao < agora) { return null } } return (
                 <>
@@ -447,11 +555,12 @@ export function ExperimentarView({
                   <button
                     key={category}
                     onClick={() => setActiveCategory(category)}
+                    disabled={isGenerating || isButtonExpanded}
                     className={`rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold transition whitespace-nowrap flex-shrink-0 ${
                       activeCategory === category
                         ? "bg-green-500 text-white border-2 border-white shadow-lg"
                         : "bg-purple-600 text-white border-2 border-white/80 hover:bg-purple-700"
-                    }`}
+                    } ${isGenerating || isButtonExpanded ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     {category}
                   </button>
@@ -468,8 +577,16 @@ export function ExperimentarView({
                 {filteredCatalog.map((produto) => { const isSelected = selectedProducts.some((p) => p.id === produto.id); return (
                   <div
                     key={produto.id}
-                    onClick={(e) => handleProductCardClick(produto, e)}
-                    className={`group relative overflow-hidden rounded-xl border-2 transition w-full cursor-pointer ${
+                    onClick={(e) => {
+                      if (!isGenerating && !isButtonExpanded) {
+                        handleProductCardClick(produto, e)
+                      }
+                    }}
+                    className={`group relative overflow-hidden rounded-xl border-2 transition w-full ${
+                      isGenerating || isButtonExpanded
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'cursor-pointer'
+                    } ${
                       isSelected
                         ? "border-teal-400 bg-teal-50 shadow-lg shadow-teal-500/30"
                         : "border-purple-500 bg-white hover:border-purple-400"
@@ -480,7 +597,9 @@ export function ExperimentarView({
                       className="product-checkbox absolute left-2 top-2 z-10"
                       onClick={(e) => {
                         e.stopPropagation()
-                        toggleProductSelection(produto)
+                        if (!isGenerating && !isButtonExpanded) {
+                          toggleProductSelection(produto)
+                        }
                       }}
                     >
                       <div className={`w-6 h-6 rounded border-2 flex items-center justify-center transition ${
@@ -511,11 +630,66 @@ export function ExperimentarView({
         </div>
       </div>
 
+      {/* Overlay com blur quando botão expandido */}
+      {isButtonExpanded && (
+        <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-md transition-opacity" />
+      )}
+
       {/* Botão FAB - Visualize */}
       {(userPhotoUrl) && selectedProducts.length > 0 && (
-        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 p-0.5 sm:p-1 rounded-full shadow-2xl" style={{ background: 'linear-gradient(to right, #facc15, #ec4899, #a855f7, #3b82f6, #10b981)' }}>
-          <button onClick={handleVisualize} disabled={isGenerating} className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-teal-600 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base md:text-lg font-bold text-white transition hover:bg-teal-700 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed w-full h-full">
-            {isGenerating ? (<><div className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 animate-spin rounded-full border-2 border-white border-t-transparent" /> <span className="hidden sm:inline">Gerando...</span><span className="sm:hidden">...</span></>) : (<><Wand2 className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" /> <span className="hidden sm:inline">CRIAR LOOK</span><span className="sm:hidden">CRIAR</span></>)}
+        <div 
+          className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 rounded-full shadow-2xl transition-all duration-500 ${
+            isButtonExpanded 
+              ? 'w-[calc(100vw-2rem)] sm:w-[calc(100vw-4rem)] max-w-2xl left-4 sm:left-6' 
+              : 'w-auto'
+          }`}
+          style={{ 
+            background: isButtonExpanded 
+              ? 'linear-gradient(45deg, rgba(37,99,235,1), rgba(147,51,234,1), rgba(249,115,22,1), rgba(34,197,94,1))'
+              : 'linear-gradient(45deg, rgba(37,99,235,1), rgba(147,51,234,1), rgba(249,115,22,1), rgba(34,197,94,1))'
+          }}
+        >
+          <button 
+            onClick={handleCreateClick} 
+            disabled={isGenerating || isButtonExpanded} 
+            className={`flex items-center justify-center gap-2 sm:gap-3 rounded-full px-5 sm:px-7 py-3.5 sm:py-4.5 md:py-5 text-sm sm:text-base md:text-lg font-bold text-white transition-all duration-300 disabled:cursor-not-allowed w-full h-full ${
+              isButtonExpanded 
+                ? 'animate-none' 
+                : 'animate-pulse-glow hover:scale-105'
+            }`}
+            style={{
+              background: isButtonExpanded
+                ? 'transparent'
+                : 'linear-gradient(45deg, rgba(37,99,235,1), rgba(147,51,234,1), rgba(249,115,22,1), rgba(34,197,94,1))',
+            }}
+          >
+            {isButtonExpanded ? (
+              <div className="flex items-center gap-3 w-full overflow-hidden">
+                <div className="flex-shrink-0">
+                  <div className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 animate-spin rounded-full border-3 border-white border-t-transparent" />
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <div 
+                    key={currentPhraseIndex}
+                    className="animate-slide-in text-white font-semibold whitespace-nowrap"
+                  >
+                    {creativePhrases[currentPhraseIndex] || creativePhrases[0]}
+                  </div>
+                </div>
+              </div>
+            ) : isGenerating ? (
+              <>
+                <div className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 animate-spin rounded-full border-3 border-white border-t-transparent" />
+                <span className="hidden sm:inline">Gerando...</span>
+                <span className="sm:hidden">...</span>
+              </>
+            ) : (
+              <>
+                <Wand2 className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7" />
+                <span className="hidden sm:inline">CRIAR LOOK</span>
+                <span className="sm:hidden">CRIAR</span>
+              </>
+            )}
           </button>
         </div>
       )}

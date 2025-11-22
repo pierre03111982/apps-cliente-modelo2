@@ -274,6 +274,30 @@ export default function ExperimentarPage() {
     }
   }
 
+  // Voltar do modo refinamento para tela 2 normal com foto original
+  const handleBackFromRefinement = () => {
+    // Limpar modo refinamento
+    sessionStorage.removeItem(`refine_mode_${lojistaId}`)
+    sessionStorage.removeItem(`refine_baseImage_${lojistaId}`)
+    sessionStorage.removeItem(`refine_compositionId_${lojistaId}`)
+    
+    // Restaurar foto original do sessionStorage
+    const originalPhoto = sessionStorage.getItem(`photo_${lojistaId}`)
+    if (originalPhoto) {
+      setUserPhotoUrl(originalPhoto)
+      setUserPhoto(null) // Limpar arquivo se houver
+    }
+    
+    // Limpar estado de refinamento
+    setIsRefineMode(false)
+    setRefineBaseImageUrl(null)
+    setRefineCompositionId(null)
+    
+    // Limpar produtos selecionados
+    setSelectedProducts([])
+    sessionStorage.removeItem(`products_${lojistaId}`)
+  }
+
   // Categorias permitidas em modo refinamento (apenas acessórios leves)
   const REFINEMENT_ALLOWED_CATEGORIES = [
     "joias", "jóias", "acessórios", "acessorios", "óculos", "oculos", 
@@ -642,6 +666,7 @@ export default function ExperimentarPage() {
       handleChangePhoto={handleChangePhoto}
       handleRemovePhoto={handleRemovePhoto}
       handlePhotoUpload={handlePhotoUpload}
+      handleBackFromRefinement={handleBackFromRefinement}
       selectedProducts={selectedProducts}
       toggleProductSelection={toggleProductSelection}
       categoryWarning={categoryWarning}
