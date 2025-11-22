@@ -418,7 +418,7 @@ export default function ResultadoPage() {
   // Função para adicionar marca d'água na imagem
   const addWatermarkToImage = async (imageUrl: string, logoUrl: string): Promise<string> => {
     return new Promise((resolve, reject) => {
-      const img = new Image()
+      const img = new window.Image()
       // Tentar carregar com CORS, mas se falhar, tentar sem
       img.crossOrigin = 'anonymous'
       
@@ -442,7 +442,7 @@ export default function ResultadoPage() {
           ctx.drawImage(img, 0, 0)
           
           // Carregar logo
-          const logo = new Image()
+          const logo = new window.Image()
           logo.crossOrigin = useCors ? 'anonymous' : undefined as any
           
           const tryLoadLogo = (logoUseCors: boolean) => {
