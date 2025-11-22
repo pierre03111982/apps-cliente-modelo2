@@ -584,7 +584,7 @@ export default function ResultadoPage() {
       if (responseData.looks && Array.isArray(responseData.looks) && responseData.looks.length > 0) {
         sessionStorage.setItem(`looks_${lojistaId}`, JSON.stringify(responseData.looks))
         // Manter foto e produtos salvos
-        sessionStorage.setItem(`photo_${lojistaId}`, storedPhoto)
+        sessionStorage.setItem(`photo_${lojistaId}`, personImageUrl)
         sessionStorage.setItem(`products_${lojistaId}`, storedProducts)
         
         // Resetar votação para o novo look

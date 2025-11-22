@@ -31,8 +31,6 @@ const nextConfig = {
     }
     return config
   },
-  // Garantir que Firebase seja tratado como módulo externo no servidor
-  serverExternalPackages: ['firebase', 'firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
 }
 
 export default nextConfig
