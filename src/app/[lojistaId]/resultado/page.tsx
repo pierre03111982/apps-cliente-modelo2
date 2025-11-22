@@ -142,6 +142,19 @@ export default function ResultadoPage() {
         if (favoritoData) {
           try {
             const favoritoLook = JSON.parse(favoritoData)
+            // Garantir que a imagemUrl está presente
+            if (!favoritoLook.imagemUrl) {
+              console.error("[ResultadoPage] Favorito sem imagemUrl:", favoritoLook)
+              router.push(`/${lojistaId}/experimentar`)
+              return
+            }
+            console.log("[ResultadoPage] Carregando favorito com imagem:", favoritoLook.imagemUrl)
+            // Salvar a foto para reutilização na tela de experimentar
+            if (favoritoLook.imagemUrl) {
+              sessionStorage.setItem(`photo_${lojistaId}`, favoritoLook.imagemUrl)
+              console.log("[ResultadoPage] Foto salva para reutilização:", favoritoLook.imagemUrl)
+            }
+            // Definir looks e estado de uma vez
             setLooks([favoritoLook])
             setCurrentLookIndex(0)
             // Marcar como já votado (like) - veio de favoritos
@@ -149,11 +162,13 @@ export default function ResultadoPage() {
             setVotedType("like")
             // Limpar flag
             sessionStorage.removeItem(`from_favoritos_${lojistaId}`)
+            console.log("[ResultadoPage] Favorito carregado e estado atualizado:", favoritoLook)
           } catch (error) {
             console.error("[ResultadoPage] Erro ao carregar favorito:", error)
             router.push(`/${lojistaId}/experimentar`)
           }
         } else {
+          console.error("[ResultadoPage] Nenhum favorito encontrado no sessionStorage")
           router.push(`/${lojistaId}/experimentar`)
         }
         return
@@ -442,7 +457,9 @@ export default function ResultadoPage() {
         }),
       })
 
-      if (response.ok) {
+      const responseData = await response.json().catch(() => ({}))
+
+      if (response.ok && responseData.success !== false) {
         setHasVoted(true)
         setVotedType("like")
         // Aguardar um pouco antes de atualizar favoritos para garantir que o backend processou
@@ -450,9 +467,9 @@ export default function ResultadoPage() {
           await loadFavorites()
         }, 500)
       } else {
-        const errorData = await response.json().catch(() => ({}))
-        console.error("[ResultadoPage] Erro ao registrar like:", errorData)
-        alert(errorData.error || "Erro ao salvar like. Tente novamente.")
+        console.error("[ResultadoPage] Erro ao registrar like:", responseData)
+        const errorMessage = responseData.error || "Erro ao salvar like. Tente novamente."
+        alert(errorMessage)
       }
     } catch (error) {
       console.error("[ResultadoPage] Erro ao registrar like:", error)
@@ -559,7 +576,33 @@ export default function ResultadoPage() {
     if (!currentLook?.imagemUrl) return
 
     try {
-      const response = await fetch(currentLook.imagemUrl)
+      // Para imagens do Firebase Storage ou outras origens, usar proxy ou método alternativo
+      const imageUrl = currentLook.imagemUrl
+      
+      // Se for URL do Firebase Storage, tentar usar como link direto primeiro
+      if (imageUrl.includes('firebasestorage.googleapis.com') || imageUrl.includes('storage.googleapis.com')) {
+        // Tentar abrir em nova aba para download
+        const link = document.createElement('a')
+        link.href = imageUrl
+        link.download = `look-${currentLook.id || Date.now()}.jpg`
+        link.target = '_blank'
+        link.rel = 'noopener noreferrer'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        return
+      }
+
+      // Para outras URLs, tentar fetch normal
+      const response = await fetch(imageUrl, {
+        mode: 'cors',
+        credentials: 'omit'
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
       const blob = await response.blob()
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -571,7 +614,12 @@ export default function ResultadoPage() {
       document.body.removeChild(a)
     } catch (error) {
       console.error("[ResultadoPage] Erro ao baixar imagem:", error)
-      alert("Erro ao baixar imagem. Tente novamente.")
+      // Se falhar, tentar abrir em nova aba
+      try {
+        window.open(currentLook.imagemUrl, '_blank', 'noopener,noreferrer')
+      } catch (openError) {
+        alert("Erro ao baixar imagem. Tente novamente.")
+      }
     }
   }, [currentLookIndex, looks])
 
@@ -757,6 +805,35 @@ export default function ResultadoPage() {
       {/* Overlay com blur quando remixando */}
       {isRemixing && (
         <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-md transition-opacity" />
+      )}
+      
+      {/* Botão Remixar Look fixo quando remixando */}
+      {isRemixing && (
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-sm px-4">
+          <button 
+            onClick={() => {}} 
+            disabled
+            className="w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold text-white text-sm transition shadow-md bg-green-700"
+            style={{
+              border: '4px solid white',
+              borderWidth: '4px',
+            }}
+          >
+            <div className="flex items-center justify-center gap-2 w-full overflow-hidden">
+              <div className="flex-shrink-0">
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              </div>
+              <div className="flex-1 overflow-hidden text-center">
+                <div 
+                  key={remixPhraseIndex}
+                  className="animate-slide-in text-white font-semibold whitespace-nowrap text-center"
+                >
+                  {remixPhrases[remixPhraseIndex] || remixPhrases[0]}
+                </div>
+              </div>
+            </div>
+          </button>
+        </div>
       )}
       
       {/* Vídeo de Fundo Fixo */}
@@ -980,11 +1057,11 @@ export default function ResultadoPage() {
                         <button 
                             onClick={handleDownload} 
                             disabled={isRemixing}
-                            className={`flex items-center justify-center rounded-xl bg-purple-600 py-3 font-semibold text-white text-sm transition shadow-md ${
-                              isRemixing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-purple-700'
+                            className={`flex items-center justify-center rounded-xl bg-black py-3 font-semibold text-white text-sm transition shadow-md ${
+                              isRemixing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-900'
                             }`}
                         >
-                            <Download className="h-6 w-6" />
+                            <Download className="h-6 w-6 text-white" />
                         </button>
                       </div>
                     </div>
@@ -1000,40 +1077,16 @@ export default function ResultadoPage() {
                       >
                           <Sparkles className="h-4 w-4" /> Adicionar Acessório
                       </button>
-                      <button 
-                        onClick={handleRegenerate} 
-                        disabled={loadingAction === "remix" || isRemixing} 
-                        className={`w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold text-white text-sm transition shadow-md ${
-                          isRemixing 
-                            ? 'bg-green-700' 
-                            : 'bg-green-600 hover:bg-green-700 disabled:opacity-50'
-                        }`}
-                        style={isRemixing ? {
-                          border: '4px solid white',
-                          borderWidth: '4px',
-                        } : {}}
-                      >
-                        {isRemixing ? (
-                          <div className="flex items-center justify-center gap-2 w-full overflow-hidden">
-                            <div className="flex-shrink-0">
-                              <RefreshCw className="h-4 w-4 animate-spin" />
-                            </div>
-                            <div className="flex-1 overflow-hidden text-center">
-                              <div 
-                                key={remixPhraseIndex}
-                                className="animate-slide-in text-white font-semibold whitespace-nowrap text-center"
-                              >
-                                {remixPhrases[remixPhraseIndex] || remixPhrases[0]}
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            <RefreshCw className={`h-4 w-4 ${loadingAction === "remix" ? "animate-spin" : ""}`} /> 
-                            {loadingAction === "remix" ? "Gerando..." : "Remixar Look"}
-                          </>
-                        )}
-                      </button>
+                      {!isRemixing && (
+                        <button 
+                          onClick={handleRegenerate} 
+                          disabled={loadingAction === "remix"} 
+                          className="w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold text-white text-sm transition shadow-md bg-green-600 hover:bg-green-700 disabled:opacity-50"
+                        >
+                          <RefreshCw className={`h-4 w-4 ${loadingAction === "remix" ? "animate-spin" : ""}`} /> 
+                          {loadingAction === "remix" ? "Gerando..." : "Remixar Look"}
+                        </button>
+                      )}
                       <button 
                           onClick={handleGoHome} 
                           disabled={isRemixing}
@@ -1072,20 +1125,20 @@ export default function ResultadoPage() {
                 <p>Você ainda não tem favoritos.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
                 {favorites.map((favorito) => (
                   <div
                     key={favorito.id}
                     onClick={() => setSelectedFavoriteDetail(favorito)}
-                    className="group relative overflow-hidden rounded-lg neo-card transition hover:shadow-glass cursor-pointer"
+                    className="group relative overflow-hidden rounded-xl border-2 border-purple-500 bg-white hover:border-purple-400 transition cursor-pointer"
                   >
                     {favorito.imagemUrl && (
-                      <div className="relative aspect-square w-full">
+                      <div className="relative aspect-square w-full bg-white">
                         <Image
                           src={favorito.imagemUrl}
                           alt={favorito.productName || "Look favorito"}
                           fill
-                          className="object-cover"
+                          className="object-contain"
                         />
                         {/* Marca d'água com logo da loja no canto superior esquerdo */}
                         {lojistaData?.logoUrl && (
@@ -1104,12 +1157,12 @@ export default function ResultadoPage() {
                       </div>
                     )}
                     {favorito.productName && (
-                      <div className="p-3">
-                        <p className="text-sm font-semibold text-white line-clamp-2">
+                      <div className="p-2 bg-purple-900">
+                        <h3 className="text-left text-xs font-semibold text-white line-clamp-2 h-8">
                           {favorito.productName}
-                        </p>
+                        </h3>
                         {favorito.productPrice && (
-                          <p className="mt-1 text-xs font-bold text-yellow-300">
+                          <p className="mt-1 text-left text-sm font-bold text-amber-300">
                             {formatPrice(favorito.productPrice)}
                           </p>
                         )}
@@ -1196,20 +1249,17 @@ export default function ResultadoPage() {
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => {
-                    const favoritoLook: GeneratedLook = {
-                      id: selectedFavoriteDetail.id || `favorito-${Date.now()}`,
-                      imagemUrl: selectedFavoriteDetail.imagemUrl,
-                      titulo: selectedFavoriteDetail.productName || "Look favorito",
-                      produtoNome: selectedFavoriteDetail.productName || "",
-                      produtoPreco: selectedFavoriteDetail.productPrice || null,
-                      compositionId: selectedFavoriteDetail.compositionId || null,
-                      jobId: selectedFavoriteDetail.jobId || null,
+                    if (!selectedFavoriteDetail.imagemUrl) {
+                      alert("Erro: Imagem do favorito não encontrada.")
+                      return
                     }
-                    sessionStorage.setItem(`favorito_${lojistaId}`, JSON.stringify(favoritoLook))
-                    sessionStorage.setItem(`from_favoritos_${lojistaId}`, "true")
+                    // Salvar a foto para substituir a foto de upload na tela de experimentar
+                    sessionStorage.setItem(`photo_${lojistaId}`, selectedFavoriteDetail.imagemUrl)
+                    console.log("[ResultadoPage] Foto do favorito salva para tela de experimentar:", selectedFavoriteDetail.imagemUrl)
                     setSelectedFavoriteDetail(null)
                     setShowFavoritesModal(false)
-                    window.location.href = `/${lojistaId}/resultado?from=favoritos`
+                    // Redirecionar para a tela de experimentar
+                    window.location.href = `/${lojistaId}/experimentar`
                   }}
                   className="w-full flex items-center justify-center gap-2 rounded-xl bg-green-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-green-700"
                 >
@@ -1343,9 +1393,9 @@ export default function ResultadoPage() {
                 </button>
                 <button
                   onClick={handleDownload}
-                  className="flex items-center justify-center rounded-xl bg-purple-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-purple-700"
+                  className="flex items-center justify-center rounded-xl bg-black py-3 font-semibold text-white text-sm transition shadow-md hover:bg-gray-900"
                 >
-                  <Download className="h-6 w-6" />
+                  <Download className="h-6 w-6 text-white" />
                 </button>
               </div>
 

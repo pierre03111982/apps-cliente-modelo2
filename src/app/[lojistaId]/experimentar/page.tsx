@@ -154,10 +154,12 @@ export default function ExperimentarPage() {
       // Em modo refinamento, mostrar a imagem base ao invés de permitir upload
       setUserPhotoUrl(baseImageUrl)
     } else {
-      // Carregar foto do sessionStorage quando volta da Tela 3 (modo normal)
+      // Carregar foto do sessionStorage quando volta da Tela 3 (modo normal) ou quando seleciona favorito
       const savedPhotoUrl = sessionStorage.getItem(`photo_${lojistaId}`)
-      if (savedPhotoUrl && !userPhotoUrl) {
+      if (savedPhotoUrl) {
+        // Sempre substituir a foto atual pela foto salva (permite substituir foto de upload por favorito)
         setUserPhotoUrl(savedPhotoUrl)
+        console.log("[ExperimentarPage] Foto carregada do sessionStorage:", savedPhotoUrl)
       }
 
       // Limpar produtos selecionados quando volta da Tela 3

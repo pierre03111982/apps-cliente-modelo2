@@ -888,16 +888,16 @@ export function ExperimentarView({
               <button onClick={() => setShowFavoritesModal(false)} className="text-white/70 hover:text-white transition"><X className="h-6 w-6" /></button>
             </div>
             {isLoadingFavorites ? (<div className="py-12 text-center text-white">Carregando...</div>) : favorites.length === 0 ? (<div className="py-12 text-center text-white/70"><Heart className="mx-auto mb-4 h-16 w-16 text-white/30" /><p>Você não tem favoritos.</p></div>) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
                 {favorites.map((favorito) => (
                   <div 
                     key={favorito.id} 
                     onClick={() => setSelectedFavoriteDetail(favorito)} 
-                    className="group relative overflow-hidden rounded-lg border-2 border-white/20 bg-white/5 transition hover:bg-white/10 cursor-pointer"
+                    className="group relative overflow-hidden rounded-xl border-2 border-purple-500 bg-white hover:border-purple-400 transition cursor-pointer"
                   >
                     {favorito.imagemUrl && (
-                      <div className="relative aspect-square w-full">
-                        <Image src={favorito.imagemUrl} alt={favorito.productName || "Look favorito"} fill className="object-cover" />
+                      <div className="relative aspect-square w-full bg-white">
+                        <Image src={favorito.imagemUrl} alt={favorito.productName || "Look favorito"} fill className="object-contain" />
                         {/* Marca d'água com logo da loja no canto superior esquerdo */}
                         {lojistaData?.logoUrl && (
                           <div className="absolute top-2 left-2 z-10 opacity-60">
@@ -915,10 +915,14 @@ export function ExperimentarView({
                       </div>
                     )}
                     {favorito.productName && (
-                      <div className="p-3">
-                        <p className="text-sm font-semibold text-white line-clamp-2">{favorito.productName}</p>
+                      <div className="p-2 bg-purple-900">
+                        <h3 className="text-left text-xs font-semibold text-white line-clamp-2 h-8">
+                          {favorito.productName}
+                        </h3>
                         {favorito.productPrice && (
-                          <p className="mt-1 text-xs font-bold text-yellow-300">{formatPrice(favorito.productPrice)}</p>
+                          <p className="mt-1 text-left text-sm font-bold text-amber-300">
+                            {formatPrice(favorito.productPrice)}
+                          </p>
                         )}
                       </div>
                     )}
@@ -1008,20 +1012,17 @@ export function ExperimentarView({
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => {
-                    const favoritoLook: GeneratedLook = {
-                      id: selectedFavoriteDetail.id || `favorito-${Date.now()}`,
-                      imagemUrl: selectedFavoriteDetail.imagemUrl,
-                      titulo: selectedFavoriteDetail.productName || "Look favorito",
-                      produtoNome: selectedFavoriteDetail.productName || "",
-                      produtoPreco: selectedFavoriteDetail.productPrice || null,
-                      compositionId: selectedFavoriteDetail.compositionId || null,
-                      jobId: selectedFavoriteDetail.jobId || null,
+                    if (!selectedFavoriteDetail.imagemUrl) {
+                      alert("Erro: Imagem do favorito não encontrada.")
+                      return
                     }
-                    sessionStorage.setItem(`favorito_${lojistaId}`, JSON.stringify(favoritoLook))
-                    sessionStorage.setItem(`from_favoritos_${lojistaId}`, "true")
+                    // Salvar a foto para substituir a foto de upload na tela de experimentar
+                    sessionStorage.setItem(`photo_${lojistaId}`, selectedFavoriteDetail.imagemUrl)
+                    console.log("[ExperimentarView] Foto do favorito salva para tela de experimentar:", selectedFavoriteDetail.imagemUrl)
                     setSelectedFavoriteDetail(null)
                     setShowFavoritesModal(false)
-                    router.push(`/${lojistaId}/resultado?from=favoritos`)
+                    // Redirecionar para a tela de experimentar (já estamos nela, mas recarregar para aplicar a foto)
+                    window.location.href = `/${lojistaId}/experimentar`
                   }}
                   className="w-full flex items-center justify-center gap-2 rounded-xl bg-green-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-green-700"
                 >

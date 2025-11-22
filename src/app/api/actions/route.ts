@@ -25,17 +25,26 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(payload),
     });
 
-    const data = await response.json();
+    const data = await response.json().catch(() => ({ 
+      success: false, 
+      error: "Erro ao comunicar com o servidor" 
+    }));
 
     if (!response.ok) {
-      return NextResponse.json(data, { status: response.status });
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: data.error || "Erro interno ao registrar ação." 
+        }, 
+        { status: response.status }
+      );
     }
 
     return NextResponse.json(data);
   } catch (error: any) {
     console.error("[Actions Proxy] Erro:", error);
     return NextResponse.json(
-      { error: "Erro ao registrar ação" },
+      { success: false, error: error.message || "Erro interno ao registrar ação." },
       { status: 500 }
     );
   }
