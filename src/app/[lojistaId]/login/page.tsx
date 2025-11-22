@@ -217,21 +217,27 @@ function LoginPageContent() {
 
   return (
     <div className="relative min-h-screen w-screen overflow-hidden">
-      {/* 1. Imagem de Fundo - Fixa */}
+      {/* 1. Vídeo de Fundo - Fixo */}
       <div className="fixed inset-0 z-0 overflow-hidden">
-        <img
-          src="/background.jpg"
-          alt="Fundo"
+        <video
+          src="/video2.mp4"
+          loop
+          muted
+          autoPlay
+          playsInline
           className="absolute inset-0 h-full w-full object-cover"
-        />
+        >
+          <source src="/video2.mp4" type="video/mp4" />
+          Seu navegador não suporta a tag de vídeo.
+        </video>
       </div>
 
       {/* 2. Conteúdo do Formulário */}
-      <div className="relative z-10 flex h-full flex-col items-center justify-center px-4 space-y-3">
+      <div className="relative z-10 flex h-full flex-col items-center justify-center px-4 space-y-3 pt-4">
         {/* Caixa com Logo e Nome da Loja */}
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-sm">
           <div
-            className="rounded-xl border-2 border-white/30 backdrop-blur px-3 sm:px-4 py-2 shadow-xl flex items-center justify-center gap-2 sm:gap-3"
+            className="rounded-xl border-2 border-white/30 backdrop-blur px-3 sm:px-3 py-2 shadow-xl flex items-center justify-center gap-2 sm:gap-2"
             style={{
               background:
                 "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
@@ -259,7 +265,7 @@ function LoginPageContent() {
         </div>
 
         <div
-          className="w-full max-w-md space-y-5 rounded-2xl border-2 border-white/30 p-6 backdrop-blur shadow-2xl"
+          className="w-full max-w-sm space-y-4 rounded-2xl border-2 border-white/30 p-5 backdrop-blur shadow-2xl"
           style={{
             background:
               "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",

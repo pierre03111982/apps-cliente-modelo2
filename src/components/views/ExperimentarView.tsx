@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import Image from "next/image"
 import {
   Upload,
@@ -80,16 +81,40 @@ export function ExperimentarView({
   router,
   lojistaId
 }: ExperimentarViewProps) {
+  const [selectedProductDetail, setSelectedProductDetail] = useState<Produto | null>(null)
+  const [selectedSize, setSelectedSize] = useState<string | null>(null)
+
+  const handleProductCardClick = (produto: Produto, e: React.MouseEvent) => {
+    // Se clicou no checkbox, não abre o modal
+    if ((e.target as HTMLElement).closest('.product-checkbox')) {
+      return
+    }
+    setSelectedProductDetail(produto)
+    setSelectedSize(null) // Resetar tamanho selecionado ao abrir modal
+  }
+
+  const handleSelectFromModal = (produto: Produto) => {
+    toggleProductSelection(produto)
+    setSelectedProductDetail(null)
+    setSelectedSize(null)
+  }
+
   return (
     // Estilo geral do Modelo 2: fundo claro e texto escuro
     <div className="relative min-h-screen w-full overflow-x-hidden overflow-y-auto text-zinc-800 antialiased">
-      {/* 1. Imagem de Fundo - Fixa */}
+      {/* 1. Vídeo de Fundo - Fixo */}
       <div className="fixed inset-0 z-0 overflow-hidden">
-        <img
-          src="/background.jpg"
-          alt="Closet de fundo"
+        <video
+          src="/video2tela2.mp4"
+          loop
+          muted
+          autoPlay
+          playsInline
           className="absolute inset-0 h-full w-full object-cover"
-        />
+        >
+          <source src="/video2tela2.mp4" type="video/mp4" />
+          Seu navegador não suporta a tag de vídeo.
+        </video>
       </div>
 
       {/* 2. Conteúdo Principal */}
@@ -98,7 +123,7 @@ export function ExperimentarView({
           {/* Caixa com Logo e Nome da Loja */}
           <div>
             <div
-              className="rounded-xl border border-white/30 backdrop-blur px-3 sm:px-4 py-2 shadow-xl flex items-center justify-center gap-2 sm:gap-3 relative"
+              className="rounded-xl border-2 border-white/30 backdrop-blur px-3 sm:px-4 py-2 shadow-xl flex items-center justify-center gap-2 sm:gap-3 relative"
               style={{
                 background:
                   "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
@@ -211,7 +236,7 @@ export function ExperimentarView({
                   <span className="text-base sm:text-lg font-bold text-white text-center px-2">
                     Faça upload da sua foto
                   </span>
-                  <span className="text-xs sm:text-sm font-semibold text-zinc-600 text-center px-2">PNG ou JPG até 10MB</span>
+                  <span className="text-xs sm:text-sm font-semibold text-yellow-200 text-center px-2">PNG ou JPG até 10MB</span>
                   <input
                     id="photo-upload"
                     type="file"
@@ -226,7 +251,7 @@ export function ExperimentarView({
             {/* Área: Personalize o seu Look */}
             {userPhotoUrl && (
               <div
-                className="w-full sm:flex-1 self-stretch rounded-xl border border-white/30 backdrop-blur p-3 sm:p-4 md:p-5 shadow-xl flex flex-col min-h-0 sm:max-w-[48%] md:max-w-[42%]"
+                className="w-full sm:flex-1 self-stretch rounded-xl border-2 border-white/30 backdrop-blur p-3 sm:p-4 md:p-5 shadow-xl flex flex-col min-h-0 sm:max-w-[48%] md:max-w-[42%]"
                 style={{
                   background:
                     "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
@@ -273,7 +298,7 @@ export function ExperimentarView({
           {/* Caixa com Produtos Selecionados */}
           {userPhotoUrl && selectedProducts.length > 0 && (
             <div
-              className="rounded-xl border border-white/30 backdrop-blur p-2 sm:p-2.5 shadow-xl w-full sm:w-[90%] md:w-[80%] lg:w-[70%] mx-auto"
+              className="rounded-xl border-2 border-white/30 backdrop-blur p-2 sm:p-2.5 shadow-xl w-full sm:w-[90%] md:w-[80%] lg:w-[70%] mx-auto"
               style={{
                 background:
                   "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
@@ -355,7 +380,7 @@ export function ExperimentarView({
           {/* Aviso sobre seleção de produtos */}
           {userPhotoUrl && (
             <div
-              className="rounded-xl border border-white/30 backdrop-blur p-4 shadow-xl"
+              className="rounded-xl border-2 border-white/30 backdrop-blur p-4 shadow-xl"
               style={{
                 background:
                   "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
@@ -375,14 +400,14 @@ export function ExperimentarView({
 
           {/* Caixa de Redes Sociais e Desconto */}
           <div
-            className="rounded-lg border border-white/30 backdrop-blur px-4 py-3 shadow-lg"
+            className="rounded-lg border-2 border-white/30 backdrop-blur px-4 py-3 shadow-lg"
             style={{
               background:
                 "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
             }}
           >
             <div className="flex flex-col items-center gap-3">
-              <div className="rounded-md border border-white/30 bg-red-500/80 px-3 py-1.5">
+              <div className="rounded-md border-2 border-white/40 bg-red-700 px-3 py-1.5">
                 <p className="text-xs font-medium text-white text-center">Siga, Curta ou Compartilhe !!!<br/>Aplique o seu Desconto agora!</p>
               </div>
               <div className="flex items-center justify-center gap-3 flex-wrap">
@@ -394,10 +419,10 @@ export function ExperimentarView({
               {(() => { const desconto = lojistaData?.descontoRedesSociais; const expiraEm = lojistaData?.descontoRedesSociaisExpiraEm; if (!desconto || desconto <= 0) { return null } if (expiraEm) { const dataExpiracao = new Date(expiraEm); const agora = new Date(); if (dataExpiracao < agora) { return null } } return (
                 <>
                   <p className="text-base font-semibold text-white text-center flex items-center justify-center gap-1.5">
-                    <span className="font-bold text-amber-300 text-base">GANHE</span>
-                    <span className="text-xl md:text-2xl font-black text-amber-300 drop-shadow-lg">{desconto}%</span>
+                    <span className="font-bold text-yellow-400 text-base">GANHE</span>
+                    <span className="text-xl md:text-2xl font-black text-yellow-400 drop-shadow-lg">{desconto}%</span>
                     <span className="font-semibold text-white text-base">de</span>
-                    <span className="font-bold text-amber-300 text-base">DESCONTO!</span>
+                    <span className="font-bold text-yellow-400 text-base">DESCONTO!</span>
                   </p>
                   {descontoAplicado && (<p className="text-xs font-semibold text-green-400 text-center animate-pulse">✓ Desconto aplicado!</p>)}
                 </>
@@ -407,7 +432,7 @@ export function ExperimentarView({
 
           {/* Card Principal */}
           <div
-            className="rounded-3xl border border-white/30 backdrop-blur p-6 md:p-8 shadow-2xl"
+            className="rounded-3xl border-2 border-white/30 backdrop-blur p-6 md:p-8 shadow-2xl"
             style={{
               background:
                 "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
@@ -433,34 +458,50 @@ export function ExperimentarView({
             </div>
 
             {/* Aviso de categoria */}
-            {categoryWarning && (<div className="mb-4 rounded-lg border border-yellow-500/50 bg-yellow-500/10 px-4 py-3"><p className="text-sm font-medium text-yellow-700">{categoryWarning}</p></div>)}
+            {categoryWarning && (<div className="mb-4 rounded-lg border-2 border-yellow-500/50 bg-yellow-500/10 px-4 py-3"><p className="text-sm font-medium text-yellow-700">{categoryWarning}</p></div>)}
 
             {/* Grid de Produtos */}
             {isLoadingCatalog ? (<div className="py-12 text-center text-zinc-600">Carregando produtos...</div>) : filteredCatalog.length === 0 ? (<div className="py-12 text-center text-zinc-500">Nenhum produto encontrado.</div>) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 max-h-[50vh] sm:max-h-[60vh] overflow-y-auto pb-4 pr-2 custom-scrollbar justify-items-center">
                 {filteredCatalog.map((produto) => { const isSelected = selectedProducts.some((p) => p.id === produto.id); return (
-                  <button
+                  <div
                     key={produto.id}
-                    onClick={() => toggleProductSelection(produto)}
-                    className={`group relative overflow-hidden rounded-xl border-2 transition w-full ${
+                    onClick={(e) => handleProductCardClick(produto, e)}
+                    className={`group relative overflow-hidden rounded-xl border-2 transition w-full cursor-pointer ${
                       isSelected
                         ? "border-teal-400 bg-teal-50 shadow-lg shadow-teal-500/30"
                         : "border-purple-500 bg-white hover:border-purple-400"
                     }`}
                   >
+                    {/* Caixinha Seletora no canto superior esquerdo */}
+                    <div 
+                      className="product-checkbox absolute left-2 top-2 z-10"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleProductSelection(produto)
+                      }}
+                    >
+                      <div className={`w-6 h-6 rounded border-2 flex items-center justify-center transition ${
+                        isSelected 
+                          ? "bg-teal-500 border-teal-600" 
+                          : "bg-white border-purple-500 hover:bg-purple-50"
+                      }`}>
+                        {isSelected && <Check className="h-4 w-4 text-white" />}
+                      </div>
+                    </div>
+
                     {produto.imagemUrl && (<div className="relative aspect-square w-full"><Image src={produto.imagemUrl} alt={produto.nome} fill className="object-cover" /></div>)}
                     <div className="p-2 bg-purple-900">
                       <h3 className="text-left text-xs font-semibold text-white line-clamp-2 h-8">
                         {produto.nome}
                       </h3>
-                      <div className="mt-1 flex flex-col gap-0.5">{(() => { const desconto = lojistaData?.descontoRedesSociais; const expiraEm = lojistaData?.descontoRedesSociaisExpiraEm; const descontoValido = desconto && desconto > 0 && (!expiraEm || new Date(expiraEm) >= new Date()); if (descontoAplicado && descontoValido) { return (<><p className="text-left text-xs text-purple-300 line-through">{formatPrice(produto.preco)}</p><div className="flex items-center gap-2"><p className="text-left text-sm font-bold text-amber-300">{formatPrice(produto.preco ? produto.preco * (1 - (desconto / 100)) : 0)}</p><p className="text-left text-[10px] font-semibold text-green-400">Desconto aplicado</p></div></>) } return (
+                      <div className="mt-1 flex flex-col gap-0.5">{(() => { const desconto = lojistaData?.descontoRedesSociais; const expiraEm = lojistaData?.descontoRedesSociaisExpiraEm; const descontoValido = desconto && desconto > 0 && (!expiraEm || new Date(expiraEm) >= new Date()); if (descontoAplicado && descontoValido) { return (<><p className="text-left text-xs text-purple-300 line-through">{formatPrice(produto.preco)}</p><p className="text-left text-sm font-bold text-amber-300">{formatPrice(produto.preco ? produto.preco * (1 - (desconto / 100)) : 0)}</p></>) } return (
                         <p className="text-left text-sm font-bold text-amber-300">
                           {formatPrice(produto.preco)}
                         </p>
                       )})()}</div>
                     </div>
-                    {isSelected && (<div className="absolute right-2 top-2 rounded-full bg-teal-500 p-1.5 shadow-lg"><Check className="h-4 w-4 text-white" /></div>)}
-                  </button>
+                  </div>
                 )})}
               </div>
             )}
@@ -478,12 +519,180 @@ export function ExperimentarView({
       )}
 
       {/* Mensagem de erro */}
-      {generationError && (<div className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-3 backdrop-blur"><p className="text-sm font-medium text-red-200">{generationError}</p></div>)}
+      {generationError && (<div className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-lg border-2 border-red-500/50 bg-red-500/10 px-4 py-3 backdrop-blur"><p className="text-sm font-medium text-red-200">{generationError}</p></div>)}
+
+      {/* Modal de Detalhes do Produto */}
+      {selectedProductDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={() => setSelectedProductDetail(null)}>
+          <div 
+            className="w-full max-w-2xl rounded-xl border-2 border-white/30 bg-white/95 backdrop-blur-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-zinc-800">Detalhes do Produto</h2>
+              <button
+                onClick={() => setSelectedProductDetail(null)}
+                className="rounded-full p-2 text-zinc-600 hover:bg-zinc-200 transition"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Imagem do Produto */}
+              {selectedProductDetail.imagemUrl && (
+                <div className="relative w-full min-h-96 rounded-lg overflow-hidden border-2 border-purple-500 bg-white flex items-center justify-center">
+                  <Image
+                    src={selectedProductDetail.imagemUrl}
+                    alt={selectedProductDetail.nome}
+                    width={800}
+                    height={800}
+                    className="object-contain max-h-[600px] w-auto h-auto"
+                  />
+                </div>
+              )}
+
+              {/* Nome */}
+              <div>
+                <h3 className="text-xl font-bold text-zinc-800 mb-2">{selectedProductDetail.nome}</h3>
+              </div>
+
+              {/* Preço */}
+              <div className="p-4 bg-purple-900 rounded-lg">
+                {(() => {
+                  const desconto = lojistaData?.descontoRedesSociais
+                  const expiraEm = lojistaData?.descontoRedesSociaisExpiraEm
+                  const descontoValido = desconto && desconto > 0 && (!expiraEm || new Date(expiraEm) >= new Date())
+                  
+                  if (descontoAplicado && descontoValido) {
+                    return (
+                      <div className="space-y-1">
+                        <p className="text-lg text-purple-300 line-through">{formatPrice(selectedProductDetail.preco)}</p>
+                        <p className="text-2xl font-bold text-amber-300">
+                          {formatPrice(selectedProductDetail.preco ? selectedProductDetail.preco * (1 - (desconto / 100)) : 0)}
+                        </p>
+                        <p className="text-xs font-semibold text-green-400 whitespace-nowrap">Desconto aplicado</p>
+                      </div>
+                    )
+                  }
+                  return (
+                    <p className="text-2xl font-bold text-amber-300">
+                      {formatPrice(selectedProductDetail.preco)}
+                    </p>
+                  )
+                })()}
+              </div>
+
+              {/* Categoria */}
+              {selectedProductDetail.categoria && (
+                <div>
+                  <p className="text-sm font-semibold text-zinc-600 mb-1">Categoria:</p>
+                  <p className="text-base text-zinc-800">{selectedProductDetail.categoria}</p>
+                </div>
+              )}
+
+              {/* Tamanhos */}
+              {selectedProductDetail.tamanhos && selectedProductDetail.tamanhos.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold text-zinc-600 mb-2">Tamanhos disponíveis:</p>
+                  {selectedProductDetail.tamanhos.length > 1 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedProductDetail.tamanhos.map((tamanho, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setSelectedSize(selectedSize === tamanho ? null : tamanho)}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                            selectedSize === tamanho
+                              ? 'bg-purple-600 text-white border-2 border-purple-700 shadow-lg'
+                              : 'bg-purple-100 text-purple-800 border-2 border-purple-300 hover:bg-purple-200'
+                          }`}
+                        >
+                          {tamanho}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedProductDetail.tamanhos.map((tamanho, index) => (
+                        <span key={index} className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+                          {tamanho}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Cores */}
+              {selectedProductDetail.cores && selectedProductDetail.cores.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold text-zinc-600 mb-1">Cores disponíveis:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedProductDetail.cores.map((cor, index) => (
+                      <span key={index} className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+                        {cor}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Medidas */}
+              {selectedProductDetail.medidas && (
+                <div>
+                  <p className="text-sm font-semibold text-zinc-600 mb-1">Medidas:</p>
+                  <p className="text-base text-zinc-800">{selectedProductDetail.medidas}</p>
+                </div>
+              )}
+
+              {/* Estoque */}
+              {selectedProductDetail.estoque !== null && selectedProductDetail.estoque !== undefined && (
+                <div>
+                  <p className="text-sm font-semibold text-zinc-600 mb-1">Estoque:</p>
+                  <p className={`text-base font-medium ${selectedProductDetail.estoque > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {selectedProductDetail.estoque > 0 ? `${selectedProductDetail.estoque} unidades disponíveis` : 'Fora de estoque'}
+                  </p>
+                </div>
+              )}
+
+              {/* Observações */}
+              {selectedProductDetail.obs && (
+                <div>
+                  <p className="text-sm font-semibold text-zinc-600 mb-1">Observações:</p>
+                  <p className="text-base text-zinc-800 whitespace-pre-wrap">{selectedProductDetail.obs}</p>
+                </div>
+              )}
+
+              {/* Botões */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => handleSelectFromModal(selectedProductDetail)}
+                  className={`flex-1 flex items-center justify-center gap-2 rounded-lg text-white font-bold py-3 px-4 transition ${
+                    selectedProducts.some((p) => p.id === selectedProductDetail.id)
+                      ? 'bg-red-600 hover:bg-red-700'
+                      : 'bg-green-600 hover:bg-green-700'
+                  }`}
+                >
+                  <Check className="h-5 w-5" />
+                  {selectedProducts.some((p) => p.id === selectedProductDetail.id) ? 'Desmarcar' : 'Selecionar'}
+                </button>
+                <button
+                  onClick={() => setSelectedProductDetail(null)}
+                  className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 transition"
+                >
+                  <ArrowLeftCircle className="h-5 w-5" />
+                  Voltar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Favoritos */}
       {showFavoritesModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-4xl rounded-xl border border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="w-full max-w-4xl rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">Meus Favoritos</h2>
               <button onClick={() => setShowFavoritesModal(false)} className="text-white/70 hover:text-white transition"><X className="h-6 w-6" /></button>
@@ -491,7 +700,7 @@ export function ExperimentarView({
             {isLoadingFavorites ? (<div className="py-12 text-center text-white">Carregando...</div>) : favorites.length === 0 ? (<div className="py-12 text-center text-white/70"><Heart className="mx-auto mb-4 h-16 w-16 text-white/30" /><p>Você não tem favoritos.</p></div>) : (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {favorites.map((favorito) => (
-                  <div key={favorito.id} onClick={() => { const favoritoLook: GeneratedLook = { id: favorito.id || `favorito-${Date.now()}`, imagemUrl: favorito.imagemUrl, titulo: favorito.productName || "Look favorito", produtoNome: favorito.productName || "", produtoPreco: favorito.productPrice || null, compositionId: favorito.compositionId || null, jobId: favorito.jobId || null }; sessionStorage.setItem(`favorito_${lojistaId}`, JSON.stringify(favoritoLook)); sessionStorage.setItem(`from_favoritos_${lojistaId}`, "true"); router.push(`/${lojistaId}/resultado?from=favoritos`) }} className="group relative overflow-hidden rounded-lg border border-white/20 bg-white/5 transition hover:bg-white/10 cursor-pointer">
+                  <div key={favorito.id} onClick={() => { const favoritoLook: GeneratedLook = { id: favorito.id || `favorito-${Date.now()}`, imagemUrl: favorito.imagemUrl, titulo: favorito.productName || "Look favorito", produtoNome: favorito.productName || "", produtoPreco: favorito.productPrice || null, compositionId: favorito.compositionId || null, jobId: favorito.jobId || null }; sessionStorage.setItem(`favorito_${lojistaId}`, JSON.stringify(favoritoLook)); sessionStorage.setItem(`from_favoritos_${lojistaId}`, "true"); router.push(`/${lojistaId}/resultado?from=favoritos`) }} className="group relative overflow-hidden rounded-lg border-2 border-white/20 bg-white/5 transition hover:bg-white/10 cursor-pointer">
                     {favorito.imagemUrl && (<div className="relative aspect-square w-full"><Image src={favorito.imagemUrl} alt={favorito.productName || "Look favorito"} fill className="object-cover" /></div>)}
                     {favorito.productName && (<div className="p-3"><p className="text-sm font-semibold text-white line-clamp-2">{favorito.productName}</p>{favorito.productPrice && (<p className="mt-1 text-xs font-bold text-yellow-300">{formatPrice(favorito.productPrice)}</p>)}</div>)}
                   </div>

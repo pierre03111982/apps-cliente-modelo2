@@ -565,6 +565,14 @@ export function Step3Results({
                           className="w-full h-auto object-contain"
                           style={{ maxHeight: '80vh' }}
                         />
+                        {/* Ícone de Download no canto inferior direito */}
+                        <button
+                          onClick={() => handleDownload(look)}
+                          className="absolute bottom-4 right-4 flex items-center justify-center w-10 h-10 rounded-full bg-black/70 hover:bg-black/90 border-2 border-white/30 text-white shadow-lg transition-all hover:scale-110 z-10"
+                          title="Baixar imagem"
+                        >
+                          <Download className="h-5 w-5" />
+                        </button>
                         {/* Ações em coluna no canto superior direito */}
                         <div className="absolute right-4 top-4 flex flex-col items-center gap-3">
                           <button

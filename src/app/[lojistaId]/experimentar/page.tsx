@@ -603,11 +603,17 @@ export default function ExperimentarPage() {
   return (
       <div className="relative min-h-screen w-full overflow-hidden">
       <div className="fixed inset-0 z-0 overflow-hidden">
-        <img
-            src="/background.jpg"
-            alt="Fundo"
-            className="absolute inset-0 h-full w-full object-cover"
-        />
+        <video
+          src="/video2tela2.mp4"
+          loop
+          muted
+          autoPlay
+          playsInline
+          className="absolute inset-0 h-full w-full object-cover"
+        >
+          <source src="/video2tela2.mp4" type="video/mp4" />
+          Seu navegador não suporta a tag de vídeo.
+        </video>
       </div>
         <div className="relative z-10 flex h-screen flex-col items-center justify-center text-white">
               {lojistaData?.logoUrl && (
