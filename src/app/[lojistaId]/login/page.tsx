@@ -30,6 +30,42 @@ function LoginPageContent() {
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // Gerar ou recuperar deviceId persistente
+  const getOrCreateDeviceId = (): string => {
+    if (typeof window === 'undefined') return 'server'
+    
+    const storageKey = 'device_id_persistent'
+    let deviceId = localStorage.getItem(storageKey)
+    
+    if (!deviceId) {
+      // Gerar um ID único baseado em características do navegador
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      ctx?.fillText('device-id', 2, 2)
+      const fingerprint = [
+        navigator.userAgent,
+        navigator.language,
+        screen.width,
+        screen.height,
+        new Date().getTimezoneOffset(),
+        canvas.toDataURL(),
+      ].join('|')
+      
+      // Criar hash simples do fingerprint
+      let hash = 0
+      for (let i = 0; i < fingerprint.length; i++) {
+        const char = fingerprint.charCodeAt(i)
+        hash = ((hash << 5) - hash) + char
+        hash = hash & hash // Convert to 32bit integer
+      }
+      
+      deviceId = `device-${Math.abs(hash)}-${Date.now()}`
+      localStorage.setItem(storageKey, deviceId)
+    }
+    
+    return deviceId
+  }
+
   // Formatação de WhatsApp: (DDD) 99999-9999
   const formatWhatsApp = (value: string): string => {
     const numbers = value.replace(/\D/g, "")
@@ -351,7 +387,7 @@ function LoginPageContent() {
         }
 
         // Salvar dados no localStorage
-        const deviceId = typeof window !== 'undefined' ? `${navigator.userAgent}-${Date.now()}` : 'server'
+        const deviceId = getOrCreateDeviceId()
         const clienteData = {
           nome,
           whatsapp: cleanWhatsapp,
@@ -403,7 +439,7 @@ function LoginPageContent() {
               // Se encontrar mesmo WhatsApp em outra loja ou mesma loja, verificar se é outro dispositivo
               if (storedWhatsapp === cleanWhatsapp && storedLojistaId === lojistaId) {
                 const storedDeviceId = storedData.deviceId
-                const currentDeviceId = `${navigator.userAgent}-${Date.now()}`
+                const currentDeviceId = getOrCreateDeviceId()
                 
                 // Se deviceId diferente, é outro dispositivo
                 if (storedDeviceId && storedDeviceId !== currentDeviceId) {
@@ -424,13 +460,14 @@ function LoginPageContent() {
         }
 
         // Verificar no backend também
+        const currentDeviceIdForLogin = getOrCreateDeviceId()
         const sessionCheckResponse = await fetch("/api/cliente/check-session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             lojistaId,
             whatsapp: cleanWhatsapp,
-            deviceId: typeof window !== 'undefined' ? `${navigator.userAgent}-${Date.now()}` : 'server',
+            deviceId: currentDeviceIdForLogin,
           }),
         })
 
@@ -485,7 +522,7 @@ function LoginPageContent() {
         }
 
         // Salvar dados no localStorage
-        const deviceId = typeof window !== 'undefined' ? `${navigator.userAgent}-${Date.now()}` : 'server'
+        const deviceId = getOrCreateDeviceId()
         const clienteData = {
           nome: data.cliente.nome,
           whatsapp: cleanWhatsapp,
