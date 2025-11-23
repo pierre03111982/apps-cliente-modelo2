@@ -437,9 +437,27 @@ export default function ResultadoPage() {
 
   // Função para adicionar marca d'água na imagem
   const addWatermarkToImage = async (imageUrl: string, logoUrl: string): Promise<string> => {
+    // Tentar usar API do servidor primeiro (evita problemas de CORS)
+    try {
+      const response = await fetch('/api/watermark', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl, logoUrl }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.watermarkedUrl && !data.fallback) {
+          return data.watermarkedUrl;
+        }
+      }
+    } catch (apiError) {
+      console.warn('[ResultadoPage] Erro ao usar API de marca d\'água, tentando método cliente:', apiError);
+    }
+
+    // Fallback: tentar no cliente (pode falhar com CORS)
     return new Promise((resolve, reject) => {
       const img = new window.Image()
-      // Tentar carregar com CORS, mas se falhar, tentar sem
       img.crossOrigin = 'anonymous'
       
       const tryLoadImage = (useCors: boolean) => {
@@ -454,12 +472,20 @@ export default function ResultadoPage() {
           const ctx = canvas.getContext('2d')
           
           if (!ctx) {
-            reject(new Error('Não foi possível criar contexto do canvas'))
+            // Se não conseguir criar contexto, retornar imagem original
+            resolve(imageUrl)
             return
           }
           
-          // Desenhar imagem original
-          ctx.drawImage(img, 0, 0)
+          try {
+            // Desenhar imagem original
+            ctx.drawImage(img, 0, 0)
+          } catch (drawError) {
+            // Se falhar ao desenhar (canvas tainted), retornar original
+            console.warn('[ResultadoPage] Canvas tainted, retornando imagem original:', drawError)
+            resolve(imageUrl)
+            return
+          }
           
           // Carregar logo
           const logo = new window.Image()
@@ -471,55 +497,59 @@ export default function ResultadoPage() {
             }
             
             logo.onload = () => {
-              // Tamanho da logo (15% da largura da imagem)
-              const logoSize = Math.min(img.width, img.height) * 0.15
-              const logoX = logoSize * 0.1 // 10% da margem
-              const logoY = logoSize * 0.1 // 10% da margem
-              
-              // Desenhar círculo branco semi-transparente atrás da logo
-              ctx.save()
-              ctx.globalAlpha = 0.4
-              ctx.fillStyle = 'white'
-              ctx.beginPath()
-              ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2)
-              ctx.fill()
-              ctx.restore()
-              
-              // Desenhar logo
-              ctx.save()
-              ctx.globalAlpha = 0.6
-              ctx.beginPath()
-              ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2 - 2, 0, Math.PI * 2)
-              ctx.clip()
-              ctx.drawImage(logo, logoX, logoY, logoSize, logoSize)
-              ctx.restore()
-              
-              // Converter para blob e criar URL
-              canvas.toBlob((blob) => {
-                if (blob) {
-                  const url = URL.createObjectURL(blob)
-                  resolve(url)
-                } else {
-                  reject(new Error('Erro ao criar blob'))
+              try {
+                // Tamanho da logo (15% da largura da imagem)
+                const logoSize = Math.min(img.width, img.height) * 0.15
+                const logoX = logoSize * 0.1
+                const logoY = logoSize * 0.1
+                
+                // Desenhar círculo branco semi-transparente atrás da logo
+                ctx.save()
+                ctx.globalAlpha = 0.4
+                ctx.fillStyle = 'white'
+                ctx.beginPath()
+                ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2)
+                ctx.fill()
+                ctx.restore()
+                
+                // Desenhar logo
+                ctx.save()
+                ctx.globalAlpha = 0.6
+                ctx.beginPath()
+                ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2 - 2, 0, Math.PI * 2)
+                ctx.clip()
+                ctx.drawImage(logo, logoX, logoY, logoSize, logoSize)
+                ctx.restore()
+                
+                // Tentar converter para blob
+                try {
+                  canvas.toBlob((blob) => {
+                    if (blob) {
+                      const url = URL.createObjectURL(blob)
+                      resolve(url)
+                    } else {
+                      // Se falhar, retornar original
+                      resolve(imageUrl)
+                    }
+                  }, 'image/jpeg', 0.9)
+                } catch (blobError) {
+                  // Se toBlob falhar (canvas tainted), retornar original
+                  console.warn('[ResultadoPage] Erro ao criar blob, retornando imagem original:', blobError)
+                  resolve(imageUrl)
                 }
-              }, 'image/jpeg', 0.9)
+              } catch (drawError) {
+                // Se falhar ao desenhar logo, retornar original
+                console.warn('[ResultadoPage] Erro ao desenhar logo, retornando imagem original:', drawError)
+                resolve(imageUrl)
+              }
             }
             
             logo.onerror = () => {
-              // Se a logo não carregar, ainda criar imagem com marca d'água vazia ou retornar original
               if (logoUseCors) {
-                // Tentar sem CORS
                 tryLoadLogo(false)
               } else {
-                // Se falhar mesmo sem CORS, retornar imagem original sem marca d'água
-                canvas.toBlob((blob) => {
-                  if (blob) {
-                    const url = URL.createObjectURL(blob)
-                    resolve(url)
-                  } else {
-                    resolve(imageUrl)
-                  }
-                }, 'image/jpeg', 0.9)
+                // Se logo não carregar, retornar imagem original
+                resolve(imageUrl)
               }
             }
             
@@ -531,10 +561,10 @@ export default function ResultadoPage() {
         
         img.onerror = () => {
           if (useCors) {
-            // Tentar sem CORS
             tryLoadImage(false)
           } else {
-            reject(new Error('Erro ao carregar imagem'))
+            // Se não conseguir carregar imagem, retornar original
+            resolve(imageUrl)
           }
         }
         
@@ -829,28 +859,53 @@ export default function ResultadoPage() {
       if (lojistaData?.logoUrl) {
         try {
           console.log("[ResultadoPage] Adicionando marca d'água para download...")
-          const watermarkedBlobUrl = await addWatermarkToImage(currentLook.imagemUrl, lojistaData.logoUrl)
+          const watermarkedUrl = await addWatermarkToImage(currentLook.imagemUrl, lojistaData.logoUrl)
           
-          // Converter blob URL para blob e fazer download
-          const response = await fetch(watermarkedBlobUrl)
-          if (response.ok) {
-            const blob = await response.blob()
-            if (blob && blob.size > 0) {
-              const url = window.URL.createObjectURL(blob)
-              const a = document.createElement('a')
-              a.href = url
-              a.download = `look-${currentLook.id || Date.now()}.jpg`
-              document.body.appendChild(a)
-              a.click()
-              window.URL.revokeObjectURL(url)
-              window.URL.revokeObjectURL(watermarkedBlobUrl)
-              document.body.removeChild(a)
+          // Se retornou a URL original, significa que falhou (CORS ou outro erro)
+          if (watermarkedUrl === currentLook.imagemUrl) {
+            console.warn("[ResultadoPage] Não foi possível adicionar marca d'água, baixando imagem original")
+            // Continuar com download normal abaixo
+          } else {
+            // Se for blob URL, converter para blob
+            if (watermarkedUrl.startsWith('blob:')) {
+              try {
+                const response = await fetch(watermarkedUrl)
+                if (response.ok) {
+                  const blob = await response.blob()
+                  if (blob && blob.size > 0) {
+                    const url = window.URL.createObjectURL(blob)
+                    const a = document.createElement('a')
+                    a.href = url
+                    a.download = `look-${currentLook.id || Date.now()}.jpg`
+                    document.body.appendChild(a)
+                    a.click()
+                    window.URL.revokeObjectURL(url)
+                    window.URL.revokeObjectURL(watermarkedUrl)
+                    document.body.removeChild(a)
+                    console.log("[ResultadoPage] Download com marca d'água concluído")
+                    return
+                  }
+                }
+                // Se falhar, limpar e continuar
+                URL.revokeObjectURL(watermarkedUrl)
+              } catch (fetchError) {
+                console.warn("[ResultadoPage] Erro ao fazer fetch do blob, baixando original:", fetchError)
+                URL.revokeObjectURL(watermarkedUrl)
+              }
+            } else {
+              // Se for URL HTTP, fazer download direto
+              const link = document.createElement('a')
+              link.href = watermarkedUrl
+              link.download = `look-${currentLook.id || Date.now()}.jpg`
+              link.target = '_blank'
+              link.rel = 'noopener noreferrer'
+              document.body.appendChild(link)
+              link.click()
+              document.body.removeChild(link)
               console.log("[ResultadoPage] Download com marca d'água concluído")
               return
             }
           }
-          // Se falhar, limpar e continuar com imagem original
-          URL.revokeObjectURL(watermarkedBlobUrl)
         } catch (watermarkError) {
           console.error("[ResultadoPage] Erro ao adicionar marca d'água para download:", watermarkError)
           // Continuar com download da imagem original se falhar
