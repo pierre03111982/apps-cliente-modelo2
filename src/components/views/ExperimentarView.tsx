@@ -1091,42 +1091,6 @@ export function ExperimentarView({
   )
 }
 
-
-                          if (descontoAplicado && descontoValido) {
-                            return (
-                              <>
-                                <p className="text-left text-[9px] text-purple-300 line-through">
-                                  {formatPrice(produto.preco)}
-                                </p>
-                                <div className="flex items-center gap-0.5 flex-wrap">
-                                  <p className="text-left text-[10px] font-bold text-amber-300">
-                                    {formatPrice(
-                                      produto.preco
-                                        ? produto.preco * (1 - desconto / 100)
-                                        : 0
-                                    )}
-                                  </p>
-                                  <p className="text-left text-[7px] font-semibold text-green-400 leading-tight">
-                                    Desconto aplicado
-                                  </p>
-                                </div>
-                              </>
-                            );
-                          }
-                          return (
-                            <p className="text-left text-[10px] font-bold text-amber-300">
-                              {formatPrice(produto.preco)}
-                            </p>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Aviso sobre seleção de produtos */}
           {userPhotoUrl && (
             <div
