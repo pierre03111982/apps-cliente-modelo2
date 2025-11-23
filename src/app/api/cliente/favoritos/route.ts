@@ -63,3 +63,43 @@ export async function GET(request: NextRequest) {
   }
 }
 
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("[Cliente Favoritos Proxy] Erro na resposta:", data);
+      return NextResponse.json(data, { status: response.status });
+    }
+
+    console.log("[Cliente Favoritos Proxy] Favoritos recebidos:", data.favorites?.length || 0);
+    return NextResponse.json(data);
+  } catch (error: any) {
+    console.error("[Cliente Favoritos Proxy] Erro:", error);
+    console.error("[Cliente Favoritos Proxy] Stack:", error?.stack);
+    return NextResponse.json(
+      { error: "Erro ao buscar favoritos" },
+      { status: 500 }
+    );
+  }
+}
+
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("[Cliente Favoritos Proxy] Erro na resposta:", data);
+      return NextResponse.json(data, { status: response.status });
+    }
+
+    console.log("[Cliente Favoritos Proxy] Favoritos recebidos:", data.favorites?.length || 0);
+    return NextResponse.json(data);
+  } catch (error: any) {
+    console.error("[Cliente Favoritos Proxy] Erro:", error);
+    console.error("[Cliente Favoritos Proxy] Stack:", error?.stack);
+    return NextResponse.json(
+      { error: "Erro ao buscar favoritos" },
+      { status: 500 }
+    );
+  }
+}
+

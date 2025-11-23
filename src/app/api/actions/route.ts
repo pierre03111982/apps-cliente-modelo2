@@ -68,3 +68,57 @@ export async function POST(request: NextRequest) {
   }
 }
 
+
+
+    console.log("[Actions Proxy] Dados recebidos:", data);
+
+    if (!response.ok) {
+      console.error("[Actions Proxy] Erro na resposta:", response.status, data);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: data.error || "Erro interno ao registrar ação." 
+        }, 
+        { status: response.status }
+      );
+    }
+
+    console.log("[Actions Proxy] Sucesso:", data);
+    return NextResponse.json(data);
+  } catch (error: any) {
+    console.error("[Actions Proxy] Erro:", error);
+    console.error("[Actions Proxy] Stack:", error?.stack);
+    return NextResponse.json(
+      { success: false, error: error.message || "Erro interno ao registrar ação." },
+      { status: 500 }
+    );
+  }
+}
+
+
+
+    console.log("[Actions Proxy] Dados recebidos:", data);
+
+    if (!response.ok) {
+      console.error("[Actions Proxy] Erro na resposta:", response.status, data);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: data.error || "Erro interno ao registrar ação." 
+        }, 
+        { status: response.status }
+      );
+    }
+
+    console.log("[Actions Proxy] Sucesso:", data);
+    return NextResponse.json(data);
+  } catch (error: any) {
+    console.error("[Actions Proxy] Erro:", error);
+    console.error("[Actions Proxy] Stack:", error?.stack);
+    return NextResponse.json(
+      { success: false, error: error.message || "Erro interno ao registrar ação." },
+      { status: 500 }
+    );
+  }
+}
+
