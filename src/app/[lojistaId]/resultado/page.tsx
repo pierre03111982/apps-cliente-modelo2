@@ -1212,31 +1212,8 @@ export default function ResultadoPage() {
         sessionStorage.setItem(`photo_${lojistaId}`, personImageUrl)
         sessionStorage.setItem(`products_${lojistaId}`, storedProducts)
         
-        // Verificar se já votou (dislike) na imagem anterior antes de gerar nova
-        const currentLook = looks[currentLookIndex]
-        if (currentLook) {
-          let compositionId = currentLook.compositionId
-          if (!compositionId && currentLook.imagemUrl) {
-            const imageHash = currentLook.imagemUrl.split('/').pop()?.split('?')[0] || `refined-${Date.now()}`
-            compositionId = `refined-${imageHash}`
-          }
-          
-          if (compositionId) {
-            const voteStatus = await checkVoteStatus(compositionId)
-            // Se já deu dislike, não precisa marcar como nova imagem (já sabe que não gostou)
-            // Se não votou ou deu like, marcar como nova imagem para perguntar novamente
-            if (voteStatus !== "dislike") {
-              sessionStorage.setItem(`new_looks_generated_${lojistaId}`, "true")
-            } else {
-              // Já deu dislike - não perguntar novamente, mas permitir ver a nova imagem
-              console.log("[ResultadoPage] Usuário já deu dislike na imagem anterior - não perguntar novamente")
-            }
-          } else {
-            sessionStorage.setItem(`new_looks_generated_${lojistaId}`, "true")
-          }
-        } else {
-          sessionStorage.setItem(`new_looks_generated_${lojistaId}`, "true")
-        }
+        // SEMPRE marcar como nova imagem gerada (remixar gera imagem NOVA, sempre permite like/dislike)
+        sessionStorage.setItem(`new_looks_generated_${lojistaId}`, "true")
         
         // Resetar votação para o novo look ANTES de recarregar
         setHasVoted(false)
