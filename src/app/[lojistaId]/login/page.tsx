@@ -346,11 +346,11 @@ function LoginPageContent() {
 
         const sessionData = await sessionCheckResponse.json()
 
-        if (sessionCheckResponse.ok && sessionData.alreadyLoggedIn) {
-          // Cliente já está logado em outro dispositivo
-          setError("⚠️ Você já está logado em outro dispositivo. Por favor, faça logout do outro dispositivo antes de fazer login aqui. Por segurança, apenas um dispositivo pode estar logado por vez.")
-          setIsSubmitting(false)
-          return
+        // NOVA LÓGICA: "Último a logar ganha" - o backend já desconecta o dispositivo anterior
+        // Não precisamos bloquear aqui, o backend já gerencia isso
+        if (sessionCheckResponse.ok && sessionData.previousDeviceDisconnected) {
+          console.log("[Register] Dispositivo anterior foi desconectado automaticamente")
+          // Continuar com o cadastro normalmente
         }
 
         // Salvar dados no localStorage

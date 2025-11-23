@@ -1688,14 +1688,18 @@ export default function ResultadoPage() {
                     onClick={() => setSelectedFavoriteDetail(favorito)}
                     className="group relative overflow-hidden rounded-xl border-2 border-purple-500 bg-white hover:border-purple-400 transition cursor-pointer"
                   >
-                    {favorito.imagemUrl && (
+                    {favorito.imagemUrl ? (
                       <div className="relative aspect-square w-full bg-white">
-                        <Image
+                        <img
                           src={favorito.imagemUrl}
                           alt={favorito.productName || "Look favorito"}
-                          fill
-                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                          className="object-contain"
+                          className="w-full h-full object-contain"
+                          loading="lazy"
+                          onError={(e) => {
+                            console.error("[ResultadoPage] Erro ao carregar imagem do favorito:", favorito.imagemUrl);
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                          }}
                         />
                         {/* Marca d'água com logo da loja no canto superior esquerdo */}
                         {lojistaData?.logoUrl && (
