@@ -1684,7 +1684,7 @@ export default function ResultadoPage() {
       {/* Modal de Detalhes do Favorito */}
       {selectedFavoriteDetail && (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-8 sm:pt-12 backdrop-blur-sm overflow-y-auto">
-          <div className="w-full max-w-4xl rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl mb-8">
+          <div className="inline-block rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl mb-8">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">Detalhes do Look</h2>
               <button 
@@ -1697,24 +1697,23 @@ export default function ResultadoPage() {
 
             {/* Imagem do Favorito */}
             {selectedFavoriteDetail.imagemUrl && (
-              <div className="relative mb-6 rounded-xl overflow-hidden">
-                <div className="relative aspect-[3/4] w-full">
-                  <Image 
-                    src={selectedFavoriteDetail.imagemUrl} 
-                    alt={selectedFavoriteDetail.productName || "Look favorito"} 
-                    fill 
-                    className="object-contain bg-black/20" 
+              <div className="relative mb-6 rounded-xl overflow-hidden inline-block">
+                <div className="relative w-full">
+                  <img
+                    src={selectedFavoriteDetail.imagemUrl}
+                    alt={selectedFavoriteDetail.productName || "Look favorito"}
+                    className="max-w-full h-auto object-contain rounded-lg"
                   />
                   {/* Marca d'água com logo da loja no canto superior esquerdo */}
                   {lojistaData?.logoUrl && (
-                    <div className="absolute top-4 left-4 z-10 opacity-60">
-                      <div className="h-12 w-12 sm:h-14 sm:w-14 overflow-hidden rounded-full border border-white/30 bg-white/40 p-0.5">
+                    <div className="absolute top-4 left-4 z-10 opacity-70">
+                      <div className="h-12 w-12 sm:h-16 sm:w-16 overflow-hidden rounded-full border-2 border-white/50 bg-white/60 p-1 shadow-lg">
                         <Image
                           src={lojistaData.logoUrl}
                           alt={lojistaData.nome || "Logo"}
-                          width={56}
-                          height={56}
-                          className="h-full w-full object-contain opacity-80"
+                          width={64}
+                          height={64}
+                          className="h-full w-full object-contain"
                         />
                       </div>
                     </div>
@@ -1723,22 +1722,8 @@ export default function ResultadoPage() {
               </div>
             )}
 
-            {/* Informações do Produto */}
-            {selectedFavoriteDetail.productName && (
-              <div className="mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4">
-                <h3 className="text-xl font-bold text-white mb-2">{selectedFavoriteDetail.productName}</h3>
-                {selectedFavoriteDetail.productPrice && (
-                  <p className="text-2xl font-bold text-yellow-300">{formatPrice(selectedFavoriteDetail.productPrice)}</p>
-                )}
-                {selectedFavoriteDetail.descricao && (
-                  <p className="mt-2 text-sm text-white/80">{selectedFavoriteDetail.descricao}</p>
-                )}
-              </div>
-            )}
-
-            {/* Botões */}
-            <div className="space-y-3">
-              {/* Botão Comprar Agora */}
+            {/* Botão Comprar Agora - Logo abaixo da foto */}
+            <div className="mb-6 w-full">
               <button
                 onClick={handleCheckout}
                 className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-bold text-white text-base hover:opacity-90 transition relative overflow-hidden"
@@ -1749,6 +1734,35 @@ export default function ResultadoPage() {
               >
                 <ShoppingCart className="h-5 w-5" /> Comprar Agora
               </button>
+            </div>
+
+            {/* Produtos Selecionados - Se houver informações de produtos no favorito */}
+            {selectedFavoriteDetail.productName && (
+              <div className="mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4 w-full">
+                <h3 className="text-lg font-bold text-white mb-3">Produtos Selecionados</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-white/5">
+                    <span className="text-sm text-white">{selectedFavoriteDetail.productName}</span>
+                    {selectedFavoriteDetail.productPrice && (
+                      <span className="text-sm font-bold text-yellow-300">{formatPrice(selectedFavoriteDetail.productPrice)}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Informações sobre a Simulação */}
+            <div className="mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4 w-full">
+              <p className="text-base text-white mb-3">
+                Adoramos te ajudar a escolher! ✨ Esta imagem é uma simulação da nossa Inteligência Artificial para você visualizar o look.
+              </p>
+              <p className="text-sm text-white/80">
+                <strong>Importante:</strong> Esta tecnologia serve como referência visual e não substitui a prova física. O ajuste exato, as dimensões e a textura real dos materiais podem apresentar diferenças em relação à simulação digital.
+              </p>
+            </div>
+
+            {/* Botões */}
+            <div className="space-y-3 w-full">
 
               {/* Botões Selecionar e Voltar */}
               <div className="grid grid-cols-2 gap-3">
@@ -1823,14 +1837,18 @@ export default function ResultadoPage() {
               </div>
             )}
 
-            {/* Informações sobre a Simulação */}
-            <div className="mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4 w-full">
-              <p className="text-base text-white mb-3">
-                Adoramos te ajudar a escolher! ✨ Esta imagem é uma simulação da nossa Inteligência Artificial para você visualizar o look.
-              </p>
-              <p className="text-sm text-white/80">
-                <strong>Importante:</strong> Esta tecnologia serve como referência visual e não substitui a prova física. O ajuste exato, as dimensões e a textura real dos materiais podem apresentar diferenças em relação à simulação digital.
-              </p>
+            {/* Botão Comprar Agora - Logo abaixo da foto */}
+            <div className="mb-6 w-full">
+              <button
+                onClick={handleCheckout}
+                className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-bold text-white text-base hover:opacity-90 transition relative overflow-hidden"
+                style={{ 
+                  background: "linear-gradient(to right, #1e3a8a, #3b82f6, #60a5fa, #3b82f6, #1e3a8a)",
+                  animation: "pulse-glow-strong 1.5s ease-in-out infinite"
+                }}
+              >
+                <ShoppingCart className="h-5 w-5" /> Comprar Agora
+              </button>
             </div>
 
             {/* Produtos Selecionados */}
@@ -1850,19 +1868,18 @@ export default function ResultadoPage() {
               </div>
             )}
 
+            {/* Informações sobre a Simulação */}
+            <div className="mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4 w-full">
+              <p className="text-base text-white mb-3">
+                Adoramos te ajudar a escolher! ✨ Esta imagem é uma simulação da nossa Inteligência Artificial para você visualizar o look.
+              </p>
+              <p className="text-sm text-white/80">
+                <strong>Importante:</strong> Esta tecnologia serve como referência visual e não substitui a prova física. O ajuste exato, as dimensões e a textura real dos materiais podem apresentar diferenças em relação à simulação digital.
+              </p>
+            </div>
+
             {/* Botões */}
             <div className="space-y-3 w-full">
-              {/* Botão Comprar Agora */}
-              <button
-                onClick={handleCheckout}
-                className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-bold text-white text-base hover:opacity-90 transition relative overflow-hidden"
-                style={{ 
-                  background: "linear-gradient(to right, #1e3a8a, #3b82f6, #60a5fa, #3b82f6, #1e3a8a)",
-                  animation: "pulse-glow-strong 1.5s ease-in-out infinite"
-                }}
-              >
-                <ShoppingCart className="h-5 w-5" /> Comprar Agora
-              </button>
 
               {/* Botões de Ação */}
               <div className="grid grid-cols-4 gap-3">
