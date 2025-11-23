@@ -383,13 +383,25 @@ export default function ResultadoPage() {
         const data = await response.json()
         const favoritesList = data.favorites || data.favoritos || []
         
+        console.log("[ResultadoPage] Total de favoritos recebidos:", favoritesList.length)
+        
         // Filtrar apenas os likes (action === "like" ou tipo === "like" ou votedType === "like")
+        // IMPORTANTE: Excluir explicitamente dislikes
         const likesOnly = favoritesList.filter((f: any) => {
           const hasImage = f.imagemUrl && f.imagemUrl.trim() !== ""
-          const isLike = f.action === "like" || f.tipo === "like" || f.votedType === "like"
-          // Se não tiver campo de ação, assumir que é like (compatibilidade com dados antigos)
-          return hasImage && (isLike || (!f.action && !f.tipo && !f.votedType))
+          const action = f.action || f.tipo || f.votedType
+          const isDislike = action === "dislike"
+          const isLike = action === "like" || (!action && !f.action && !f.tipo && !f.votedType) // Compatibilidade com dados antigos
+          
+          // Excluir dislikes explicitamente
+          if (isDislike) {
+            return false
+          }
+          
+          return hasImage && isLike
         })
+        
+        console.log("[ResultadoPage] Likes filtrados:", likesOnly.length, "de", favoritesList.length, "total")
         
         // Remover duplicatas baseadas em imagemUrl (manter apenas o mais recente)
         const seenUrls = new Map<string, any>()
