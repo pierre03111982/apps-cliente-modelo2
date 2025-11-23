@@ -438,8 +438,13 @@ export default function ResultadoPage() {
 
   // Função para adicionar marca d'água na imagem
   const addWatermarkToImage = async (imageUrl: string, logoUrl: string): Promise<string> => {
+    console.log('[ResultadoPage] Iniciando processo de marca d\'água...')
+    console.log('[ResultadoPage] ImageUrl:', imageUrl)
+    console.log('[ResultadoPage] LogoUrl:', logoUrl)
+    
     // Tentar usar API do servidor primeiro (evita problemas de CORS)
     try {
+      console.log('[ResultadoPage] Tentando usar API do servidor...')
       const response = await fetch('/api/watermark', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -448,18 +453,30 @@ export default function ResultadoPage() {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('[ResultadoPage] Resposta da API:', data)
         if (data.watermarkedUrl && !data.fallback) {
+          console.log('[ResultadoPage] ✅ Marca d\'água aplicada via API do servidor')
           return data.watermarkedUrl;
+        } else {
+          console.warn('[ResultadoPage] API retornou fallback, tentando método cliente...')
         }
+      } else {
+        console.warn('[ResultadoPage] API retornou erro:', response.status, 'tentando método cliente...')
       }
     } catch (apiError) {
       console.warn('[ResultadoPage] Erro ao usar API de marca d\'água, tentando método cliente:', apiError);
     }
 
     // Fallback: tentar no cliente (pode falhar com CORS)
-    return new Promise((resolve, reject) => {
+    console.log('[ResultadoPage] Tentando aplicar marca d\'água no cliente...')
+    return new Promise((resolve) => {
       const img = new window.Image()
       img.crossOrigin = 'anonymous'
+      
+      let imageLoaded = false
+      let logoLoaded = false
+      let canvas: HTMLCanvasElement | null = null
+      let ctx: CanvasRenderingContext2D | null = null
       
       const tryLoadImage = (useCors: boolean) => {
         if (!useCors) {
@@ -467,13 +484,16 @@ export default function ResultadoPage() {
         }
         
         img.onload = () => {
-          const canvas = document.createElement('canvas')
+          console.log('[ResultadoPage] Imagem carregada, dimensões:', img.width, 'x', img.height)
+          imageLoaded = true
+          
+          canvas = document.createElement('canvas')
           canvas.width = img.width
           canvas.height = img.height
-          const ctx = canvas.getContext('2d')
+          ctx = canvas.getContext('2d')
           
           if (!ctx) {
-            // Se não conseguir criar contexto, retornar imagem original
+            console.error('[ResultadoPage] Não foi possível criar contexto do canvas')
             resolve(imageUrl)
             return
           }
@@ -481,90 +501,27 @@ export default function ResultadoPage() {
           try {
             // Desenhar imagem original
             ctx.drawImage(img, 0, 0)
+            console.log('[ResultadoPage] Imagem desenhada no canvas')
+            
+            // Se logo já carregou, desenhar logo
+            if (logoLoaded && canvas) {
+              drawLogo()
+            }
           } catch (drawError) {
             // Se falhar ao desenhar (canvas tainted), retornar original
-            console.warn('[ResultadoPage] Canvas tainted, retornando imagem original:', drawError)
+            console.warn('[ResultadoPage] Canvas tainted ao desenhar imagem:', drawError)
             resolve(imageUrl)
             return
           }
-          
-          // Carregar logo
-          const logo = new window.Image()
-          logo.crossOrigin = useCors ? 'anonymous' : undefined as any
-          
-          const tryLoadLogo = (logoUseCors: boolean) => {
-            if (!logoUseCors) {
-              logo.crossOrigin = undefined as any
-            }
-            
-            logo.onload = () => {
-              try {
-                // Tamanho da logo (15% da largura da imagem)
-                const logoSize = Math.min(img.width, img.height) * 0.15
-                const logoX = logoSize * 0.1
-                const logoY = logoSize * 0.1
-                
-                // Desenhar círculo branco semi-transparente atrás da logo
-                ctx.save()
-                ctx.globalAlpha = 0.4
-                ctx.fillStyle = 'white'
-                ctx.beginPath()
-                ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2)
-                ctx.fill()
-                ctx.restore()
-                
-                // Desenhar logo
-                ctx.save()
-                ctx.globalAlpha = 0.6
-                ctx.beginPath()
-                ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2 - 2, 0, Math.PI * 2)
-                ctx.clip()
-                ctx.drawImage(logo, logoX, logoY, logoSize, logoSize)
-                ctx.restore()
-                
-                // Tentar converter para blob
-                try {
-                  canvas.toBlob((blob) => {
-                    if (blob) {
-                      const url = URL.createObjectURL(blob)
-                      resolve(url)
-                    } else {
-                      // Se falhar, retornar original
-                      resolve(imageUrl)
-                    }
-                  }, 'image/jpeg', 0.9)
-                } catch (blobError) {
-                  // Se toBlob falhar (canvas tainted), retornar original
-                  console.warn('[ResultadoPage] Erro ao criar blob, retornando imagem original:', blobError)
-                  resolve(imageUrl)
-                }
-              } catch (drawError) {
-                // Se falhar ao desenhar logo, retornar original
-                console.warn('[ResultadoPage] Erro ao desenhar logo, retornando imagem original:', drawError)
-                resolve(imageUrl)
-              }
-            }
-            
-            logo.onerror = () => {
-              if (logoUseCors) {
-                tryLoadLogo(false)
-              } else {
-                // Se logo não carregar, retornar imagem original
-                resolve(imageUrl)
-              }
-            }
-            
-            logo.src = logoUrl
-          }
-          
-          tryLoadLogo(true)
         }
         
-        img.onerror = () => {
+        img.onerror = (error) => {
+          console.error('[ResultadoPage] Erro ao carregar imagem:', error)
           if (useCors) {
+            console.log('[ResultadoPage] Tentando carregar imagem sem CORS...')
             tryLoadImage(false)
           } else {
-            // Se não conseguir carregar imagem, retornar original
+            console.error('[ResultadoPage] Não foi possível carregar imagem, retornando original')
             resolve(imageUrl)
           }
         }
@@ -572,7 +529,117 @@ export default function ResultadoPage() {
         img.src = imageUrl
       }
       
+      const drawLogo = () => {
+        if (!canvas || !ctx) {
+          console.error('[ResultadoPage] Canvas ou contexto não disponível para desenhar logo')
+          return
+        }
+        
+        const logo = new window.Image()
+        logo.crossOrigin = 'anonymous'
+        
+        const tryLoadLogo = (logoUseCors: boolean) => {
+          if (!logoUseCors) {
+            logo.crossOrigin = undefined as any
+          }
+          
+          logo.onload = () => {
+            console.log('[ResultadoPage] Logo carregada, dimensões:', logo.width, 'x', logo.height)
+            logoLoaded = true
+            
+            try {
+              if (!canvas || !ctx) {
+                console.error('[ResultadoPage] Canvas não disponível')
+                resolve(imageUrl)
+                return
+              }
+              
+              // Tamanho da logo (15% da largura da imagem)
+              const logoSize = Math.min(canvas.width, canvas.height) * 0.15
+              const logoX = logoSize * 0.1
+              const logoY = logoSize * 0.1
+              
+              console.log('[ResultadoPage] Desenhando logo em:', logoX, logoY, 'tamanho:', logoSize)
+              
+              // Desenhar círculo branco semi-transparente atrás da logo
+              ctx.save()
+              ctx.globalAlpha = 0.4
+              ctx.fillStyle = 'white'
+              ctx.beginPath()
+              ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2)
+              ctx.fill()
+              ctx.restore()
+              
+              // Desenhar logo
+              ctx.save()
+              ctx.globalAlpha = 0.6
+              ctx.beginPath()
+              ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2 - 2, 0, Math.PI * 2)
+              ctx.clip()
+              ctx.drawImage(logo, logoX, logoY, logoSize, logoSize)
+              ctx.restore()
+              
+              console.log('[ResultadoPage] Logo desenhada com sucesso')
+              
+              // Tentar converter para blob
+              try {
+                canvas.toBlob((blob) => {
+                  if (blob) {
+                    const url = URL.createObjectURL(blob)
+                    console.log('[ResultadoPage] ✅ Blob criado com sucesso, tamanho:', blob.size, 'bytes')
+                    resolve(url)
+                  } else {
+                    console.warn('[ResultadoPage] Blob vazio, retornando imagem original')
+                    resolve(imageUrl)
+                  }
+                }, 'image/jpeg', 0.9)
+              } catch (blobError) {
+                // Se toBlob falhar (canvas tainted), retornar original
+                console.warn('[ResultadoPage] Erro ao criar blob:', blobError)
+                resolve(imageUrl)
+              }
+            } catch (drawError) {
+              // Se falhar ao desenhar logo, retornar original
+              console.error('[ResultadoPage] Erro ao desenhar logo:', drawError)
+              resolve(imageUrl)
+            }
+          }
+          
+          logo.onerror = (error) => {
+            console.error('[ResultadoPage] Erro ao carregar logo:', error)
+            if (logoUseCors) {
+              console.log('[ResultadoPage] Tentando carregar logo sem CORS...')
+              tryLoadLogo(false)
+            } else {
+              console.error('[ResultadoPage] Não foi possível carregar logo, retornando imagem original')
+              resolve(imageUrl)
+            }
+          }
+          
+          logo.src = logoUrl
+        }
+        
+        tryLoadLogo(true)
+      }
+      
+      // Carregar imagem primeiro
       tryLoadImage(true)
+      
+      // Carregar logo em paralelo
+      const logo = new window.Image()
+      logo.crossOrigin = 'anonymous'
+      logo.onload = () => {
+        console.log('[ResultadoPage] Logo carregada antes da imagem')
+        logoLoaded = true
+        // Se imagem já carregou, desenhar logo
+        if (imageLoaded && canvas && ctx) {
+          drawLogo()
+        }
+      }
+      logo.onerror = () => {
+        console.warn('[ResultadoPage] Logo não carregou, mas continuando...')
+      }
+      logo.src = logoUrl
     })
   }
 
