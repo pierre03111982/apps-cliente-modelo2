@@ -443,28 +443,31 @@ export function ExperimentarView({
                     {/* Imagem do Produto */}
                     {produto.imagemUrl && (
                       <div className="relative aspect-square w-full bg-gray-100 flex items-center justify-center">
-                        {(produto.imagemUrl?.includes('storage.googleapis.com') || produto.imagemUrl?.includes('firebasestorage.googleapis.com')) ? (
-                          <img
-                            src={produto.imagemUrl}
-                            alt={produto.nome}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              console.error(`[ExperimentarView] Erro ao carregar imagem: ${produto.imagemUrl}`, e);
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
-                        ) : (
-                          <Image
-                            src={produto.imagemUrl}
-                            alt={produto.nome}
-                            fill
-                            className="object-cover"
-                            onError={(e) => {
-                              console.error(`[ExperimentarView] Erro ao carregar imagem: ${produto.imagemUrl}`, e);
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
-                        )}
+                        {/* Usar img tag para todas as URLs externas para evitar problemas com Next.js Image */}
+                        <img
+                          src={produto.imagemUrl}
+                          alt={produto.nome}
+                          className="w-full h-full object-cover"
+                          crossOrigin="anonymous"
+                          onError={(e) => {
+                            console.error(`[ExperimentarView] Erro ao carregar imagem: ${produto.imagemUrl}`, e);
+                            // Tentar carregar novamente após um delay
+                            const target = e.currentTarget;
+                            setTimeout(() => {
+                              if (target.src && !target.complete) {
+                                const newImg = new Image();
+                                newImg.onload = () => {
+                                  target.src = newImg.src;
+                                  target.style.display = '';
+                                };
+                                newImg.onerror = () => {
+                                  target.style.display = 'none';
+                                };
+                                newImg.src = produto.imagemUrl || '';
+                              }
+                            }, 1000);
+                          }}
+                        />
                       </div>
                     )}
                     {/* Informações do Produto */}
@@ -641,28 +644,31 @@ export function ExperimentarView({
 
                     {produto.imagemUrl && (
                       <div className="relative aspect-square w-full bg-gray-100 flex items-center justify-center">
-                        {(produto.imagemUrl?.includes('storage.googleapis.com') || produto.imagemUrl?.includes('firebasestorage.googleapis.com')) ? (
-                          <img
-                            src={produto.imagemUrl}
-                            alt={produto.nome}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              console.error(`[ExperimentarView] Erro ao carregar imagem: ${produto.imagemUrl}`, e);
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
-                        ) : (
-                          <Image 
-                            src={produto.imagemUrl} 
-                            alt={produto.nome} 
-                            fill 
-                            className="object-cover"
-                            onError={(e) => {
-                              console.error(`[ExperimentarView] Erro ao carregar imagem: ${produto.imagemUrl}`, e);
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
-                        )}
+                        {/* Usar img tag para todas as URLs externas para evitar problemas com Next.js Image */}
+                        <img
+                          src={produto.imagemUrl}
+                          alt={produto.nome}
+                          className="w-full h-full object-cover"
+                          crossOrigin="anonymous"
+                          onError={(e) => {
+                            console.error(`[ExperimentarView] Erro ao carregar imagem: ${produto.imagemUrl}`, e);
+                            // Tentar carregar novamente após um delay
+                            const target = e.currentTarget;
+                            setTimeout(() => {
+                              if (target.src && !target.complete) {
+                                const newImg = new Image();
+                                newImg.onload = () => {
+                                  target.src = newImg.src;
+                                  target.style.display = '';
+                                };
+                                newImg.onerror = () => {
+                                  target.style.display = 'none';
+                                };
+                                newImg.src = produto.imagemUrl || '';
+                              }
+                            }, 1000);
+                          }}
+                        />
                       </div>
                     )}
                     <div className="p-2 bg-purple-900">
@@ -773,29 +779,30 @@ export function ExperimentarView({
               {/* Imagem do Produto */}
               {selectedProductDetail.imagemUrl && (
                 <div className="relative w-full min-h-96 rounded-lg overflow-hidden border-2 border-purple-500 bg-white flex items-center justify-center">
-                  {(selectedProductDetail.imagemUrl?.includes('storage.googleapis.com') || selectedProductDetail.imagemUrl?.includes('firebasestorage.googleapis.com')) ? (
-                    <img
-                      src={selectedProductDetail.imagemUrl}
-                      alt={selectedProductDetail.nome}
-                      className="max-h-[600px] w-auto h-auto object-contain"
-                      onError={(e) => {
-                        console.error(`[ExperimentarView] Erro ao carregar imagem: ${selectedProductDetail.imagemUrl}`, e);
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <Image
-                      src={selectedProductDetail.imagemUrl}
-                      alt={selectedProductDetail.nome}
-                      width={800}
-                      height={800}
-                      className="object-contain max-h-[600px] w-auto h-auto"
-                      onError={(e) => {
-                        console.error(`[ExperimentarView] Erro ao carregar imagem: ${selectedProductDetail.imagemUrl}`, e);
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                  )}
+                  {/* Usar img tag para todas as URLs externas para evitar problemas com Next.js Image */}
+                  <img
+                    src={selectedProductDetail.imagemUrl}
+                    alt={selectedProductDetail.nome}
+                    className="max-h-[600px] w-auto h-auto object-contain"
+                    crossOrigin="anonymous"
+                    onError={(e) => {
+                      console.error(`[ExperimentarView] Erro ao carregar imagem: ${selectedProductDetail.imagemUrl}`, e);
+                      const target = e.currentTarget;
+                      setTimeout(() => {
+                        if (target.src && !target.complete) {
+                          const newImg = new Image();
+                          newImg.onload = () => {
+                            target.src = newImg.src;
+                            target.style.display = '';
+                          };
+                          newImg.onerror = () => {
+                            target.style.display = 'none';
+                          };
+                          newImg.src = selectedProductDetail.imagemUrl || '';
+                        }
+                      }, 1000);
+                    }}
+                  />
                 </div>
               )}
 
