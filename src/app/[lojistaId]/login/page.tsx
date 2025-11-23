@@ -290,28 +290,7 @@ function LoginPageContent() {
           throw new Error(data.error || "Erro ao cadastrar")
         }
 
-        // Verificar no backend se há sessão ativa
-        const currentDeviceIdForRegister = getOrCreateDeviceId()
-        const sessionCheckResponse = await fetch("/api/cliente/check-session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            lojistaId,
-            whatsapp: cleanWhatsapp,
-            deviceId: currentDeviceIdForRegister,
-          }),
-        })
-
-        const sessionData = await sessionCheckResponse.json()
-
-        if (sessionCheckResponse.ok && sessionData.alreadyLoggedIn) {
-          // Cliente já está logado em outro dispositivo
-          setError("⚠️ Você já está logado em outro dispositivo. Por favor, faça logout do outro dispositivo antes de fazer login aqui. Por segurança, apenas um dispositivo pode estar logado por vez.")
-          setIsSubmitting(false)
-          return
-        }
-
-        // Limpar qualquer sessão anterior do mesmo WhatsApp nesta loja
+        // PRIMEIRO: Limpar qualquer sessão anterior do mesmo WhatsApp nesta loja
         const allStorageKeysForCleanup = Object.keys(localStorage)
         let previousSessionDataForRegister = null
         allStorageKeysForCleanup.forEach(key => {
@@ -332,24 +311,46 @@ function LoginPageContent() {
           }
         })
 
-        // Fazer logout no backend se havia sessão anterior
-        if (previousSessionDataForRegister) {
-          try {
-            const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000"
-            await fetch(`${backendUrl}/api/cliente/logout`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                lojistaId,
-                whatsapp: cleanWhatsapp,
-                deviceId: previousSessionDataForRegister.deviceId || "unknown",
-              }),
-            }).catch(() => {
-              // Ignorar erros de logout (não bloquear cadastro)
-            })
-          } catch (e) {
-            // Ignorar erros
-          }
+        // SEGUNDO: Sempre fazer logout no backend ANTES de verificar sessão (garantir limpeza)
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_PAINELADM_URL || "http://localhost:3000"
+        try {
+          await fetch(`${backendUrl}/api/cliente/logout`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              lojistaId,
+              whatsapp: cleanWhatsapp,
+              deviceId: previousSessionDataForRegister?.deviceId || "unknown",
+            }),
+          }).catch(() => {
+            // Ignorar erros de logout (não bloquear cadastro)
+            console.log("[Register] Erro ao fazer logout prévio (ignorado)")
+          })
+          console.log("[Register] Logout prévio realizado com sucesso")
+        } catch (e) {
+          // Ignorar erros
+          console.log("[Register] Erro ao fazer logout prévio (ignorado):", e)
+        }
+
+        // TERCEIRO: Agora verificar no backend se há sessão ativa (após limpar)
+        const currentDeviceIdForRegister = getOrCreateDeviceId()
+        const sessionCheckResponse = await fetch("/api/cliente/check-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lojistaId,
+            whatsapp: cleanWhatsapp,
+            deviceId: currentDeviceIdForRegister,
+          }),
+        })
+
+        const sessionData = await sessionCheckResponse.json()
+
+        if (sessionCheckResponse.ok && sessionData.alreadyLoggedIn) {
+          // Cliente já está logado em outro dispositivo
+          setError("⚠️ Você já está logado em outro dispositivo. Por favor, faça logout do outro dispositivo antes de fazer login aqui. Por segurança, apenas um dispositivo pode estar logado por vez.")
+          setIsSubmitting(false)
+          return
         }
 
         // Salvar dados no localStorage
@@ -392,34 +393,7 @@ function LoginPageContent() {
           throw new Error(data.error || "Erro ao fazer login")
         }
 
-        // Verificar no backend se há sessão ativa
-        const currentDeviceIdForLogin = getOrCreateDeviceId()
-        const sessionCheckResponse = await fetch("/api/cliente/check-session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            lojistaId,
-            whatsapp: cleanWhatsapp,
-            deviceId: currentDeviceIdForLogin,
-          }),
-        })
-
-        const sessionData = await sessionCheckResponse.json()
-
-        // Se o backend disser que já está logado E não for o mesmo dispositivo, bloquear
-        if (sessionCheckResponse.ok && sessionData.alreadyLoggedIn) {
-          // Verificar se é realmente outro dispositivo (deviceId diferente)
-          // O backend já faz essa verificação, mas vamos garantir
-          const backendDeviceId = sessionData.activeDeviceId
-          if (backendDeviceId && backendDeviceId !== currentDeviceIdForLogin) {
-            setError("⚠️ Você já está logado em outro dispositivo. Por favor, faça logout do outro dispositivo antes de fazer login aqui. Por segurança, apenas um dispositivo pode estar logado por vez.")
-            setIsSubmitting(false)
-            return
-          }
-          // Se for o mesmo deviceId, permitir login (mesmo dispositivo)
-        }
-
-        // Limpar qualquer sessão anterior do mesmo WhatsApp nesta loja
+        // PRIMEIRO: Limpar qualquer sessão anterior do mesmo WhatsApp nesta loja
         const allStorageKeys = Object.keys(localStorage)
         let previousSessionData = null
         allStorageKeys.forEach(key => {
@@ -440,24 +414,51 @@ function LoginPageContent() {
           }
         })
 
-        // Fazer logout no backend se havia sessão anterior
-        if (previousSessionData) {
-          try {
-            const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000"
-            await fetch(`${backendUrl}/api/cliente/logout`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                lojistaId,
-                whatsapp: cleanWhatsapp,
-                deviceId: previousSessionData.deviceId || "unknown",
-              }),
-            }).catch(() => {
-              // Ignorar erros de logout (não bloquear login)
-            })
-          } catch (e) {
-            // Ignorar erros
+        // SEGUNDO: Sempre fazer logout no backend ANTES de verificar sessão (garantir limpeza)
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_PAINELADM_URL || "http://localhost:3000"
+        try {
+          await fetch(`${backendUrl}/api/cliente/logout`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              lojistaId,
+              whatsapp: cleanWhatsapp,
+              deviceId: previousSessionData?.deviceId || "unknown",
+            }),
+          }).catch(() => {
+            // Ignorar erros de logout (não bloquear login)
+            console.log("[Login] Erro ao fazer logout prévio (ignorado)")
+          })
+          console.log("[Login] Logout prévio realizado com sucesso")
+        } catch (e) {
+          // Ignorar erros
+          console.log("[Login] Erro ao fazer logout prévio (ignorado):", e)
+        }
+
+        // TERCEIRO: Agora verificar no backend se há sessão ativa (após limpar)
+        const currentDeviceIdForLogin = getOrCreateDeviceId()
+        const sessionCheckResponse = await fetch("/api/cliente/check-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lojistaId,
+            whatsapp: cleanWhatsapp,
+            deviceId: currentDeviceIdForLogin,
+          }),
+        })
+
+        const sessionData = await sessionCheckResponse.json()
+
+        // Se o backend disser que já está logado E não for o mesmo dispositivo, bloquear
+        if (sessionCheckResponse.ok && sessionData.alreadyLoggedIn) {
+          // Verificar se é realmente outro dispositivo (deviceId diferente)
+          const backendDeviceId = sessionData.activeDeviceId
+          if (backendDeviceId && backendDeviceId !== currentDeviceIdForLogin) {
+            setError("⚠️ Você já está logado em outro dispositivo. Por favor, faça logout do outro dispositivo antes de fazer login aqui. Por segurança, apenas um dispositivo pode estar logado por vez.")
+            setIsSubmitting(false)
+            return
           }
+          // Se for o mesmo deviceId, permitir login (mesmo dispositivo)
         }
 
         // Salvar dados no localStorage
