@@ -19,6 +19,7 @@ import {
   ShoppingCart,
 } from "lucide-react"
 import { ClockAnimation } from "../ClockAnimation"
+import { LoadingSpinner } from "../LoadingSpinner"
 import { CLOSET_BACKGROUND_IMAGE } from "@/lib/constants" // Esta constante não será mais usada
 import type { LojistaData, Produto, GeneratedLook } from "@/lib/types"
 
@@ -187,6 +188,26 @@ export function ExperimentarView({
   return (
     // Estilo geral do Modelo 2: fundo claro e texto escuro
     <div className="relative min-h-screen w-full overflow-x-hidden overflow-y-auto text-zinc-800 antialiased">
+      {/* Overlay de Loading Centralizado quando gerando */}
+      {isGenerating && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="flex flex-col items-center justify-center gap-6">
+            <div className="relative">
+              <LoadingSpinner size={120} />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <ClockAnimation size={60} />
+              </div>
+            </div>
+            <div className="text-center">
+              <p className="text-xl font-bold text-white mb-2">
+                {creativePhrases[currentPhraseIndex] || creativePhrases[0]}
+              </p>
+              <p className="text-sm text-white/80">Aguarde enquanto criamos seu look...</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 1. Vídeo de Fundo - Fixo */}
       <div className="fixed inset-0 z-0 overflow-hidden">
         <video

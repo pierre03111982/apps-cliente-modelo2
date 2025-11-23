@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import { ArrowLeft, ThumbsUp, ThumbsDown, Share2, ShoppingCart, Heart, RefreshCw, Home, Instagram, Facebook, Music2, MessageCircle, X, Sparkles, ArrowLeftCircle, Check, Download } from "lucide-react"
 import { ClockAnimation } from "@/components/ClockAnimation"
+import { LoadingSpinner } from "@/components/LoadingSpinner"
 import { CLOSET_BACKGROUND_IMAGE } from "@/lib/constants"
 import { fetchLojistaData } from "@/lib/firebaseQueries"
 import type { LojistaData, GeneratedLook } from "@/lib/types"
@@ -1141,7 +1142,27 @@ export default function ResultadoPage() {
 
   return (
     <div className="relative min-h-screen w-screen overflow-hidden">
-      {/* Overlay com blur quando remixando */}
+      {/* Overlay de Loading Centralizado quando remixando */}
+      {isRemixing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="flex flex-col items-center justify-center gap-6">
+            <div className="relative">
+              <LoadingSpinner size={120} />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <ClockAnimation size={60} />
+              </div>
+            </div>
+            <div className="text-center">
+              <p className="text-xl font-bold text-white mb-2">
+                {remixPhrases[remixPhraseIndex] || remixPhrases[0]}
+              </p>
+              <p className="text-sm text-white/80">Aguarde enquanto remixamos seu look...</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Overlay com blur quando remixando (mantido para compatibilidade) */}
       {isRemixing && (
         <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-md transition-opacity" />
       )}
