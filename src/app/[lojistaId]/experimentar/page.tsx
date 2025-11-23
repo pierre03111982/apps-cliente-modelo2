@@ -305,18 +305,43 @@ export default function ExperimentarPage() {
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files?.[0]) {
       const file = event.target.files[0]
+      
+      // Limpar URL anterior se existir (para liberar memória)
+      if (userPhotoUrl && userPhotoUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(userPhotoUrl)
+      }
+      
+      // Criar URL do novo arquivo
+      const newPhotoUrl = URL.createObjectURL(file)
+      
+      // Substituir foto atual pela nova
       setUserPhoto(file)
-      setUserPhotoUrl(URL.createObjectURL(file))
+      setUserPhotoUrl(newPhotoUrl)
+      
+      // Salvar no sessionStorage para persistir
+      sessionStorage.setItem(`photo_${lojistaId}`, newPhotoUrl)
+      
+      console.log("[ExperimentarPage] Foto substituída com sucesso")
     }
+    
+    // Resetar input para permitir selecionar o mesmo arquivo novamente
+    event.target.value = ""
   }
 
   // Remover foto
   const handleRemovePhoto = () => {
+    // Limpar URL se for blob
+    if (userPhotoUrl && userPhotoUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(userPhotoUrl)
+    }
+    
     setUserPhoto(null)
     setUserPhotoUrl(null)
     sessionStorage.removeItem(`photo_${lojistaId}`)
-    if (document.getElementById("photo-upload") as HTMLInputElement) {
-      (document.getElementById("photo-upload") as HTMLInputElement).value = ""
+    
+    const input = document.getElementById("photo-upload") as HTMLInputElement
+    if (input) {
+      input.value = ""
     }
   }
 
@@ -324,6 +349,8 @@ export default function ExperimentarPage() {
   const handleChangePhoto = () => {
     const input = document.getElementById("photo-upload") as HTMLInputElement
     if (input) {
+      // Resetar input antes de abrir para garantir que onChange sempre dispare
+      input.value = ""
       input.click()
     }
   }

@@ -783,67 +783,7 @@ export default function ResultadoPage() {
         
         console.log("[ResultadoPage] Like salvo com sucesso - imagem será salva automaticamente nos favoritos")
         
-        // Processar marca d'água em background (não bloqueia a resposta)
-        if (lojistaData?.logoUrl && currentLook.imagemUrl) {
-          // Processar marca d'água de forma assíncrona sem bloquear
-          (async () => {
-            try {
-              console.log("[ResultadoPage] Iniciando processo de marca d'água em background...")
-              
-              // Timeout reduzido para 5 segundos
-              const watermarkPromise = (async () => {
-                const watermarkedBlobUrl = await addWatermarkToImage(currentLook.imagemUrl, lojistaData.logoUrl)
-                console.log("[ResultadoPage] Marca d'água criada, fazendo upload...")
-                
-                const response = await fetch(watermarkedBlobUrl)
-                if (!response.ok) {
-                  throw new Error(`Erro ao buscar blob: ${response.status}`)
-                }
-                
-                const blob = await response.blob()
-                if (!blob || blob.size === 0) {
-                  throw new Error('Blob vazio ou inválido')
-                }
-                
-                const file = new File([blob], `look-watermarked-${Date.now()}.jpg`, { type: 'image/jpeg' })
-                const formData = new FormData()
-                formData.append('photo', file)
-                
-                const uploadResponse = await fetch('/api/upload-photo', {
-                  method: 'POST',
-                  body: formData,
-                })
-                
-                if (uploadResponse.ok) {
-                  const uploadData = await uploadResponse.json()
-                  const uploadedUrl = uploadData.url || uploadData.imageUrl
-                  if (uploadedUrl && uploadedUrl.startsWith('http')) {
-                    console.log("[ResultadoPage] Upload da imagem com marca d'água concluído:", uploadedUrl)
-                    URL.revokeObjectURL(watermarkedBlobUrl)
-                    
-                    // Atualizar o favorito com a imagem com marca d'água (opcional)
-                    // Isso pode ser feito em background sem bloquear a UI
-                    return uploadedUrl
-                  }
-                }
-                URL.revokeObjectURL(watermarkedBlobUrl)
-                return null
-              })()
-              
-              const timeoutPromise = new Promise((resolve) => {
-                setTimeout(() => resolve(null), 5000) // Timeout reduzido para 5 segundos
-              })
-              
-              await Promise.race([watermarkPromise, timeoutPromise])
-              console.log("[ResultadoPage] Processo de marca d'água concluído em background")
-            } catch (error) {
-              console.error("[ResultadoPage] Erro ao processar marca d'água em background:", error)
-              // Não mostrar erro ao usuário, pois o like já foi salvo
-            }
-          })()
-        }
-        
-        // Atualizar favoritos imediatamente para garantir que a imagem aparece (já foi salva pelo backend)
+        // Atualizar favoritos imediatamente (a imagem original já foi salva pelo backend)
         await loadFavorites()
       } else {
         console.error("[ResultadoPage] Erro ao registrar like:", response.status, responseData)
@@ -997,15 +937,15 @@ export default function ResultadoPage() {
   // Verificar se WhatsApp está disponível
   const hasWhatsApp = !!(lojistaData?.redesSociais?.whatsapp || lojistaData?.salesConfig?.whatsappLink)
 
-  // Handle download
+  // Handle download - Versão simplificada e otimizada
   const handleDownload = useCallback(async () => {
     const currentLook = looks[currentLookIndex]
     if (!currentLook?.imagemUrl) {
-      alert("Imagem não encontrada para download.")
+      console.error("[ResultadoPage] Imagem não encontrada para download")
       return
     }
 
-    // Se não houver logo, fazer download direto
+    // Se não houver logo, fazer download direto (rápido e sem problemas)
     if (!lojistaData?.logoUrl) {
       try {
         const link = document.createElement('a')
@@ -1019,88 +959,61 @@ export default function ResultadoPage() {
         return
       } catch (error) {
         console.error("[ResultadoPage] Erro ao baixar imagem:", error)
-        alert("Erro ao baixar imagem. Tente novamente.")
         return
       }
     }
 
-    // Se houver logo, tentar adicionar marca d'água (com timeout)
+    // Se houver logo, tentar usar backend para processar marca d'água (rápido e sem CORS)
     try {
-      console.log("[ResultadoPage] Tentando adicionar marca d'água para download...")
+      console.log("[ResultadoPage] Processando marca d'água via backend...")
       
-      // Timeout de 5 segundos para não travar
-      const watermarkPromise = addWatermarkToImage(currentLook.imagemUrl, lojistaData.logoUrl)
-      const timeoutPromise = new Promise<string>((resolve) => {
-        setTimeout(() => resolve(currentLook.imagemUrl), 5000)
-      })
+      // Timeout curto de 3 segundos - se demorar mais, fazer download direto
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 3000)
       
-      const watermarkedUrl = await Promise.race([watermarkPromise, timeoutPromise])
-      
-      // Se retornou a URL original ou timeout, baixar original
-      if (watermarkedUrl === currentLook.imagemUrl) {
-        console.warn("[ResultadoPage] Não foi possível adicionar marca d'água, baixando original")
-        const link = document.createElement('a')
-        link.href = currentLook.imagemUrl
-        link.download = `look-${currentLook.id || Date.now()}.jpg`
-        link.target = '_blank'
-        link.rel = 'noopener noreferrer'
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        return
-      }
-      
-      // Se for blob URL, fazer download do blob
-      if (watermarkedUrl.startsWith('blob:')) {
-        try {
-          const response = await fetch(watermarkedUrl)
-          if (!response.ok) {
-            throw new Error(`Erro ao buscar blob: ${response.status}`)
-          }
+      try {
+        const response = await fetch('/api/watermark', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            imageUrl: currentLook.imagemUrl, 
+            logoUrl: lojistaData.logoUrl 
+          }),
+          signal: controller.signal
+        })
+
+        clearTimeout(timeoutId)
+
+        if (response.ok) {
+          const data = await response.json()
           
-          const blob = await response.blob()
-          if (!blob || blob.size === 0) {
-            throw new Error('Blob vazio')
+          // Se backend retornou imagem com marca d'água, usar ela
+          if (data.watermarkedUrl && !data.fallback && data.watermarkedUrl !== currentLook.imagemUrl) {
+            console.log("[ResultadoPage] ✅ Marca d'água processada pelo backend")
+            const link = document.createElement('a')
+            link.href = data.watermarkedUrl
+            link.download = `look-${currentLook.id || Date.now()}.jpg`
+            link.target = '_blank'
+            link.rel = 'noopener noreferrer'
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            return
           }
-          
-          const url = window.URL.createObjectURL(blob)
-          const a = document.createElement('a')
-          a.href = url
-          a.download = `look-${currentLook.id || Date.now()}.jpg`
-          document.body.appendChild(a)
-          a.click()
-          window.URL.revokeObjectURL(url)
-          window.URL.revokeObjectURL(watermarkedUrl)
-          document.body.removeChild(a)
-          console.log("[ResultadoPage] ✅ Download com marca d'água concluído!")
-          return
-        } catch (fetchError) {
-          console.error("[ResultadoPage] Erro ao fazer fetch do blob:", fetchError)
-          if (watermarkedUrl.startsWith('blob:')) {
-            URL.revokeObjectURL(watermarkedUrl)
-          }
-          // Continuar para fallback
         }
-      } else {
-        // Se for URL HTTP, fazer download direto
-        const link = document.createElement('a')
-        link.href = watermarkedUrl
-        link.download = `look-${currentLook.id || Date.now()}.jpg`
-        link.target = '_blank'
-        link.rel = 'noopener noreferrer'
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        console.log("[ResultadoPage] ✅ Download com marca d'água concluído!")
-        return
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId)
+        if (fetchError.name !== 'AbortError') {
+          console.warn("[ResultadoPage] Erro ao processar marca d'água:", fetchError)
+        }
       }
-    } catch (watermarkError) {
-      console.error("[ResultadoPage] Erro ao processar marca d'água:", watermarkError)
+    } catch (error) {
+      console.warn("[ResultadoPage] Erro ao processar marca d'água:", error)
     }
     
-    // Fallback: sempre baixar imagem original se tudo falhar
+    // Fallback: sempre fazer download direto da imagem original (rápido e confiável)
     try {
-      console.log("[ResultadoPage] Fazendo download da imagem original...")
+      console.log("[ResultadoPage] Fazendo download direto da imagem...")
       const link = document.createElement('a')
       link.href = currentLook.imagemUrl
       link.download = `look-${currentLook.id || Date.now()}.jpg`
@@ -1109,10 +1022,9 @@ export default function ResultadoPage() {
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-      console.log("[ResultadoPage] ✅ Download da imagem original concluído!")
+      console.log("[ResultadoPage] ✅ Download concluído!")
     } catch (fallbackError) {
       console.error("[ResultadoPage] Erro no download:", fallbackError)
-      alert("Erro ao baixar imagem. Tente abrir a imagem em uma nova aba e salvar manualmente.")
     }
   }, [currentLookIndex, looks, lojistaData])
 
@@ -1684,7 +1596,7 @@ export default function ResultadoPage() {
       {/* Modal de Detalhes do Favorito */}
       {selectedFavoriteDetail && (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-8 sm:pt-12 backdrop-blur-sm overflow-y-auto">
-          <div className="inline-block rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl mb-8">
+          <div className="w-full max-w-6xl rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl mb-8">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">Detalhes do Look</h2>
               <button 
@@ -1695,101 +1607,109 @@ export default function ResultadoPage() {
               </button>
             </div>
 
-            {/* Imagem do Favorito */}
-            {selectedFavoriteDetail.imagemUrl && (
-              <div className="relative mb-6 rounded-xl overflow-hidden inline-block">
-                <div className="relative w-full">
-                  <img
-                    src={selectedFavoriteDetail.imagemUrl}
-                    alt={selectedFavoriteDetail.productName || "Look favorito"}
-                    className="max-w-full h-auto object-contain rounded-lg"
-                  />
-                  {/* Marca d'água com logo da loja no canto superior esquerdo */}
-                  {lojistaData?.logoUrl && (
-                    <div className="absolute top-4 left-4 z-10 opacity-70">
-                      <div className="h-12 w-12 sm:h-16 sm:w-16 overflow-hidden rounded-full border-2 border-white/50 bg-white/60 p-1 shadow-lg">
-                        <Image
-                          src={lojistaData.logoUrl}
-                          alt={lojistaData.nome || "Logo"}
-                          width={64}
-                          height={64}
-                          className="h-full w-full object-contain"
-                        />
+            {/* Layout: Desktop (2 colunas) | Mobile (1 coluna) */}
+            <div className="flex flex-col lg:flex-row gap-6">
+              {/* Coluna Esquerda: Imagem */}
+              <div className="flex-shrink-0 lg:w-1/2">
+                {selectedFavoriteDetail.imagemUrl && (
+                  <div className="relative rounded-xl overflow-hidden">
+                    <div className="relative w-full">
+                      <img
+                        src={selectedFavoriteDetail.imagemUrl}
+                        alt={selectedFavoriteDetail.productName || "Look favorito"}
+                        className="w-full h-auto object-contain rounded-lg"
+                      />
+                      {/* Marca d'água com logo da loja no canto superior esquerdo */}
+                      {lojistaData?.logoUrl && (
+                        <div className="absolute top-4 left-4 z-10 opacity-70">
+                          <div className="h-12 w-12 sm:h-16 sm:w-16 overflow-hidden rounded-full border-2 border-white/50 bg-white/60 p-1 shadow-lg">
+                            <Image
+                              src={lojistaData.logoUrl}
+                              alt={lojistaData.nome || "Logo"}
+                              width={64}
+                              height={64}
+                              className="h-full w-full object-contain"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Coluna Direita: Conteúdo */}
+              <div className="flex-1 lg:w-1/2 flex flex-col">
+                {/* Botão Comprar Agora - Logo abaixo da foto no mobile, no topo no desktop */}
+                <div className="mb-6 w-full">
+                  <button
+                    onClick={handleCheckout}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-bold text-white text-base hover:opacity-90 transition relative overflow-hidden"
+                    style={{ 
+                      background: "linear-gradient(to right, #1e3a8a, #3b82f6, #60a5fa, #3b82f6, #1e3a8a)",
+                      animation: "pulse-glow-strong 1.5s ease-in-out infinite"
+                    }}
+                  >
+                    <ShoppingCart className="h-5 w-5" /> Comprar Agora
+                  </button>
+                </div>
+
+                {/* Produtos Selecionados - Se houver informações de produtos no favorito */}
+                {selectedFavoriteDetail.productName && (
+                  <div className="mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4 w-full">
+                    <h3 className="text-lg font-bold text-white mb-3">Produtos Selecionados</h3>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between p-2 rounded-lg bg-white/5">
+                        <span className="text-sm text-white">{selectedFavoriteDetail.productName}</span>
+                        {selectedFavoriteDetail.productPrice && (
+                          <span className="text-sm font-bold text-yellow-300">{formatPrice(selectedFavoriteDetail.productPrice)}</span>
+                        )}
                       </div>
                     </div>
-                  )}
+                  </div>
+                )}
+
+                {/* Informações sobre a Simulação */}
+                <div className="mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4 w-full">
+                  <p className="text-base text-white mb-3">
+                    Adoramos te ajudar a escolher! ✨ Esta imagem é uma simulação da nossa Inteligência Artificial para você visualizar o look.
+                  </p>
+                  <p className="text-sm text-white/80">
+                    <strong>Importante:</strong> Esta tecnologia serve como referência visual e não substitui a prova física. O ajuste exato, as dimensões e a textura real dos materiais podem apresentar diferenças em relação à simulação digital.
+                  </p>
                 </div>
-              </div>
-            )}
 
-            {/* Botão Comprar Agora - Logo abaixo da foto */}
-            <div className="mb-6 w-full">
-              <button
-                onClick={handleCheckout}
-                className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-bold text-white text-base hover:opacity-90 transition relative overflow-hidden"
-                style={{ 
-                  background: "linear-gradient(to right, #1e3a8a, #3b82f6, #60a5fa, #3b82f6, #1e3a8a)",
-                  animation: "pulse-glow-strong 1.5s ease-in-out infinite"
-                }}
-              >
-                <ShoppingCart className="h-5 w-5" /> Comprar Agora
-              </button>
-            </div>
+                {/* Botões */}
+                <div className="space-y-3 w-full mt-auto">
 
-            {/* Produtos Selecionados - Se houver informações de produtos no favorito */}
-            {selectedFavoriteDetail.productName && (
-              <div className="mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4 w-full">
-                <h3 className="text-lg font-bold text-white mb-3">Produtos Selecionados</h3>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between p-2 rounded-lg bg-white/5">
-                    <span className="text-sm text-white">{selectedFavoriteDetail.productName}</span>
-                    {selectedFavoriteDetail.productPrice && (
-                      <span className="text-sm font-bold text-yellow-300">{formatPrice(selectedFavoriteDetail.productPrice)}</span>
-                    )}
+                  {/* Botões Selecionar e Voltar */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => {
+                        if (!selectedFavoriteDetail.imagemUrl) {
+                          alert("Erro: Imagem do favorito não encontrada.")
+                          return
+                        }
+                        // Salvar a foto para substituir a foto de upload na tela de experimentar
+                        sessionStorage.setItem(`photo_${lojistaId}`, selectedFavoriteDetail.imagemUrl)
+                        console.log("[ResultadoPage] Foto do favorito salva para tela de experimentar:", selectedFavoriteDetail.imagemUrl)
+                        setSelectedFavoriteDetail(null)
+                        setShowFavoritesModal(false)
+                        // Redirecionar para a tela de experimentar
+                        window.location.href = `/${lojistaId}/experimentar`
+                      }}
+                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-green-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-green-700"
+                    >
+                      <Check className="h-5 w-5" /> Selecionar
+                    </button>
+                    <button
+                      onClick={() => setSelectedFavoriteDetail(null)}
+                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-gray-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-gray-700"
+                    >
+                      <ArrowLeft className="h-5 w-5" /> Voltar
+                    </button>
                   </div>
                 </div>
-              </div>
-            )}
-
-            {/* Informações sobre a Simulação */}
-            <div className="mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4 w-full">
-              <p className="text-base text-white mb-3">
-                Adoramos te ajudar a escolher! ✨ Esta imagem é uma simulação da nossa Inteligência Artificial para você visualizar o look.
-              </p>
-              <p className="text-sm text-white/80">
-                <strong>Importante:</strong> Esta tecnologia serve como referência visual e não substitui a prova física. O ajuste exato, as dimensões e a textura real dos materiais podem apresentar diferenças em relação à simulação digital.
-              </p>
-            </div>
-
-            {/* Botões */}
-            <div className="space-y-3 w-full">
-
-              {/* Botões Selecionar e Voltar */}
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => {
-                    if (!selectedFavoriteDetail.imagemUrl) {
-                      alert("Erro: Imagem do favorito não encontrada.")
-                      return
-                    }
-                    // Salvar a foto para substituir a foto de upload na tela de experimentar
-                    sessionStorage.setItem(`photo_${lojistaId}`, selectedFavoriteDetail.imagemUrl)
-                    console.log("[ResultadoPage] Foto do favorito salva para tela de experimentar:", selectedFavoriteDetail.imagemUrl)
-                    setSelectedFavoriteDetail(null)
-                    setShowFavoritesModal(false)
-                    // Redirecionar para a tela de experimentar
-                    window.location.href = `/${lojistaId}/experimentar`
-                  }}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-green-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-green-700"
-                >
-                  <Check className="h-5 w-5" /> Selecionar
-                </button>
-                <button
-                  onClick={() => setSelectedFavoriteDetail(null)}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-gray-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-gray-700"
-                >
-                  <ArrowLeft className="h-5 w-5" /> Voltar
-                </button>
               </div>
             </div>
           </div>
@@ -1799,7 +1719,7 @@ export default function ResultadoPage() {
       {/* Modal de Detalhes da Imagem Gerada */}
       {showImageDetailModal && currentLook && (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-8 sm:pt-12 backdrop-blur-sm overflow-y-auto">
-          <div className="inline-block rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl mb-8">
+          <div className="w-full max-w-6xl rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl mb-8">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">Detalhes do Look</h2>
               <button 
@@ -1810,76 +1730,82 @@ export default function ResultadoPage() {
               </button>
             </div>
 
-            {/* Imagem do Look */}
-            {currentLook.imagemUrl && (
-              <div className="relative mb-6 rounded-xl overflow-hidden inline-block">
-                <div className="relative w-full">
-                  <img
-                    src={currentLook.imagemUrl}
-                    alt={currentLook.titulo || "Look gerado"}
-                    className="max-w-full h-auto object-contain rounded-lg"
-                  />
-                  {/* Marca d'água com logo da loja no canto superior esquerdo */}
-                  {lojistaData?.logoUrl && (
-                    <div className="absolute top-4 left-4 z-10 opacity-70">
-                      <div className="h-12 w-12 sm:h-16 sm:w-16 overflow-hidden rounded-full border-2 border-white/50 bg-white/60 p-1 shadow-lg">
-                        <Image
-                          src={lojistaData.logoUrl}
-                          alt={lojistaData.nome || "Logo"}
-                          width={64}
-                          height={64}
-                          className="h-full w-full object-contain"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Botão Comprar Agora - Logo abaixo da foto */}
-            <div className="mb-6 w-full">
-              <button
-                onClick={handleCheckout}
-                className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-bold text-white text-base hover:opacity-90 transition relative overflow-hidden"
-                style={{ 
-                  background: "linear-gradient(to right, #1e3a8a, #3b82f6, #60a5fa, #3b82f6, #1e3a8a)",
-                  animation: "pulse-glow-strong 1.5s ease-in-out infinite"
-                }}
-              >
-                <ShoppingCart className="h-5 w-5" /> Comprar Agora
-              </button>
-            </div>
-
-            {/* Produtos Selecionados */}
-            {selectedProducts.length > 0 && (
-              <div className="mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4 w-full">
-                <h3 className="text-lg font-bold text-white mb-3">Produtos Selecionados</h3>
-                <div className="space-y-2">
-                  {selectedProducts.map((produto: any, index: number) => (
-                    <div key={produto.id || index} className="flex items-center justify-between p-2 rounded-lg bg-white/5">
-                      <span className="text-sm text-white">{produto.nome}</span>
-                      {produto.preco && (
-                        <span className="text-sm font-bold text-yellow-300">{formatPrice(produto.preco)}</span>
+            {/* Layout: Desktop (2 colunas) | Mobile (1 coluna) */}
+            <div className="flex flex-col lg:flex-row gap-6">
+              {/* Coluna Esquerda: Imagem */}
+              <div className="flex-shrink-0 lg:w-1/2">
+                {currentLook.imagemUrl && (
+                  <div className="relative rounded-xl overflow-hidden">
+                    <div className="relative w-full">
+                      <img
+                        src={currentLook.imagemUrl}
+                        alt={currentLook.titulo || "Look gerado"}
+                        className="w-full h-auto object-contain rounded-lg"
+                      />
+                      {/* Marca d'água com logo da loja no canto superior esquerdo */}
+                      {lojistaData?.logoUrl && (
+                        <div className="absolute top-4 left-4 z-10 opacity-70">
+                          <div className="h-12 w-12 sm:h-16 sm:w-16 overflow-hidden rounded-full border-2 border-white/50 bg-white/60 p-1 shadow-lg">
+                            <Image
+                              src={lojistaData.logoUrl}
+                              alt={lojistaData.nome || "Logo"}
+                              width={64}
+                              height={64}
+                              className="h-full w-full object-contain"
+                            />
+                          </div>
+                        </div>
                       )}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
               </div>
-            )}
 
-            {/* Informações sobre a Simulação */}
-            <div className="mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4 w-full">
-              <p className="text-base text-white mb-3">
-                Adoramos te ajudar a escolher! ✨ Esta imagem é uma simulação da nossa Inteligência Artificial para você visualizar o look.
-              </p>
-              <p className="text-sm text-white/80">
-                <strong>Importante:</strong> Esta tecnologia serve como referência visual e não substitui a prova física. O ajuste exato, as dimensões e a textura real dos materiais podem apresentar diferenças em relação à simulação digital.
-              </p>
-            </div>
+              {/* Coluna Direita: Conteúdo */}
+              <div className="flex-1 lg:w-1/2 flex flex-col">
+                {/* Botão Comprar Agora - Logo abaixo da foto no mobile, no topo no desktop */}
+                <div className="mb-6 w-full">
+                  <button
+                    onClick={handleCheckout}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-bold text-white text-base hover:opacity-90 transition relative overflow-hidden"
+                    style={{ 
+                      background: "linear-gradient(to right, #1e3a8a, #3b82f6, #60a5fa, #3b82f6, #1e3a8a)",
+                      animation: "pulse-glow-strong 1.5s ease-in-out infinite"
+                    }}
+                  >
+                    <ShoppingCart className="h-5 w-5" /> Comprar Agora
+                  </button>
+                </div>
 
-            {/* Botões */}
-            <div className="space-y-3 w-full">
+                {/* Produtos Selecionados */}
+                {selectedProducts.length > 0 && (
+                  <div className="mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4 w-full">
+                    <h3 className="text-lg font-bold text-white mb-3">Produtos Selecionados</h3>
+                    <div className="space-y-2">
+                      {selectedProducts.map((produto: any, index: number) => (
+                        <div key={produto.id || index} className="flex items-center justify-between p-2 rounded-lg bg-white/5">
+                          <span className="text-sm text-white">{produto.nome}</span>
+                          {produto.preco && (
+                            <span className="text-sm font-bold text-yellow-300">{formatPrice(produto.preco)}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Informações sobre a Simulação */}
+                <div className="mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4 w-full">
+                  <p className="text-base text-white mb-3">
+                    Adoramos te ajudar a escolher! ✨ Esta imagem é uma simulação da nossa Inteligência Artificial para você visualizar o look.
+                  </p>
+                  <p className="text-sm text-white/80">
+                    <strong>Importante:</strong> Esta tecnologia serve como referência visual e não substitui a prova física. O ajuste exato, as dimensões e a textura real dos materiais podem apresentar diferenças em relação à simulação digital.
+                  </p>
+                </div>
+
+                {/* Botões */}
+                <div className="space-y-3 w-full mt-auto">
 
               {/* Botões de Ação */}
               <div className="grid grid-cols-4 gap-3">
@@ -1917,13 +1843,15 @@ export default function ResultadoPage() {
                 </button>
               </div>
 
-              {/* Botão Voltar */}
-              <button
-                onClick={() => setShowImageDetailModal(false)}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-gray-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-gray-700"
-              >
-                <ArrowLeft className="h-5 w-5" /> Voltar
-              </button>
+                  {/* Botão Voltar */}
+                  <button
+                    onClick={() => setShowImageDetailModal(false)}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-gray-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-gray-700"
+                  >
+                    <ArrowLeft className="h-5 w-5" /> Voltar
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
