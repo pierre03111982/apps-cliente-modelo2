@@ -395,35 +395,14 @@ export default function ResultadoPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentLookIndex, fromFavoritos, looks, lojistaId])
 
-  // Recarregar favoritos quando o modal for aberto OU quando der like (com múltiplas tentativas para garantir)
+  // Recarregar favoritos quando o modal for aberto (apenas uma vez para evitar piscar)
   useEffect(() => {
     if (showFavoritesModal && lojistaId) {
       console.log("[ResultadoPage] Modal de favoritos aberto - recarregando favoritos...")
-      // Recarregar imediatamente
       loadFavorites()
-      // Recarregar novamente após 300ms para garantir que o último like apareça
-      const timeout1 = setTimeout(() => {
-        console.log("[ResultadoPage] Recarregando favoritos após abertura do modal (tentativa 2)...")
-        loadFavorites()
-      }, 300)
-      // Recarregar novamente após 800ms
-      const timeout2 = setTimeout(() => {
-        console.log("[ResultadoPage] Recarregando favoritos após abertura do modal (tentativa 3)...")
-        loadFavorites()
-      }, 800)
-      // Recarregar novamente após 1500ms (garantir)
-      const timeout3 = setTimeout(() => {
-        console.log("[ResultadoPage] Recarregando favoritos após abertura do modal (tentativa 4)...")
-        loadFavorites()
-      }, 1500)
-      return () => {
-        clearTimeout(timeout1)
-        clearTimeout(timeout2)
-        clearTimeout(timeout3)
-      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showFavoritesModal, lojistaId, votedType])
+  }, [showFavoritesModal, lojistaId])
 
   // Carregar favoritos (simplificado como no modelo-3)
   const loadFavorites = useCallback(async () => {
@@ -821,6 +800,20 @@ export default function ResultadoPage() {
         return
       }
 
+      // Verificar se a imagem já está nos favoritos (evitar duplicatas)
+      const imagemUrl = currentLook.imagemUrl
+      const alreadyInFavorites = favorites.some((fav: any) => {
+        return fav.imagemUrl === imagemUrl || fav.compositionId === compositionId
+      })
+      
+      if (alreadyInFavorites) {
+        console.log("[ResultadoPage] Imagem já está nos favoritos, atualizando apenas o status de voto")
+        setHasVoted(true)
+        setVotedType("like")
+        setLoadingAction(null)
+        return
+      }
+
       // Enviar like imediatamente com a imagem original (não bloquear)
       console.log("[ResultadoPage] Salvando like:", {
         lojistaId,
@@ -858,24 +851,11 @@ export default function ResultadoPage() {
         
         console.log("[ResultadoPage] Like salvo com sucesso - imagem será salva automaticamente nos favoritos")
         
-        // Recarregar favoritos múltiplas vezes para garantir que o último like apareça
-        // Primeira tentativa após 300ms
+        // Recarregar favoritos apenas uma vez após um pequeno delay para dar tempo ao backend processar
         setTimeout(async () => {
-          console.log("[ResultadoPage] Recarregando favoritos (tentativa 1)...")
+          console.log("[ResultadoPage] Recarregando favoritos após like...")
           await loadFavorites()
-        }, 300)
-        
-        // Segunda tentativa após 800ms
-        setTimeout(async () => {
-          console.log("[ResultadoPage] Recarregando favoritos (tentativa 2)...")
-          await loadFavorites()
-        }, 800)
-        
-        // Terceira tentativa após 1500ms (garantir)
-        setTimeout(async () => {
-          console.log("[ResultadoPage] Recarregando favoritos (tentativa 3)...")
-          await loadFavorites()
-        }, 1500)
+        }, 500)
       } else {
         console.error("[ResultadoPage] Erro ao registrar like:", response.status, responseData)
         const errorMessage = responseData.error || "Erro ao salvar like. Tente novamente."
@@ -1554,10 +1534,6 @@ export default function ResultadoPage() {
                               console.log("[ResultadoPage] Botão Favoritos clicado - recarregando favoritos antes de abrir modal...")
                               // Recarregar favoritos antes de abrir o modal
                               await loadFavorites()
-                              // Aguardar um pouco e recarregar novamente
-                              setTimeout(async () => {
-                                await loadFavorites()
-                              }, 200)
                               // Abrir modal
                               setShowFavoritesModal(true)
                             }} 
@@ -1997,24 +1973,11 @@ export default function ResultadoPage() {
         
         console.log("[ResultadoPage] Like salvo com sucesso - imagem será salva automaticamente nos favoritos")
         
-        // Recarregar favoritos múltiplas vezes para garantir que o último like apareça
-        // Primeira tentativa após 300ms
+        // Recarregar favoritos apenas uma vez após um pequeno delay para dar tempo ao backend processar
         setTimeout(async () => {
-          console.log("[ResultadoPage] Recarregando favoritos (tentativa 1)...")
+          console.log("[ResultadoPage] Recarregando favoritos após like...")
           await loadFavorites()
-        }, 300)
-        
-        // Segunda tentativa após 800ms
-        setTimeout(async () => {
-          console.log("[ResultadoPage] Recarregando favoritos (tentativa 2)...")
-          await loadFavorites()
-        }, 800)
-        
-        // Terceira tentativa após 1500ms (garantir)
-        setTimeout(async () => {
-          console.log("[ResultadoPage] Recarregando favoritos (tentativa 3)...")
-          await loadFavorites()
-        }, 1500)
+        }, 500)
       } else {
         console.error("[ResultadoPage] Erro ao registrar like:", response.status, responseData)
         const errorMessage = responseData.error || "Erro ao salvar like. Tente novamente."
@@ -2693,10 +2656,6 @@ export default function ResultadoPage() {
                               console.log("[ResultadoPage] Botão Favoritos clicado - recarregando favoritos antes de abrir modal...")
                               // Recarregar favoritos antes de abrir o modal
                               await loadFavorites()
-                              // Aguardar um pouco e recarregar novamente
-                              setTimeout(async () => {
-                                await loadFavorites()
-                              }, 200)
                               // Abrir modal
                               setShowFavoritesModal(true)
                             }} 
@@ -3136,24 +3095,11 @@ export default function ResultadoPage() {
         
         console.log("[ResultadoPage] Like salvo com sucesso - imagem será salva automaticamente nos favoritos")
         
-        // Recarregar favoritos múltiplas vezes para garantir que o último like apareça
-        // Primeira tentativa após 300ms
+        // Recarregar favoritos apenas uma vez após um pequeno delay para dar tempo ao backend processar
         setTimeout(async () => {
-          console.log("[ResultadoPage] Recarregando favoritos (tentativa 1)...")
+          console.log("[ResultadoPage] Recarregando favoritos após like...")
           await loadFavorites()
-        }, 300)
-        
-        // Segunda tentativa após 800ms
-        setTimeout(async () => {
-          console.log("[ResultadoPage] Recarregando favoritos (tentativa 2)...")
-          await loadFavorites()
-        }, 800)
-        
-        // Terceira tentativa após 1500ms (garantir)
-        setTimeout(async () => {
-          console.log("[ResultadoPage] Recarregando favoritos (tentativa 3)...")
-          await loadFavorites()
-        }, 1500)
+        }, 500)
       } else {
         console.error("[ResultadoPage] Erro ao registrar like:", response.status, responseData)
         const errorMessage = responseData.error || "Erro ao salvar like. Tente novamente."
@@ -3832,10 +3778,6 @@ export default function ResultadoPage() {
                               console.log("[ResultadoPage] Botão Favoritos clicado - recarregando favoritos antes de abrir modal...")
                               // Recarregar favoritos antes de abrir o modal
                               await loadFavorites()
-                              // Aguardar um pouco e recarregar novamente
-                              setTimeout(async () => {
-                                await loadFavorites()
-                              }, 200)
                               // Abrir modal
                               setShowFavoritesModal(true)
                             }} 
