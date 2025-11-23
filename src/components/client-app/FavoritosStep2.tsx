@@ -150,8 +150,8 @@ export function FavoritosStep2({
 
       {/* Modal com todos os favoritos */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-4xl rounded-xl border border-white/20 bg-gradient-to-br from-purple-600/90 via-indigo-700/90 to-blue-800/90 p-6 shadow-xl shadow-black/30 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-8 sm:pt-12 backdrop-blur-sm overflow-y-auto">
+          <div className="w-full max-w-4xl rounded-xl border border-white/20 bg-gradient-to-br from-purple-600/90 via-indigo-700/90 to-blue-800/90 p-6 shadow-xl shadow-black/30 mb-8">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
                 <Heart className="h-6 w-6 text-pink-400 fill-pink-400" />

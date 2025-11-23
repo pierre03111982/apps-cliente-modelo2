@@ -244,18 +244,36 @@ export default function ResultadoPage() {
   useEffect(() => {
     if (!fromFavoritos && looks.length > 0 && looks[currentLookIndex]) {
       const checkVote = async () => {
+        // Primeiro verificar se novas imagens foram geradas (prioridade máxima)
+        const newLooksGenerated = sessionStorage.getItem(`new_looks_generated_${lojistaId}`)
+        console.log("[ResultadoPage] Verificando voto - newLooksGenerated:", newLooksGenerated)
+        
+        if (newLooksGenerated === "true") {
+          // Nova imagem gerada - sempre mostrar botões de like/dislike
+          console.log("[ResultadoPage] Nova imagem gerada detectada - resetando voto")
+          setHasVoted(false)
+          setVotedType(null)
+          // Remover flag
+          sessionStorage.removeItem(`new_looks_generated_${lojistaId}`)
+          return
+        }
+        
         const currentLook = looks[currentLookIndex]
+        console.log("[ResultadoPage] Verificando voto para look:", currentLook.id, "compositionId:", currentLook.compositionId)
+        
         let compositionId = currentLook.compositionId
         
-        // Se não houver compositionId (look refinado), criar um ID único baseado na imagemUrl
+        // Se não houver compositionId (look refinado ou remixado), criar um ID único baseado na imagemUrl
         if (!compositionId && currentLook.imagemUrl) {
           const imageHash = currentLook.imagemUrl.split('/').pop()?.split('?')[0] || `refined-${Date.now()}`
           compositionId = `refined-${imageHash}`
+          console.log("[ResultadoPage] CompositionId gerado para look sem ID:", compositionId)
         }
         
         // Verificar status de voto
         if (compositionId) {
           const voteStatus = await checkVoteStatus(compositionId)
+          console.log("[ResultadoPage] Status de voto verificado:", voteStatus)
           if (voteStatus) {
             setHasVoted(true)
             setVotedType(voteStatus === "like" ? "like" : "dislike")
@@ -264,6 +282,7 @@ export default function ResultadoPage() {
             setVotedType(null)
           }
         } else {
+          console.log("[ResultadoPage] Sem compositionId - resetando voto")
           setHasVoted(false)
           setVotedType(null)
         }
@@ -271,7 +290,7 @@ export default function ResultadoPage() {
       checkVote()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentLookIndex, fromFavoritos, looks])
+  }, [currentLookIndex, fromFavoritos, looks, lojistaId])
 
   // Recarregar favoritos quando o modal for aberto
   useEffect(() => {
@@ -908,7 +927,7 @@ export default function ResultadoPage() {
         // Marcar que uma nova imagem foi gerada (para resetar hasVoted na tela de resultado)
         sessionStorage.setItem(`new_looks_generated_${lojistaId}`, "true")
         
-        // Resetar votação para o novo look
+        // Resetar votação para o novo look ANTES de recarregar
         setHasVoted(false)
         setVotedType(null)
         setCurrentLookIndex(0)
@@ -1292,7 +1311,7 @@ export default function ResultadoPage() {
 
       {/* Modal de Favoritos (mantido como está) */}
       {showFavoritesModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-8 sm:pt-12 backdrop-blur-sm overflow-y-auto">
           <div className="w-full max-w-4xl rounded-xl neo-card p-6 max-h-[90vh] overflow-y-auto">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">Meus Favoritos</h2>
@@ -1365,8 +1384,8 @@ export default function ResultadoPage() {
 
       {/* Modal de Detalhes do Favorito */}
       {selectedFavoriteDetail && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-4xl rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-8 sm:pt-12 backdrop-blur-sm overflow-y-auto">
+          <div className="w-full max-w-4xl rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl mb-8">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">Detalhes do Look</h2>
               <button 
@@ -1466,8 +1485,8 @@ export default function ResultadoPage() {
 
       {/* Modal de Detalhes da Imagem Gerada */}
       {showImageDetailModal && currentLook && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-4xl rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-8 sm:pt-12 backdrop-blur-sm overflow-y-auto">
+          <div className="w-full max-w-4xl rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl mb-8">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">Detalhes do Look</h2>
               <button 

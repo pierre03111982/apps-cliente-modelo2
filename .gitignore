@@ -42,3 +42,10 @@ next-env.d.ts
 
 # OS
 Thumbs.db
+
+# Arquivos de backup
+*BACKUP*
+*backup*
+*_backup.*
+*.bak
+*.old

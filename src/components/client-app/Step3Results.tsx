@@ -731,8 +731,8 @@ export function Step3Results({
       </section>
 
       {showFavorites && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-          <div className="w-full max-w-5xl rounded-2xl border border-slate-700 bg-slate-950 p-6 shadow-2xl shadow-black/70">
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 px-4 pt-8 sm:pt-12 overflow-y-auto">
+          <div className="w-full max-w-5xl rounded-2xl border border-slate-700 bg-slate-950 p-6 shadow-2xl shadow-black/70 mb-8">
             {!selectedFavorite ? (
               <>
                 <div className="mb-4 flex items-center justify-between">
