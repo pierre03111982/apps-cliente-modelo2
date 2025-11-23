@@ -18,6 +18,7 @@ import {
   ArrowLeftCircle,
   ShoppingCart,
 } from "lucide-react"
+import { ClockAnimation } from "../ClockAnimation"
 import { CLOSET_BACKGROUND_IMAGE } from "@/lib/constants" // Esta constante não será mais usada
 import type { LojistaData, Produto, GeneratedLook } from "@/lib/types"
 
@@ -740,7 +741,7 @@ export function ExperimentarView({
               </div>
             ) : isGenerating ? (
               <>
-                <div className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 animate-spin rounded-full border-3 border-white border-t-transparent" />
+                <ClockAnimation size={28} className="sm:w-7 sm:h-7 md:w-8 md:h-8" />
                 <span className="hidden sm:inline">Gerando...</span>
                 <span className="sm:hidden">...</span>
               </>

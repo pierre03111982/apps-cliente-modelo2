@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import { ArrowLeft, ThumbsUp, ThumbsDown, Share2, ShoppingCart, Heart, RefreshCw, Home, Instagram, Facebook, Music2, MessageCircle, X, Sparkles, ArrowLeftCircle, Check, Download } from "lucide-react"
+import { ClockAnimation } from "@/components/ClockAnimation"
 import { CLOSET_BACKGROUND_IMAGE } from "@/lib/constants"
 import { fetchLojistaData } from "@/lib/firebaseQueries"
 import type { LojistaData, GeneratedLook } from "@/lib/types"
@@ -1104,7 +1105,7 @@ export default function ResultadoPage() {
           >
             <div className="flex items-center justify-center gap-2 w-full overflow-hidden">
               <div className="flex-shrink-0">
-                <RefreshCw className="h-4 w-4 animate-spin" />
+                <ClockAnimation size={20} />
               </div>
               <div className="flex-1 overflow-hidden text-center">
                 <div 
@@ -1386,7 +1387,11 @@ export default function ResultadoPage() {
                           disabled={loadingAction === "remix"} 
                           className="w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold text-white text-sm transition shadow-md bg-green-600 hover:bg-green-700 disabled:opacity-50"
                         >
-                          <RefreshCw className={`h-4 w-4 ${loadingAction === "remix" ? "animate-spin" : ""}`} /> 
+                          {loadingAction === "remix" ? (
+                            <ClockAnimation size={20} />
+                          ) : (
+                            <RefreshCw className="h-4 w-4" />
+                          )}
                           {loadingAction === "remix" ? "Gerando..." : "Remixar Look"}
                         </button>
                       )}
