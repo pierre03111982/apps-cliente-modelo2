@@ -423,16 +423,18 @@ export default function ResultadoPage() {
 
       if (!clienteId) return
 
-      // Adicionar timestamp para evitar cache
-      const response = await fetch(
-        `/api/cliente/favoritos?lojistaId=${encodeURIComponent(lojistaId)}&customerId=${encodeURIComponent(clienteId)}&_t=${Date.now()}`,
-        {
-          cache: 'no-store',
-          headers: {
-            'Cache-Control': 'no-cache',
-          }
+      // Adicionar timestamp para evitar cache (forçar sempre buscar dados frescos)
+      const timestamp = Date.now()
+      const url = `/api/cliente/favoritos?lojistaId=${encodeURIComponent(lojistaId)}&customerId=${encodeURIComponent(clienteId)}&_t=${timestamp}`
+      console.log("[ResultadoPage] Buscando favoritos:", { lojistaId, clienteId, timestamp })
+      
+      const response = await fetch(url, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
         }
-      )
+      })
 
       if (response.ok) {
         const data = await response.json()
@@ -484,6 +486,18 @@ export default function ResultadoPage() {
         const limitedFavorites = sortedFavorites.slice(0, 10)
         
         console.log("[ResultadoPage] Favoritos carregados:", limitedFavorites.length, "de", likesOnly.length, "likes totais")
+        console.log("[ResultadoPage] Primeiro favorito (mais recente):", limitedFavorites[0] ? {
+          id: limitedFavorites[0].id,
+          imagemUrl: limitedFavorites[0].imagemUrl?.substring(0, 50),
+          createdAt: limitedFavorites[0].createdAt,
+          action: limitedFavorites[0].action
+        } : "Nenhum")
+        console.log("[ResultadoPage] Último favorito (mais antigo):", limitedFavorites[limitedFavorites.length - 1] ? {
+          id: limitedFavorites[limitedFavorites.length - 1].id,
+          imagemUrl: limitedFavorites[limitedFavorites.length - 1].imagemUrl?.substring(0, 50),
+          createdAt: limitedFavorites[limitedFavorites.length - 1].createdAt,
+          action: limitedFavorites[limitedFavorites.length - 1].action
+        } : "Nenhum")
         
         setFavorites(limitedFavorites)
       }
@@ -828,10 +842,24 @@ export default function ResultadoPage() {
         
         console.log("[ResultadoPage] Like salvo com sucesso - imagem será salva automaticamente nos favoritos")
         
-        // Aguardar um pouco antes de atualizar favoritos para garantir que o backend processou (igual modelo-3)
+        // Recarregar favoritos múltiplas vezes para garantir que o último like apareça
+        // Primeira tentativa após 300ms
         setTimeout(async () => {
+          console.log("[ResultadoPage] Recarregando favoritos (tentativa 1)...")
           await loadFavorites()
-        }, 500)
+        }, 300)
+        
+        // Segunda tentativa após 800ms
+        setTimeout(async () => {
+          console.log("[ResultadoPage] Recarregando favoritos (tentativa 2)...")
+          await loadFavorites()
+        }, 800)
+        
+        // Terceira tentativa após 1500ms (garantir)
+        setTimeout(async () => {
+          console.log("[ResultadoPage] Recarregando favoritos (tentativa 3)...")
+          await loadFavorites()
+        }, 1500)
       } else {
         console.error("[ResultadoPage] Erro ao registrar like:", response.status, responseData)
         const errorMessage = responseData.error || "Erro ao salvar like. Tente novamente."
