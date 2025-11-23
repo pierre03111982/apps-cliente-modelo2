@@ -867,7 +867,7 @@ export default function ResultadoPage() {
       alert("Erro ao salvar like. Tente novamente.")
       setLoadingAction(null)
     }
-  }, [hasVoted, currentLookIndex, looks, lojistaId, lojistaData, loadFavorites])
+  }, [hasVoted, currentLookIndex, looks, lojistaId, lojistaData, loadFavorites, favorites])
 
   // Handle dislike
   const handleDislike = useCallback(async () => {
@@ -1989,7 +1989,7 @@ export default function ResultadoPage() {
       alert("Erro ao salvar like. Tente novamente.")
       setLoadingAction(null)
     }
-  }, [hasVoted, currentLookIndex, looks, lojistaId, lojistaData, loadFavorites])
+  }, [hasVoted, currentLookIndex, looks, lojistaId, lojistaData, loadFavorites, favorites])
 
   // Handle dislike
   const handleDislike = useCallback(async () => {
@@ -3111,7 +3111,7 @@ export default function ResultadoPage() {
       alert("Erro ao salvar like. Tente novamente.")
       setLoadingAction(null)
     }
-  }, [hasVoted, currentLookIndex, looks, lojistaId, lojistaData, loadFavorites])
+  }, [hasVoted, currentLookIndex, looks, lojistaId, lojistaData, loadFavorites, favorites])
 
   // Handle dislike
   const handleDislike = useCallback(async () => {
