@@ -12,7 +12,10 @@ export default function NotFound() {
           Acesse o aplicativo usando o link completo com o ID da loja:
         </p>
         <p className="text-sm text-gray-500 break-all mb-6">
-          https://apps-cliente-modelo1.vercel.app/[lojistaId]/login
+          https://app2.experimenteai.com.br/[lojistaId]/login
+        </p>
+        <p className="text-sm text-gray-500 break-all mb-6">
+          ou localhost:3005/[lojistaId]/login
         </p>
       </div>
     </div>

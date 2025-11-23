@@ -1,5 +1,9 @@
 "use client"
 
+// Forçar renderização dinâmica para evitar erro 404 em rotas dinâmicas
+export const dynamic = 'force-dynamic'
+export const dynamicParams = true
+
 import { useState, useEffect, Suspense } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
