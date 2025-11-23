@@ -305,7 +305,7 @@ function LoginPageContent() {
               // Se encontrar mesmo WhatsApp em outra loja ou mesma loja, verificar se é outro dispositivo
               if (storedWhatsapp === cleanWhatsapp && storedLojistaId === lojistaId) {
                 const storedDeviceId = storedData.deviceId
-                const currentDeviceId = `${navigator.userAgent}-${Date.now()}`
+                const currentDeviceId = getOrCreateDeviceId()
                 
                 // Se deviceId diferente, é outro dispositivo
                 if (storedDeviceId && storedDeviceId !== currentDeviceId) {
@@ -326,13 +326,14 @@ function LoginPageContent() {
         }
 
         // Verificar no backend também
+        const currentDeviceIdForRegister = getOrCreateDeviceId()
         const sessionCheckResponse = await fetch("/api/cliente/check-session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             lojistaId,
             whatsapp: cleanWhatsapp,
-            deviceId: typeof window !== 'undefined' ? `${navigator.userAgent}-${Date.now()}` : 'server',
+            deviceId: currentDeviceIdForRegister,
           }),
         })
 
