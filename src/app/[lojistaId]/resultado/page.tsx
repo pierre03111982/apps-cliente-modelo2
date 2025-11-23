@@ -1702,12 +1702,12 @@ export default function ResultadoPage() {
       {/* Modal de Detalhes da Imagem Gerada */}
       {showImageDetailModal && currentLook && (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-8 sm:pt-12 backdrop-blur-sm overflow-y-auto">
-          <div className="w-full max-w-4xl rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl mb-8">
-            <div className="mb-6 flex items-center justify-between">
+          <div className="inline-block rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl mb-8">
+            <div className="mb-4 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">Detalhes do Look</h2>
               <button 
                 onClick={() => setShowImageDetailModal(false)} 
-                className="text-white/70 hover:text-white transition"
+                className="text-white/70 hover:text-white transition ml-4"
               >
                 <X className="h-6 w-6" />
               </button>
@@ -1715,24 +1715,23 @@ export default function ResultadoPage() {
 
             {/* Imagem do Look */}
             {currentLook.imagemUrl && (
-              <div className="relative mb-6 rounded-xl overflow-hidden">
-                <div className="relative aspect-[3/4] w-full">
-                  <Image 
-                    src={currentLook.imagemUrl} 
-                    alt={currentLook.titulo || "Look gerado"} 
-                    fill 
-                    className="object-contain bg-black/20" 
+              <div className="relative mb-6 rounded-xl overflow-hidden inline-block">
+                <div className="relative w-full">
+                  <img
+                    src={currentLook.imagemUrl}
+                    alt={currentLook.titulo || "Look gerado"}
+                    className="max-w-full h-auto object-contain rounded-lg"
                   />
                   {/* Marca d'água com logo da loja no canto superior esquerdo */}
                   {lojistaData?.logoUrl && (
-                    <div className="absolute top-4 left-4 z-10 opacity-60">
-                      <div className="h-12 w-12 sm:h-14 sm:w-14 overflow-hidden rounded-full border border-white/30 bg-white/40 p-0.5">
+                    <div className="absolute top-4 left-4 z-10 opacity-70">
+                      <div className="h-12 w-12 sm:h-16 sm:w-16 overflow-hidden rounded-full border-2 border-white/50 bg-white/60 p-1 shadow-lg">
                         <Image
                           src={lojistaData.logoUrl}
                           alt={lojistaData.nome || "Logo"}
-                          width={56}
-                          height={56}
-                          className="h-full w-full object-contain opacity-80"
+                          width={64}
+                          height={64}
+                          className="h-full w-full object-contain"
                         />
                       </div>
                     </div>
@@ -1742,7 +1741,7 @@ export default function ResultadoPage() {
             )}
 
             {/* Informações sobre a Simulação */}
-            <div className="mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4">
+            <div className="mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4 w-full">
               <p className="text-base text-white mb-3">
                 Adoramos te ajudar a escolher! ✨ Esta imagem é uma simulação da nossa Inteligência Artificial para você visualizar o look.
               </p>
@@ -1753,7 +1752,7 @@ export default function ResultadoPage() {
 
             {/* Produtos Selecionados */}
             {selectedProducts.length > 0 && (
-              <div className="mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4">
+              <div className="mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4 w-full">
                 <h3 className="text-lg font-bold text-white mb-3">Produtos Selecionados</h3>
                 <div className="space-y-2">
                   {selectedProducts.map((produto: any, index: number) => (
@@ -1769,7 +1768,7 @@ export default function ResultadoPage() {
             )}
 
             {/* Botões */}
-            <div className="space-y-3">
+            <div className="space-y-3 w-full">
               {/* Botão Comprar Agora */}
               <button
                 onClick={handleCheckout}
