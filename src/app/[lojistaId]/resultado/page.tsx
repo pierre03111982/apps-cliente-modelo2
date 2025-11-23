@@ -687,24 +687,71 @@ export default function ResultadoPage() {
 
   // Handle dislike
   const handleDislike = useCallback(async () => {
-    if (hasVoted) return
+    if (hasVoted) {
+      console.log("[ResultadoPage] Já votado, ignorando dislike")
+      return
+    }
 
     const currentLook = looks[currentLookIndex]
-    if (!currentLook) return
-
-    // Para looks refinados sem compositionId, usar um ID único baseado na imagemUrl
-    let compositionId = currentLook.compositionId
-    if (!compositionId && currentLook.imagemUrl) {
-      const imageHash = currentLook.imagemUrl.split('/').pop()?.split('?')[0] || `refined-${Date.now()}`
-      compositionId = `refined-${imageHash}`
+    if (!currentLook || !lojistaId) {
+      console.error("[ResultadoPage] Look ou lojistaId não encontrado")
+      return
     }
 
-    const success = await registerAction("dislike")
-    if (success) {
-      setHasVoted(true)
-      setVotedType("dislike")
+    setLoadingAction("dislike")
+
+    try {
+      const stored = localStorage.getItem(`cliente_${lojistaId}`)
+      const clienteData = stored ? JSON.parse(stored) : null
+      const clienteId = clienteData?.clienteId || null
+
+      // Para looks refinados sem compositionId, usar um ID único baseado na imagemUrl
+      let compositionId = currentLook.compositionId
+      let jobId = currentLook.jobId
+      
+      if (!compositionId && currentLook.imagemUrl) {
+        const imageHash = currentLook.imagemUrl.split('/').pop()?.split('?')[0] || `refined-${Date.now()}`
+        compositionId = `refined-${imageHash}`
+      }
+
+      console.log("[ResultadoPage] Registrando dislike:", { compositionId, jobId, clienteId })
+
+      const response = await fetch("/api/actions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lojistaId,
+          action: "dislike",
+          compositionId: compositionId || null,
+          jobId: jobId || null,
+          customerId: clienteId,
+          customerName: clienteData?.nome || null,
+          productName: currentLook.produtoNome,
+          productPrice: currentLook.produtoPreco || null,
+          // Dislike não envia imagemUrl
+        }),
+      })
+
+      const responseData = await response.json().catch(() => ({}))
+
+      console.log("[ResultadoPage] Resposta do servidor (dislike):", response.status, responseData)
+
+      if (response.ok && responseData.success !== false) {
+        setHasVoted(true)
+        setVotedType("dislike")
+        console.log("[ResultadoPage] Dislike salvo com sucesso")
+      } else {
+        console.error("[ResultadoPage] Erro ao registrar dislike:", response.status, responseData)
+        const errorMessage = responseData.error || "Erro ao salvar dislike. Tente novamente."
+        alert(errorMessage)
+      }
+    } catch (error) {
+      console.error("[ResultadoPage] Erro ao registrar dislike:", error)
+      alert("Erro ao salvar dislike. Tente novamente.")
+    } finally {
+      setLoadingAction(null)
     }
-  }, [hasVoted, currentLookIndex, looks, lojistaId, registerAction])
+  }, [hasVoted, currentLookIndex, looks, lojistaId])
 
   // Handle share
   const handleShare = useCallback(async () => {
@@ -1161,22 +1208,42 @@ export default function ResultadoPage() {
                   <p className="mb-3 font-semibold text-white">Curtiu o Look?</p>
                   <div className="flex justify-center gap-4">
                     <button 
-                        onClick={handleDislike} 
-                        disabled={isRemixing}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          console.log("[ResultadoPage] Botão dislike clicado")
+                          handleDislike()
+                        }} 
+                        disabled={isRemixing || hasVoted || loadingAction === "dislike"}
                         className={`flex flex-1 items-center justify-center gap-2 rounded-full bg-red-600 px-6 py-2 text-white font-semibold shadow-lg transition ${
-                          isRemixing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-red-700'
+                          isRemixing || hasVoted || loadingAction === "dislike" ? 'opacity-50 cursor-not-allowed' : 'hover:bg-red-700 active:scale-95'
                         }`}
                     >
-                        <ThumbsDown className="h-5 w-5" /> Não
+                        {loadingAction === "dislike" ? (
+                          <RefreshCw className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <ThumbsDown className="h-5 w-5" />
+                        )}
+                        Não
                     </button>
                     <button 
-                        onClick={handleLike} 
-                        disabled={isRemixing}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          console.log("[ResultadoPage] Botão like clicado")
+                          handleLike()
+                        }} 
+                        disabled={isRemixing || hasVoted || loadingAction === "like"}
                         className={`flex flex-1 items-center justify-center gap-2 rounded-full bg-green-600 px-6 py-2 text-white font-semibold shadow-lg transition ${
-                          isRemixing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'
+                          isRemixing || hasVoted || loadingAction === "like" ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700 active:scale-95'
                         }`}
                     >
-                        <ThumbsUp className="h-5 w-5" /> Sim
+                        {loadingAction === "like" ? (
+                          <RefreshCw className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <ThumbsUp className="h-5 w-5" />
+                        )}
+                        Sim
                     </button>
                   </div>
                 </div>
