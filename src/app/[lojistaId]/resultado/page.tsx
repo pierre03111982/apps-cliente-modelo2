@@ -1741,18 +1741,15 @@ export default function ResultadoPage() {
               </div>
             )}
 
-            {/* Informações do Produto */}
-            {currentLook.produtoNome && (
-              <div className="mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4">
-                <h3 className="text-xl font-bold text-white mb-2">{currentLook.produtoNome}</h3>
-                {currentLook.produtoPreco && (
-                  <p className="text-2xl font-bold text-yellow-300">{formatPrice(currentLook.produtoPreco)}</p>
-                )}
-                {currentLook.descricao && (
-                  <p className="mt-2 text-sm text-white/80">{currentLook.descricao}</p>
-                )}
-              </div>
-            )}
+            {/* Informações sobre a Simulação */}
+            <div className="mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4">
+              <p className="text-base text-white mb-3">
+                Adoramos te ajudar a escolher! ✨ Esta imagem é uma simulação da nossa Inteligência Artificial para você visualizar o look.
+              </p>
+              <p className="text-sm text-white/80">
+                <strong>Importante:</strong> Esta tecnologia serve como referência visual e não substitui a prova física. O ajuste exato, as dimensões e a textura real dos materiais podem apresentar diferenças em relação à simulação digital.
+              </p>
+            </div>
 
             {/* Produtos Selecionados */}
             {selectedProducts.length > 0 && (
