@@ -186,19 +186,65 @@ export default function ResultadoPage() {
           // Verificar se uma nova imagem foi gerada
           const newLooksGenerated = sessionStorage.getItem(`new_looks_generated_${lojistaId}`)
           if (newLooksGenerated === "true") {
-            // Nova imagem gerada - sempre mostrar botões de like/dislike
-            setHasVoted(false)
-            setVotedType(null)
-            // Remover flag
+            // Nova imagem gerada - verificar se já votou nesta nova imagem
             sessionStorage.removeItem(`new_looks_generated_${lojistaId}`)
-          } else {
-            // Verificar se já foi votado no primeiro look (apenas se não for nova imagem)
-            if (parsedLooks.length > 0 && parsedLooks[0].compositionId) {
-              const voteStatus = await checkVoteStatus(parsedLooks[0].compositionId)
-              if (voteStatus) {
-                setHasVoted(true)
-                setVotedType(voteStatus === "like" ? "like" : "dislike")
+            
+            // Verificar voto para a nova imagem gerada
+            if (parsedLooks.length > 0) {
+              const firstLook = parsedLooks[0]
+              let compositionId = firstLook.compositionId
+              
+              // Se não houver compositionId (look refinado ou remixado), criar um ID único baseado na imagemUrl
+              if (!compositionId && firstLook.imagemUrl) {
+                const imageHash = firstLook.imagemUrl.split('/').pop()?.split('?')[0] || `refined-${Date.now()}`
+                compositionId = `refined-${imageHash}`
+              }
+              
+              if (compositionId) {
+                const voteStatus = await checkVoteStatus(compositionId)
+                if (voteStatus) {
+                  // Já votou nesta imagem - não mostrar pergunta
+                  setHasVoted(true)
+                  setVotedType(voteStatus === "like" ? "like" : "dislike")
+                } else {
+                  // Não votou ainda - mostrar pergunta
+                  setHasVoted(false)
+                  setVotedType(null)
+                }
               } else {
+                // Sem compositionId - mostrar pergunta
+                setHasVoted(false)
+                setVotedType(null)
+              }
+            } else {
+              setHasVoted(false)
+              setVotedType(null)
+            }
+          } else {
+            // Não é nova imagem - verificar se já foi votado
+            if (parsedLooks.length > 0) {
+              const firstLook = parsedLooks[0]
+              let compositionId = firstLook.compositionId
+              
+              // Se não houver compositionId (look refinado ou remixado), criar um ID único baseado na imagemUrl
+              if (!compositionId && firstLook.imagemUrl) {
+                const imageHash = firstLook.imagemUrl.split('/').pop()?.split('?')[0] || `refined-${Date.now()}`
+                compositionId = `refined-${imageHash}`
+              }
+              
+              if (compositionId) {
+                const voteStatus = await checkVoteStatus(compositionId)
+                if (voteStatus) {
+                  // Já votou - não mostrar pergunta
+                  setHasVoted(true)
+                  setVotedType(voteStatus === "like" ? "like" : "dislike")
+                } else {
+                  // Não votou ainda - mostrar pergunta
+                  setHasVoted(false)
+                  setVotedType(null)
+                }
+              } else {
+                // Sem compositionId - mostrar pergunta
                 setHasVoted(false)
                 setVotedType(null)
               }
@@ -339,8 +385,46 @@ export default function ResultadoPage() {
           return hasImage && (isLike || (!f.action && !f.tipo && !f.votedType))
         })
         
+        // Remover duplicatas baseadas em imagemUrl (manter apenas o mais recente)
+        const seenUrls = new Map<string, any>()
+        likesOnly.forEach((f: any) => {
+          const imageUrl = f.imagemUrl?.trim()
+          if (imageUrl) {
+            const existing = seenUrls.get(imageUrl)
+            if (!existing) {
+              seenUrls.set(imageUrl, f)
+            } else {
+              // Comparar datas e manter o mais recente
+              let existingDate = new Date(0)
+              let currentDate = new Date(0)
+              
+              if (existing.createdAt?.toDate) {
+                existingDate = existing.createdAt.toDate()
+              } else if (existing.createdAt?.seconds) {
+                existingDate = new Date(existing.createdAt.seconds * 1000)
+              } else if (existing.createdAt) {
+                existingDate = new Date(existing.createdAt)
+              }
+              
+              if (f.createdAt?.toDate) {
+                currentDate = f.createdAt.toDate()
+              } else if (f.createdAt?.seconds) {
+                currentDate = new Date(f.createdAt.seconds * 1000)
+              } else if (f.createdAt) {
+                currentDate = new Date(f.createdAt)
+              }
+              
+              if (currentDate.getTime() > existingDate.getTime()) {
+                seenUrls.set(imageUrl, f)
+              }
+            }
+          }
+        })
+        
+        const uniqueFavorites = Array.from(seenUrls.values())
+        
         // Ordenar por data de criação (mais recente primeiro)
-        const sortedFavorites = likesOnly.sort((a: any, b: any) => {
+        const sortedFavorites = uniqueFavorites.sort((a: any, b: any) => {
           // Tentar diferentes formatos de data
           let dateA: Date
           let dateB: Date
@@ -376,7 +460,7 @@ export default function ResultadoPage() {
         // Limitar a 10 favoritos mais recentes
         const limitedFavorites = sortedFavorites.slice(0, 10)
         
-        console.log("[ResultadoPage] Favoritos carregados:", limitedFavorites.length, "de", likesOnly.length, "likes totais")
+        console.log("[ResultadoPage] Favoritos carregados:", limitedFavorites.length, "de", likesOnly.length, "likes totais (após remover duplicatas)")
         
         setFavorites(limitedFavorites)
       }
@@ -697,7 +781,7 @@ export default function ResultadoPage() {
         setVotedType("like")
         setLoadingAction(null) // Liberar o botão imediatamente
         
-        console.log("[ResultadoPage] Like salvo com sucesso")
+        console.log("[ResultadoPage] Like salvo com sucesso - imagem será salva automaticamente nos favoritos")
         
         // Processar marca d'água em background (não bloqueia a resposta)
         if (lojistaData?.logoUrl && currentLook.imagemUrl) {
@@ -759,10 +843,8 @@ export default function ResultadoPage() {
           })()
         }
         
-        // Atualizar favoritos após um pequeno delay (não bloqueia)
-        setTimeout(async () => {
-          await loadFavorites()
-        }, 500) // Reduzido para 500ms
+        // Atualizar favoritos imediatamente para garantir que a imagem aparece (já foi salva pelo backend)
+        await loadFavorites()
       } else {
         console.error("[ResultadoPage] Erro ao registrar like:", response.status, responseData)
         const errorMessage = responseData.error || "Erro ao salvar like. Tente novamente."
@@ -1129,8 +1211,32 @@ export default function ResultadoPage() {
         // Manter foto e produtos salvos
         sessionStorage.setItem(`photo_${lojistaId}`, personImageUrl)
         sessionStorage.setItem(`products_${lojistaId}`, storedProducts)
-        // Marcar que uma nova imagem foi gerada (para resetar hasVoted na tela de resultado)
-        sessionStorage.setItem(`new_looks_generated_${lojistaId}`, "true")
+        
+        // Verificar se já votou (dislike) na imagem anterior antes de gerar nova
+        const currentLook = looks[currentLookIndex]
+        if (currentLook) {
+          let compositionId = currentLook.compositionId
+          if (!compositionId && currentLook.imagemUrl) {
+            const imageHash = currentLook.imagemUrl.split('/').pop()?.split('?')[0] || `refined-${Date.now()}`
+            compositionId = `refined-${imageHash}`
+          }
+          
+          if (compositionId) {
+            const voteStatus = await checkVoteStatus(compositionId)
+            // Se já deu dislike, não precisa marcar como nova imagem (já sabe que não gostou)
+            // Se não votou ou deu like, marcar como nova imagem para perguntar novamente
+            if (voteStatus !== "dislike") {
+              sessionStorage.setItem(`new_looks_generated_${lojistaId}`, "true")
+            } else {
+              // Já deu dislike - não perguntar novamente, mas permitir ver a nova imagem
+              console.log("[ResultadoPage] Usuário já deu dislike na imagem anterior - não perguntar novamente")
+            }
+          } else {
+            sessionStorage.setItem(`new_looks_generated_${lojistaId}`, "true")
+          }
+        } else {
+          sessionStorage.setItem(`new_looks_generated_${lojistaId}`, "true")
+        }
         
         // Resetar votação para o novo look ANTES de recarregar
         setHasVoted(false)
