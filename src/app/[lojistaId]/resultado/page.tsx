@@ -409,121 +409,45 @@ export default function ResultadoPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showFavoritesModal, lojistaId, votedType])
 
-  // Carregar favoritos
+  // Carregar favoritos (simplificado como no modelo-3)
   const loadFavorites = useCallback(async () => {
-    if (!lojistaId) {
-      console.warn("[ResultadoPage] loadFavorites: lojistaId não encontrado")
-      return
-    }
+    if (!lojistaId) return
 
     try {
       setIsLoadingFavorites(true)
       const stored = localStorage.getItem(`cliente_${lojistaId}`)
-      if (!stored) {
-        console.warn("[ResultadoPage] loadFavorites: Cliente não encontrado no localStorage")
-        setFavorites([])
-        return
-      }
+      if (!stored) return
 
       const clienteData = JSON.parse(stored)
       const clienteId = clienteData.clienteId
 
-      if (!clienteId) {
-        console.warn("[ResultadoPage] loadFavorites: clienteId não encontrado nos dados do localStorage")
-        setFavorites([])
-        return
-      }
-
-      console.log("[ResultadoPage] Carregando favoritos para:", { lojistaId, clienteId })
+      if (!clienteId) return
 
       // Adicionar timestamp para evitar cache
-      const url = `/api/cliente/favoritos?lojistaId=${encodeURIComponent(lojistaId)}&customerId=${encodeURIComponent(clienteId)}&_t=${Date.now()}`
-      console.log("[ResultadoPage] URL da requisição:", url)
-      
-      const response = await fetch(url, {
-        cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache',
+      const response = await fetch(
+        `/api/cliente/favoritos?lojistaId=${encodeURIComponent(lojistaId)}&customerId=${encodeURIComponent(clienteId)}&_t=${Date.now()}`,
+        {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+          }
         }
-      })
+      )
 
-      console.log("[ResultadoPage] Resposta da API:", response.status, response.statusText)
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        console.error("[ResultadoPage] Erro ao buscar favoritos:", response.status, errorData)
-        setFavorites([])
-        return
-      }
-
-      const data = await response.json().catch((err) => {
-        console.error("[ResultadoPage] Erro ao parsear JSON:", err)
-        return { favorites: [] }
-      })
-      
-      const favoritesList = data.favorites || data.favoritos || []
-      
-      console.log("[ResultadoPage] Total de favoritos recebidos:", favoritesList.length)
-      console.log("[ResultadoPage] Dados brutos dos favoritos:", favoritesList)
+      if (response.ok) {
+        const data = await response.json()
+        const favoritesList = data.favorites || data.favoritos || []
         
         // Filtrar apenas os likes (action === "like" ou tipo === "like" ou votedType === "like")
-        // IMPORTANTE: Excluir explicitamente dislikes
         const likesOnly = favoritesList.filter((f: any) => {
           const hasImage = f.imagemUrl && f.imagemUrl.trim() !== ""
-          const action = f.action || f.tipo || f.votedType
-          const isDislike = action === "dislike"
-          const isLike = action === "like" || (!action && !f.action && !f.tipo && !f.votedType) // Compatibilidade com dados antigos
-          
-          // Excluir dislikes explicitamente
-          if (isDislike) {
-            return false
-          }
-          
-          return hasImage && isLike
+          const isLike = f.action === "like" || f.tipo === "like" || f.votedType === "like"
+          // Se não tiver campo de ação, assumir que é like (compatibilidade com dados antigos)
+          return hasImage && (isLike || (!f.action && !f.tipo && !f.votedType))
         })
-        
-        console.log("[ResultadoPage] Likes filtrados:", likesOnly.length, "de", favoritesList.length, "total")
-        
-        // Remover duplicatas baseadas em imagemUrl (manter apenas o mais recente)
-        const seenUrls = new Map<string, any>()
-        likesOnly.forEach((f: any) => {
-          const imageUrl = f.imagemUrl?.trim()
-          if (imageUrl) {
-            const existing = seenUrls.get(imageUrl)
-            if (!existing) {
-              seenUrls.set(imageUrl, f)
-            } else {
-              // Comparar datas e manter o mais recente
-              let existingDate = new Date(0)
-              let currentDate = new Date(0)
-              
-              if (existing.createdAt?.toDate) {
-                existingDate = existing.createdAt.toDate()
-              } else if (existing.createdAt?.seconds) {
-                existingDate = new Date(existing.createdAt.seconds * 1000)
-              } else if (existing.createdAt) {
-                existingDate = new Date(existing.createdAt)
-              }
-              
-              if (f.createdAt?.toDate) {
-                currentDate = f.createdAt.toDate()
-              } else if (f.createdAt?.seconds) {
-                currentDate = new Date(f.createdAt.seconds * 1000)
-              } else if (f.createdAt) {
-                currentDate = new Date(f.createdAt)
-              }
-              
-              if (currentDate.getTime() > existingDate.getTime()) {
-                seenUrls.set(imageUrl, f)
-              }
-            }
-          }
-        })
-        
-        const uniqueFavorites = Array.from(seenUrls.values())
         
         // Ordenar por data de criação (mais recente primeiro)
-        const sortedFavorites = uniqueFavorites.sort((a: any, b: any) => {
+        const sortedFavorites = likesOnly.sort((a: any, b: any) => {
           // Tentar diferentes formatos de data
           let dateA: Date
           let dateB: Date
@@ -559,27 +483,12 @@ export default function ResultadoPage() {
         // Limitar a 10 favoritos mais recentes
         const limitedFavorites = sortedFavorites.slice(0, 10)
         
-        console.log("[ResultadoPage] Favoritos carregados:", limitedFavorites.length, "de", likesOnly.length, "likes totais (após remover duplicatas)")
-        console.log("[ResultadoPage] Favoritos finais:", limitedFavorites.map((f: any) => ({
-          id: f.id,
-          imagemUrl: f.imagemUrl?.substring(0, 100),
-          hasImagemUrl: !!f.imagemUrl,
-          imagemUrlLength: f.imagemUrl?.length || 0,
-          action: f.action,
-          createdAt: f.createdAt
-        })))
-        
-        // Verificar se há favoritos sem imagemUrl
-        const favoritosSemImagem = limitedFavorites.filter((f: any) => !f.imagemUrl || f.imagemUrl.trim() === "")
-        if (favoritosSemImagem.length > 0) {
-          console.warn("[ResultadoPage] AVISO: Favoritos sem imagemUrl:", favoritosSemImagem.length, favoritosSemImagem.map((f: any) => f.id))
-        }
+        console.log("[ResultadoPage] Favoritos carregados:", limitedFavorites.length, "de", likesOnly.length, "likes totais")
         
         setFavorites(limitedFavorites)
-    } catch (error: any) {
+      }
+    } catch (error) {
       console.error("[ResultadoPage] Erro ao carregar favoritos:", error)
-      console.error("[ResultadoPage] Stack do erro:", error?.stack)
-      setFavorites([])
     } finally {
       setIsLoadingFavorites(false)
     }
@@ -919,15 +828,10 @@ export default function ResultadoPage() {
         
         console.log("[ResultadoPage] Like salvo com sucesso - imagem será salva automaticamente nos favoritos")
         
-        // Atualizar favoritos imediatamente com delay para garantir que backend processou
+        // Aguardar um pouco antes de atualizar favoritos para garantir que o backend processou (igual modelo-3)
         setTimeout(async () => {
           await loadFavorites()
-        }, 1500)
-        
-        // Atualizar novamente após mais tempo para garantir sincronização
-        setTimeout(async () => {
-          await loadFavorites()
-        }, 3000)
+        }, 500)
       } else {
         console.error("[ResultadoPage] Erro ao registrar like:", response.status, responseData)
         const errorMessage = responseData.error || "Erro ao salvar like. Tente novamente."
