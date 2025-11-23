@@ -456,7 +456,7 @@ export function ExperimentarView({
                             const target = e.currentTarget;
                             setTimeout(() => {
                               if (target.src && !target.complete) {
-                                const newImg = new Image();
+                                const newImg = new window.Image();
                                 newImg.onload = () => {
                                   target.src = newImg.src;
                                   target.style.display = '';
@@ -657,7 +657,7 @@ export function ExperimentarView({
                             const target = e.currentTarget;
                             setTimeout(() => {
                               if (target.src && !target.complete) {
-                                const newImg = new Image();
+                                const newImg = new window.Image();
                                 newImg.onload = () => {
                                   target.src = newImg.src;
                                   target.style.display = '';
