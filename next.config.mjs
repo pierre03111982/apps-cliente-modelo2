@@ -1,5 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Otimizações de build
+  swcMinify: true, // Usar SWC para minificação (mais rápido)
+  compress: true, // Habilitar compressão
+  
+  // Remover console.log em produção
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'], // Manter apenas erros e avisos
+    } : false,
+  },
+  
   images: {
     remotePatterns: [
       {
@@ -28,7 +39,10 @@ const nextConfig = {
       },
     ],
     unoptimized: false,
+    formats: ['image/avif', 'image/webp'], // Formatos modernos
+    minimumCacheTTL: 60, // Cache de 60 segundos
   },
+  
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
