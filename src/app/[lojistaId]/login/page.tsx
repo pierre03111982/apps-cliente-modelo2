@@ -290,42 +290,7 @@ function LoginPageContent() {
           throw new Error(data.error || "Erro ao cadastrar")
         }
 
-        // Verificar se cliente já está logado em outro dispositivo POR WHATSAPP
-        // cleanWhatsapp já foi definido acima na linha 235
-        
-        // Verificar localmente primeiro (verificar se há outro localStorage com mesmo WhatsApp)
-        const allStorageKeys = Object.keys(localStorage)
-        const existingSession = allStorageKeys.find(key => {
-          if (key.startsWith(`cliente_`)) {
-            try {
-              const storedData = JSON.parse(localStorage.getItem(key) || '{}')
-              const storedWhatsapp = storedData.whatsapp?.replace(/\D/g, "") || ""
-              const storedLojistaId = storedData.lojistaId
-              
-              // Se encontrar mesmo WhatsApp em outra loja ou mesma loja, verificar se é outro dispositivo
-              if (storedWhatsapp === cleanWhatsapp && storedLojistaId === lojistaId) {
-                const storedDeviceId = storedData.deviceId
-                const currentDeviceId = getOrCreateDeviceId()
-                
-                // Se deviceId diferente, é outro dispositivo
-                if (storedDeviceId && storedDeviceId !== currentDeviceId) {
-                  return true
-                }
-              }
-            } catch (e) {
-              // Ignorar erros de parse
-            }
-          }
-          return false
-        })
-
-        if (existingSession) {
-          setError("⚠️ Você já está logado em outro dispositivo com este número de WhatsApp. Por favor, faça logout do outro dispositivo antes de fazer login aqui. Por segurança, apenas um dispositivo pode estar logado por vez.")
-          setIsSubmitting(false)
-          return
-        }
-
-        // Verificar no backend também
+        // Verificar no backend se há sessão ativa
         const currentDeviceIdForRegister = getOrCreateDeviceId()
         const sessionCheckResponse = await fetch("/api/cliente/check-session", {
           method: "POST",
@@ -427,40 +392,7 @@ function LoginPageContent() {
           throw new Error(data.error || "Erro ao fazer login")
         }
 
-        // Verificar se cliente já está logado em outro dispositivo POR WHATSAPP
-        // Verificar localmente primeiro (verificar se há outro localStorage com mesmo WhatsApp)
-        const allStorageKeysForCheck = Object.keys(localStorage)
-        const existingSessionForLogin = allStorageKeysForCheck.find(key => {
-          if (key.startsWith(`cliente_`)) {
-            try {
-              const storedData = JSON.parse(localStorage.getItem(key) || '{}')
-              const storedWhatsapp = storedData.whatsapp?.replace(/\D/g, "") || ""
-              const storedLojistaId = storedData.lojistaId
-              
-              // Se encontrar mesmo WhatsApp em outra loja ou mesma loja, verificar se é outro dispositivo
-              if (storedWhatsapp === cleanWhatsapp && storedLojistaId === lojistaId) {
-                const storedDeviceId = storedData.deviceId
-                const currentDeviceId = getOrCreateDeviceId()
-                
-                // Se deviceId diferente, é outro dispositivo
-                if (storedDeviceId && storedDeviceId !== currentDeviceId) {
-                  return true
-                }
-              }
-            } catch (e) {
-              // Ignorar erros de parse
-            }
-          }
-          return false
-        })
-
-        if (existingSessionForLogin) {
-          setError("⚠️ Você já está logado em outro dispositivo com este número de WhatsApp. Por favor, faça logout do outro dispositivo antes de fazer login aqui. Por segurança, apenas um dispositivo pode estar logado por vez.")
-          setIsSubmitting(false)
-          return
-        }
-
-        // Verificar no backend também
+        // Verificar no backend se há sessão ativa
         const currentDeviceIdForLogin = getOrCreateDeviceId()
         const sessionCheckResponse = await fetch("/api/cliente/check-session", {
           method: "POST",
@@ -474,11 +406,17 @@ function LoginPageContent() {
 
         const sessionData = await sessionCheckResponse.json()
 
+        // Se o backend disser que já está logado E não for o mesmo dispositivo, bloquear
         if (sessionCheckResponse.ok && sessionData.alreadyLoggedIn) {
-          // Cliente já está logado em outro dispositivo
-          setError("⚠️ Você já está logado em outro dispositivo. Por favor, faça logout do outro dispositivo antes de fazer login aqui. Por segurança, apenas um dispositivo pode estar logado por vez.")
-          setIsSubmitting(false)
-          return
+          // Verificar se é realmente outro dispositivo (deviceId diferente)
+          // O backend já faz essa verificação, mas vamos garantir
+          const backendDeviceId = sessionData.activeDeviceId
+          if (backendDeviceId && backendDeviceId !== currentDeviceIdForLogin) {
+            setError("⚠️ Você já está logado em outro dispositivo. Por favor, faça logout do outro dispositivo antes de fazer login aqui. Por segurança, apenas um dispositivo pode estar logado por vez.")
+            setIsSubmitting(false)
+            return
+          }
+          // Se for o mesmo deviceId, permitir login (mesmo dispositivo)
         }
 
         // Limpar qualquer sessão anterior do mesmo WhatsApp nesta loja
