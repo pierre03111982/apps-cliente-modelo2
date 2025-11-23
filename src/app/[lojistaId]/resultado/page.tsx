@@ -1162,39 +1162,6 @@ export default function ResultadoPage() {
         </div>
       )}
       
-      {/* Overlay com blur quando remixando (mantido para compatibilidade) */}
-      {isRemixing && (
-        <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-md transition-opacity" />
-      )}
-      
-      {/* Botão Remixar Look fixo quando remixando */}
-      {isRemixing && (
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-sm px-4">
-          <button 
-            onClick={() => {}} 
-            disabled
-            className="w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold text-white text-sm transition shadow-md bg-green-700"
-            style={{
-              border: '4px solid white',
-              borderWidth: '4px',
-            }}
-          >
-            <div className="flex items-center justify-center gap-2 w-full overflow-hidden">
-              <div className="flex-shrink-0">
-                <ClockAnimation size={20} />
-              </div>
-              <div className="flex-1 overflow-hidden text-center">
-                <div 
-                  key={remixPhraseIndex}
-                  className="animate-slide-in text-white font-semibold whitespace-nowrap text-center"
-                >
-                  {remixPhrases[remixPhraseIndex] || remixPhrases[0]}
-                </div>
-              </div>
-            </div>
-          </button>
-        </div>
-      )}
       
       {/* Vídeo de Fundo Fixo */}
       <div className="fixed inset-0 z-0 overflow-hidden">

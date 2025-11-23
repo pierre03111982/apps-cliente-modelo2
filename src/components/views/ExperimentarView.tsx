@@ -713,68 +713,27 @@ export function ExperimentarView({
         </div>
       </div>
 
-      {/* Overlay com blur quando botão expandido */}
-      {isButtonExpanded && (
-        <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-md transition-opacity" />
-      )}
-
-      {/* Botão FAB - Visualize */}
-      {(userPhotoUrl) && selectedProducts.length > 0 && (
+      {/* Botão FAB - Visualize (oculto quando gerando) */}
+      {(userPhotoUrl) && selectedProducts.length > 0 && !isGenerating && (
         <div 
-          className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 rounded-full shadow-2xl transition-all duration-500 ${
-            isButtonExpanded 
-              ? 'w-[calc(100vw-2rem)] sm:w-[calc(100vw-4rem)] max-w-2xl left-4 sm:left-6' 
-              : 'w-auto'
-          }`}
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 rounded-full shadow-2xl transition-all duration-500 w-auto"
           style={{ 
-            background: isButtonExpanded 
-              ? 'linear-gradient(45deg, rgba(37,99,235,1), rgba(147,51,234,1), rgba(249,115,22,1), rgba(34,197,94,1))'
-              : 'linear-gradient(45deg, rgba(37,99,235,1), rgba(147,51,234,1), rgba(249,115,22,1), rgba(34,197,94,1))'
+            background: 'linear-gradient(45deg, rgba(37,99,235,1), rgba(147,51,234,1), rgba(249,115,22,1), rgba(34,197,94,1))'
           }}
         >
           <button 
             onClick={handleCreateClick} 
-            disabled={isGenerating || isButtonExpanded} 
-            className={`flex items-center justify-center gap-2 sm:gap-3 rounded-full px-5 sm:px-7 py-3.5 sm:py-4.5 md:py-5 text-sm sm:text-base md:text-lg font-bold text-white transition-all duration-300 disabled:cursor-not-allowed w-full h-full ${
-              isButtonExpanded 
-                ? 'animate-none' 
-                : 'animate-pulse-glow hover:scale-105'
-            }`}
+            disabled={isGenerating} 
+            className="flex items-center justify-center gap-2 sm:gap-3 rounded-full px-5 sm:px-7 py-3.5 sm:py-4.5 md:py-5 text-sm sm:text-base md:text-lg font-bold text-white transition-all duration-300 disabled:cursor-not-allowed w-full h-full animate-pulse-glow hover:scale-105"
             style={{
-              background: isButtonExpanded
-                ? 'transparent'
-                : 'linear-gradient(45deg, rgba(37,99,235,1), rgba(147,51,234,1), rgba(249,115,22,1), rgba(34,197,94,1))',
+              background: 'linear-gradient(45deg, rgba(37,99,235,1), rgba(147,51,234,1), rgba(249,115,22,1), rgba(34,197,94,1))',
               border: '4px solid white',
               borderWidth: '4px',
             }}
           >
-            {isButtonExpanded ? (
-              <div className="flex items-center justify-center gap-3 w-full overflow-hidden">
-                <div className="flex-shrink-0">
-                  <div className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 animate-spin rounded-full border-3 border-white border-t-transparent" />
-                </div>
-                <div className="flex-1 overflow-hidden text-center">
-                  <div 
-                    key={currentPhraseIndex}
-                    className="animate-slide-in text-white font-semibold whitespace-nowrap text-center"
-                  >
-                    {creativePhrases[currentPhraseIndex] || creativePhrases[0]}
-                  </div>
-                </div>
-              </div>
-            ) : isGenerating ? (
-              <>
-                <ClockAnimation size={28} className="sm:w-7 sm:h-7 md:w-8 md:h-8" />
-                <span className="hidden sm:inline">Gerando...</span>
-                <span className="sm:hidden">...</span>
-              </>
-            ) : (
-              <>
-                <Wand2 className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7" />
-                <span className="hidden sm:inline">CRIAR LOOK</span>
-                <span className="sm:hidden">CRIAR</span>
-              </>
-            )}
+            <Wand2 className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7" />
+            <span className="hidden sm:inline">CRIAR LOOK</span>
+            <span className="sm:hidden">CRIAR</span>
           </button>
         </div>
       )}
