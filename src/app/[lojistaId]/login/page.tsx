@@ -311,6 +311,7 @@ function LoginPageContent() {
 
         // Limpar qualquer sessão anterior do mesmo WhatsApp nesta loja
         const allStorageKeysForCleanup = Object.keys(localStorage)
+        let previousSessionDataForRegister = null
         allStorageKeysForCleanup.forEach(key => {
           if (key.startsWith(`cliente_`)) {
             try {
@@ -320,6 +321,7 @@ function LoginPageContent() {
               
               // Se encontrar mesmo WhatsApp na mesma loja, limpar
               if (storedWhatsapp === cleanWhatsapp && storedLojistaId === lojistaId) {
+                previousSessionDataForRegister = storedData
                 localStorage.removeItem(key)
               }
             } catch (e) {
@@ -327,6 +329,26 @@ function LoginPageContent() {
             }
           }
         })
+
+        // Fazer logout no backend se havia sessão anterior
+        if (previousSessionDataForRegister) {
+          try {
+            const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000"
+            await fetch(`${backendUrl}/api/cliente/logout`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                lojistaId,
+                whatsapp: cleanWhatsapp,
+                deviceId: previousSessionDataForRegister.deviceId || "unknown",
+              }),
+            }).catch(() => {
+              // Ignorar erros de logout (não bloquear cadastro)
+            })
+          } catch (e) {
+            // Ignorar erros
+          }
+        }
 
         // Salvar dados no localStorage
         const deviceId = typeof window !== 'undefined' ? `${navigator.userAgent}-${Date.now()}` : 'server'
@@ -423,6 +445,7 @@ function LoginPageContent() {
 
         // Limpar qualquer sessão anterior do mesmo WhatsApp nesta loja
         const allStorageKeys = Object.keys(localStorage)
+        let previousSessionData = null
         allStorageKeys.forEach(key => {
           if (key.startsWith(`cliente_`)) {
             try {
@@ -432,6 +455,7 @@ function LoginPageContent() {
               
               // Se encontrar mesmo WhatsApp na mesma loja, limpar
               if (storedWhatsapp === cleanWhatsapp && storedLojistaId === lojistaId) {
+                previousSessionData = storedData
                 localStorage.removeItem(key)
               }
             } catch (e) {
@@ -439,6 +463,26 @@ function LoginPageContent() {
             }
           }
         })
+
+        // Fazer logout no backend se havia sessão anterior
+        if (previousSessionData) {
+          try {
+            const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000"
+            await fetch(`${backendUrl}/api/cliente/logout`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                lojistaId,
+                whatsapp: cleanWhatsapp,
+                deviceId: previousSessionData.deviceId || "unknown",
+              }),
+            }).catch(() => {
+              // Ignorar erros de logout (não bloquear login)
+            })
+          } catch (e) {
+            // Ignorar erros
+          }
+        }
 
         // Salvar dados no localStorage
         const deviceId = typeof window !== 'undefined' ? `${navigator.userAgent}-${Date.now()}` : 'server'
@@ -509,7 +553,7 @@ function LoginPageContent() {
                   alt={lojistaData.nome || "Logo"}
                   width={64}
                   height={64}
-                  className="h-full w-full object-contain"
+                  className="h-full w-full object-cover"
                   unoptimized
                 />
               </div>

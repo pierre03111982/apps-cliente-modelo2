@@ -221,7 +221,7 @@ export default function ResultadoPage() {
               setVotedType(null)
             }
           } else {
-            // Não é nova imagem - verificar se já foi votado
+            // Não é nova imagem - SEMPRE verificar se já foi votado (mesmo após refresh)
             if (parsedLooks.length > 0) {
               const firstLook = parsedLooks[0]
               let compositionId = firstLook.compositionId
@@ -233,9 +233,12 @@ export default function ResultadoPage() {
               }
               
               if (compositionId) {
+                // SEMPRE verificar voto no backend ao carregar a página
+                console.log("[ResultadoPage] Verificando voto ao carregar página para compositionId:", compositionId)
                 const voteStatus = await checkVoteStatus(compositionId)
+                console.log("[ResultadoPage] Status de voto verificado:", voteStatus)
                 if (voteStatus) {
-                  // Já votou - não mostrar pergunta
+                  // Já votou - mostrar botões liberados (não perguntar novamente)
                   setHasVoted(true)
                   setVotedType(voteStatus === "like" ? "like" : "dislike")
                 } else {
@@ -318,14 +321,16 @@ export default function ResultadoPage() {
           console.log("[ResultadoPage] CompositionId gerado para look sem ID:", compositionId)
         }
         
-        // Verificar status de voto
+        // SEMPRE verificar status de voto no backend (mesmo após refresh)
         if (compositionId) {
           const voteStatus = await checkVoteStatus(compositionId)
-          console.log("[ResultadoPage] Status de voto verificado:", voteStatus)
+          console.log("[ResultadoPage] Status de voto verificado ao mudar look:", voteStatus)
           if (voteStatus) {
+            // Já votou - mostrar botões liberados (não perguntar novamente)
             setHasVoted(true)
             setVotedType(voteStatus === "like" ? "like" : "dislike")
           } else {
+            // Não votou ainda - mostrar pergunta
             setHasVoted(false)
             setVotedType(null)
           }
