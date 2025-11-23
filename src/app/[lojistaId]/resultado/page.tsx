@@ -1550,7 +1550,17 @@ export default function ResultadoPage() {
                             </svg>
                         </button>
                         <button 
-                            onClick={() => setShowFavoritesModal(true)} 
+                            onClick={async () => {
+                              console.log("[ResultadoPage] Botão Favoritos clicado - recarregando favoritos antes de abrir modal...")
+                              // Recarregar favoritos antes de abrir o modal
+                              await loadFavorites()
+                              // Aguardar um pouco e recarregar novamente
+                              setTimeout(async () => {
+                                await loadFavorites()
+                              }, 200)
+                              // Abrir modal
+                              setShowFavoritesModal(true)
+                            }} 
                             disabled={isRemixing}
                             className={`flex items-center justify-center rounded-xl bg-pink-600 py-3 font-semibold text-white text-sm transition shadow-md ${
                               isRemixing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-pink-700'
