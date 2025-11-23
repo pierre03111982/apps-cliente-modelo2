@@ -465,7 +465,11 @@ function LoginPageContent() {
             <button
               type="submit"
               disabled={isSubmitting || !isFormValid()}
-              className="w-full flex items-center justify-center gap-2 rounded-lg bg-teal-600/80 border-2 border-white/30 py-3 font-bold text-white transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              className={`w-full flex items-center justify-center gap-2 rounded-lg border-2 border-white/30 py-3 font-bold text-white transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-sm ${
+                isSubmitting || !isFormValid()
+                  ? "bg-teal-600/80"
+                  : "bg-green-500 hover:bg-green-400 shadow-lg shadow-green-500/50"
+              }`}
             >
               <LogIn className="h-4 w-4" />
               {mode === "login" ? "Entrar" : "Cadastrar"}
