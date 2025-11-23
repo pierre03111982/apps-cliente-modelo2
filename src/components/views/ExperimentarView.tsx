@@ -448,7 +448,7 @@ export function ExperimentarView({
                           src={produto.imagemUrl}
                           alt={produto.nome}
                           className="w-full h-full object-cover"
-                          crossOrigin="anonymous"
+                          loading="lazy"
                           onError={(e) => {
                             console.error(`[ExperimentarView] Erro ao carregar imagem: ${produto.imagemUrl}`, e);
                             // Tentar carregar novamente após um delay
@@ -649,7 +649,7 @@ export function ExperimentarView({
                           src={produto.imagemUrl}
                           alt={produto.nome}
                           className="w-full h-full object-cover"
-                          crossOrigin="anonymous"
+                          loading="lazy"
                           onError={(e) => {
                             console.error(`[ExperimentarView] Erro ao carregar imagem: ${produto.imagemUrl}`, e);
                             // Tentar carregar novamente após um delay
@@ -784,7 +784,7 @@ export function ExperimentarView({
                     src={selectedProductDetail.imagemUrl}
                     alt={selectedProductDetail.nome}
                     className="max-h-[600px] w-auto h-auto object-contain"
-                    crossOrigin="anonymous"
+                    loading="lazy"
                     onError={(e) => {
                       console.error(`[ExperimentarView] Erro ao carregar imagem: ${selectedProductDetail.imagemUrl}`, e);
                       const target = e.currentTarget;
