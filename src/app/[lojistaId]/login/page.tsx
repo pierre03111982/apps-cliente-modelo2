@@ -251,7 +251,7 @@ function LoginPageContent() {
         }
 
         // Verificar se cliente já está logado em outro dispositivo POR WHATSAPP
-        const cleanWhatsapp = whatsapp.replace(/\D/g, "")
+        // cleanWhatsapp já foi definido acima na linha 235
         
         // Verificar localmente primeiro (verificar se há outro localStorage com mesmo WhatsApp)
         const allStorageKeys = Object.keys(localStorage)
