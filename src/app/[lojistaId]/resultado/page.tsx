@@ -1557,6 +1557,7 @@ export default function ResultadoPage() {
                           src={favorito.imagemUrl}
                           alt={favorito.productName || "Look favorito"}
                           fill
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                           className="object-contain"
                         />
                         {/* Marca d'água com logo da loja no canto superior esquerdo */}
