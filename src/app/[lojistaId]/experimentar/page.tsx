@@ -77,8 +77,14 @@ export default function ExperimentarPage() {
             }
           }
           
-          // Buscar produtos via API
-          const produtosResponse = await fetch(`/api/lojista/products?lojistaId=${encodeURIComponent(lojistaId)}`)
+          // Buscar produtos via API (sem cache para sempre ter dados atualizados)
+          const produtosResponse = await fetch(`/api/lojista/products?lojistaId=${encodeURIComponent(lojistaId)}`, {
+            cache: "no-store",
+            next: { revalidate: 0 },
+            headers: {
+              "Cache-Control": "no-store, no-cache, must-revalidate",
+            },
+          })
           if (produtosResponse.ok) {
             const produtosData = await produtosResponse.json()
             if (Array.isArray(produtosData)) {

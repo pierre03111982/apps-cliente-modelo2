@@ -18,7 +18,16 @@ const nextConfig = {
         protocol: "https",
         hostname: "firebasestorage.googleapis.com",
       },
+      {
+        protocol: "https",
+        hostname: "**.googleapis.com",
+      },
+      {
+        protocol: "https",
+        hostname: "*.firebasestorage.googleapis.com",
+      },
     ],
+    unoptimized: false,
   },
   webpack: (config, { isServer }) => {
     if (!isServer) {

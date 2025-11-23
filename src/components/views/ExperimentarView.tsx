@@ -448,6 +448,11 @@ export function ExperimentarView({
                           alt={produto.nome}
                           fill
                           className="object-cover"
+                          unoptimized={produto.imagemUrl?.includes('firebase') || produto.imagemUrl?.includes('googleapis')}
+                          onError={(e) => {
+                            console.error(`[ExperimentarView] Erro ao carregar imagem: ${produto.imagemUrl}`, e);
+                            e.currentTarget.style.display = 'none';
+                          }}
                         />
                       </div>
                     )}
@@ -623,7 +628,21 @@ export function ExperimentarView({
                       </div>
                     </div>
 
-                    {produto.imagemUrl && (<div className="relative aspect-square w-full"><Image src={produto.imagemUrl} alt={produto.nome} fill className="object-cover" /></div>)}
+                    {produto.imagemUrl && (
+                      <div className="relative aspect-square w-full">
+                        <Image 
+                          src={produto.imagemUrl} 
+                          alt={produto.nome} 
+                          fill 
+                          className="object-cover"
+                          unoptimized={produto.imagemUrl?.includes('firebase') || produto.imagemUrl?.includes('googleapis')}
+                          onError={(e) => {
+                            console.error(`[ExperimentarView] Erro ao carregar imagem: ${produto.imagemUrl}`, e);
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
                     <div className="p-2 bg-purple-900">
                       <h3 className="text-left text-xs font-semibold text-white line-clamp-2 h-8">
                         {produto.nome}
@@ -738,6 +757,11 @@ export function ExperimentarView({
                     width={800}
                     height={800}
                     className="object-contain max-h-[600px] w-auto h-auto"
+                    unoptimized={selectedProductDetail.imagemUrl?.includes('firebase') || selectedProductDetail.imagemUrl?.includes('googleapis')}
+                    onError={(e) => {
+                      console.error(`[ExperimentarView] Erro ao carregar imagem: ${selectedProductDetail.imagemUrl}`, e);
+                      e.currentTarget.style.display = 'none';
+                    }}
                   />
                 </div>
               )}

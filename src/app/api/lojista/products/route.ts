@@ -34,6 +34,10 @@ export async function GET(request: NextRequest) {
 
     const response = await fetch(url, {
       cache: "no-store",
+      next: { revalidate: 0 },
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+      },
     });
 
     const data = await response.json();
