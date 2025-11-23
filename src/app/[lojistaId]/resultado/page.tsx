@@ -942,28 +942,33 @@ export default function ResultadoPage() {
       }
     }
 
-    // Se houver logo, SEMPRE adicionar marca d'água antes de baixar
+    // Se houver logo, tentar adicionar marca d'água (com timeout)
     try {
-      console.log("[ResultadoPage] Adicionando marca d'água para download...")
-      console.log("[ResultadoPage] Imagem:", currentLook.imagemUrl)
-      console.log("[ResultadoPage] Logo:", lojistaData.logoUrl)
+      console.log("[ResultadoPage] Tentando adicionar marca d'água para download...")
       
-      const watermarkedUrl = await addWatermarkToImage(currentLook.imagemUrl, lojistaData.logoUrl)
+      // Timeout de 5 segundos para não travar
+      const watermarkPromise = addWatermarkToImage(currentLook.imagemUrl, lojistaData.logoUrl)
+      const timeoutPromise = new Promise<string>((resolve) => {
+        setTimeout(() => resolve(currentLook.imagemUrl), 5000)
+      })
       
-      console.log("[ResultadoPage] URL com marca d'água:", watermarkedUrl)
+      const watermarkedUrl = await Promise.race([watermarkPromise, timeoutPromise])
       
-      // Se retornou a URL original, tentar novamente ou mostrar aviso
+      // Se retornou a URL original ou timeout, baixar original
       if (watermarkedUrl === currentLook.imagemUrl) {
-        console.warn("[ResultadoPage] Não foi possível adicionar marca d'água (CORS ou outro erro)")
-        // Tentar fazer download mesmo assim, mas avisar o usuário
-        const confirmDownload = confirm(
-          "Não foi possível adicionar a marca d'água automaticamente. " +
-          "Deseja baixar a imagem sem marca d'água?"
-        )
-        if (!confirmDownload) return
+        console.warn("[ResultadoPage] Não foi possível adicionar marca d'água, baixando original")
+        const link = document.createElement('a')
+        link.href = currentLook.imagemUrl
+        link.download = `look-${currentLook.id || Date.now()}.jpg`
+        link.target = '_blank'
+        link.rel = 'noopener noreferrer'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        return
       }
       
-      // Se for blob URL, converter para blob e fazer download
+      // Se for blob URL, fazer download do blob
       if (watermarkedUrl.startsWith('blob:')) {
         try {
           const response = await fetch(watermarkedUrl)
@@ -973,7 +978,7 @@ export default function ResultadoPage() {
           
           const blob = await response.blob()
           if (!blob || blob.size === 0) {
-            throw new Error('Blob vazio ou inválido')
+            throw new Error('Blob vazio')
           }
           
           const url = window.URL.createObjectURL(blob)
@@ -985,48 +990,47 @@ export default function ResultadoPage() {
           window.URL.revokeObjectURL(url)
           window.URL.revokeObjectURL(watermarkedUrl)
           document.body.removeChild(a)
-          console.log("[ResultadoPage] ✅ Download com marca d'água concluído com sucesso!")
+          console.log("[ResultadoPage] ✅ Download com marca d'água concluído!")
           return
         } catch (fetchError) {
           console.error("[ResultadoPage] Erro ao fazer fetch do blob:", fetchError)
-          URL.revokeObjectURL(watermarkedUrl)
-          throw fetchError
+          if (watermarkedUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(watermarkedUrl)
+          }
+          // Continuar para fallback
         }
-      }
-      
-      // Se for URL HTTP, fazer download direto
-      const link = document.createElement('a')
-      link.href = watermarkedUrl
-      link.download = `look-${currentLook.id || Date.now()}.jpg`
-      link.target = '_blank'
-      link.rel = 'noopener noreferrer'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      console.log("[ResultadoPage] ✅ Download com marca d'água concluído com sucesso!")
-      
-    } catch (watermarkError) {
-      console.error("[ResultadoPage] ❌ Erro ao adicionar marca d'água para download:", watermarkError)
-      alert(
-        "Erro ao adicionar marca d'água na imagem. " +
-        "A imagem será baixada sem marca d'água. " +
-        "Erro: " + (watermarkError instanceof Error ? watermarkError.message : "Erro desconhecido")
-      )
-      
-      // Fallback: baixar imagem original
-      try {
+      } else {
+        // Se for URL HTTP, fazer download direto
         const link = document.createElement('a')
-        link.href = currentLook.imagemUrl
+        link.href = watermarkedUrl
         link.download = `look-${currentLook.id || Date.now()}.jpg`
         link.target = '_blank'
         link.rel = 'noopener noreferrer'
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
-      } catch (fallbackError) {
-        console.error("[ResultadoPage] Erro no fallback:", fallbackError)
-        alert("Erro ao baixar imagem. Tente novamente.")
+        console.log("[ResultadoPage] ✅ Download com marca d'água concluído!")
+        return
       }
+    } catch (watermarkError) {
+      console.error("[ResultadoPage] Erro ao processar marca d'água:", watermarkError)
+    }
+    
+    // Fallback: sempre baixar imagem original se tudo falhar
+    try {
+      console.log("[ResultadoPage] Fazendo download da imagem original...")
+      const link = document.createElement('a')
+      link.href = currentLook.imagemUrl
+      link.download = `look-${currentLook.id || Date.now()}.jpg`
+      link.target = '_blank'
+      link.rel = 'noopener noreferrer'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      console.log("[ResultadoPage] ✅ Download da imagem original concluído!")
+    } catch (fallbackError) {
+      console.error("[ResultadoPage] Erro no download:", fallbackError)
+      alert("Erro ao baixar imagem. Tente abrir a imagem em uma nova aba e salvar manualmente.")
     }
   }, [currentLookIndex, looks, lojistaData])
 
