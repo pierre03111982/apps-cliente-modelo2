@@ -97,10 +97,60 @@ export default function ResultadoPage() {
       } catch (error) {
         console.error("[ResultadoPage] Erro ao carregar dados:", error)
       }
+      
+      // Carregar favoritos na inicialização (após carregar dados do lojista)
+      console.log("[ResultadoPage] Carregando favoritos na inicialização...")
+      const stored = localStorage.getItem(`cliente_${lojistaId}`)
+      if (stored) {
+        const clienteData = JSON.parse(stored)
+        const clienteId = clienteData.clienteId
+        if (clienteId) {
+          // Chamar loadFavorites diretamente aqui para evitar dependência circular
+          try {
+            const response = await fetch(
+              `/api/cliente/favoritos?lojistaId=${encodeURIComponent(lojistaId)}&customerId=${encodeURIComponent(clienteId)}&_t=${Date.now()}`,
+              { cache: 'no-store' }
+            )
+            if (response.ok) {
+              const data = await response.json()
+              const favoritesList = data.favorites || data.favoritos || []
+              console.log("[ResultadoPage] Favoritos carregados na inicialização:", favoritesList.length)
+              // Filtrar e processar favoritos (mesma lógica de loadFavorites)
+              const likesOnly = favoritesList.filter((f: any) => {
+                const hasImage = f.imagemUrl && f.imagemUrl.trim() !== ""
+                const action = f.action || f.tipo || f.votedType
+                const isDislike = action === "dislike"
+                const isLike = action === "like" || (!action && !f.action && !f.tipo && !f.votedType)
+                return !isDislike && hasImage && isLike
+              })
+              // Remover duplicatas e ordenar
+              const seenUrls = new Map<string, any>()
+              likesOnly.forEach((f: any) => {
+                const imageUrl = f.imagemUrl?.trim()
+                if (imageUrl) {
+                  const existing = seenUrls.get(imageUrl)
+                  if (!existing) {
+                    seenUrls.set(imageUrl, f)
+                  }
+                }
+              })
+              const uniqueFavorites = Array.from(seenUrls.values())
+              const sortedFavorites = uniqueFavorites.sort((a: any, b: any) => {
+                const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt || 0)
+                const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt || 0)
+                return dateB.getTime() - dateA.getTime()
+              })
+              setFavorites(sortedFavorites.slice(0, 10))
+            }
+          } catch (error) {
+            console.error("[ResultadoPage] Erro ao carregar favoritos na inicialização:", error)
+          }
+        }
+      }
     }
 
     loadData()
-  }, [lojistaId, loadFavorites])
+  }, [lojistaId])
 
   // Verificar se já foi votado
   const checkVoteStatus = async (compositionId: string | null) => {
