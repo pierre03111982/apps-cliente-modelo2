@@ -343,7 +343,13 @@ export default function ResultadoPage() {
   // Recarregar favoritos quando o modal for aberto ou quando der like
   useEffect(() => {
     if (showFavoritesModal && lojistaId) {
+      // Recarregar imediatamente
       loadFavorites()
+      // Recarregar novamente após 1 segundo para garantir sincronização
+      const timeout = setTimeout(() => {
+        loadFavorites()
+      }, 1000)
+      return () => clearTimeout(timeout)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showFavoritesModal, lojistaId, votedType])
@@ -786,7 +792,12 @@ export default function ResultadoPage() {
         // Atualizar favoritos imediatamente com delay para garantir que backend processou
         setTimeout(async () => {
           await loadFavorites()
-        }, 1000)
+        }, 1500)
+        
+        // Atualizar novamente após mais tempo para garantir sincronização
+        setTimeout(async () => {
+          await loadFavorites()
+        }, 3000)
       } else {
         console.error("[ResultadoPage] Erro ao registrar like:", response.status, responseData)
         const errorMessage = responseData.error || "Erro ao salvar like. Tente novamente."

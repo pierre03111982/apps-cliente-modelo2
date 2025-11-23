@@ -24,17 +24,34 @@ export async function GET(request: NextRequest) {
     const backendUrl =
       process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000";
 
-    const response = await fetch(
-      `${backendUrl}/api/actions/check-vote?compositionId=${encodeURIComponent(compositionId)}&customerId=${encodeURIComponent(customerId)}&lojistaId=${encodeURIComponent(lojistaId)}`
-    );
+    try {
+      const response = await fetch(
+        `${backendUrl}/api/actions/check-vote?compositionId=${encodeURIComponent(compositionId)}&customerId=${encodeURIComponent(customerId)}&lojistaId=${encodeURIComponent(lojistaId)}`,
+        {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
 
-    const data = await response.json();
+      if (!response.ok) {
+        // Se der erro 500 ou outro, retornar que não votou (não bloquear)
+        console.warn("[Check Vote Proxy] Erro do backend:", response.status);
+        return NextResponse.json(
+          { votedType: null, action: null },
+          { status: 200 }
+        );
+      }
 
-    if (!response.ok) {
-      return NextResponse.json(data, { status: response.status });
+      const data = await response.json();
+      return NextResponse.json(data);
+    } catch (fetchError: any) {
+      console.error("[Check Vote Proxy] Erro ao buscar:", fetchError);
+      // Em caso de erro, retornar que não votou (não bloquear)
+      return NextResponse.json(
+        { votedType: null, action: null },
+        { status: 200 }
+      );
     }
-
-    return NextResponse.json(data);
   } catch (error: any) {
     console.error("[Check Vote Proxy] Erro:", error);
     return NextResponse.json(

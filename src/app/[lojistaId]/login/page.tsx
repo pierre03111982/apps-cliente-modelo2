@@ -250,13 +250,48 @@ function LoginPageContent() {
           throw new Error(data.error || "Erro ao cadastrar")
         }
 
-        // Verificar se cliente já está logado em outro dispositivo
+        // Verificar se cliente já está logado em outro dispositivo POR WHATSAPP
+        const cleanWhatsapp = whatsapp.replace(/\D/g, "")
+        
+        // Verificar localmente primeiro (verificar se há outro localStorage com mesmo WhatsApp)
+        const allStorageKeys = Object.keys(localStorage)
+        const existingSession = allStorageKeys.find(key => {
+          if (key.startsWith(`cliente_`)) {
+            try {
+              const storedData = JSON.parse(localStorage.getItem(key) || '{}')
+              const storedWhatsapp = storedData.whatsapp?.replace(/\D/g, "") || ""
+              const storedLojistaId = storedData.lojistaId
+              
+              // Se encontrar mesmo WhatsApp em outra loja ou mesma loja, verificar se é outro dispositivo
+              if (storedWhatsapp === cleanWhatsapp && storedLojistaId === lojistaId) {
+                const storedDeviceId = storedData.deviceId
+                const currentDeviceId = `${navigator.userAgent}-${Date.now()}`
+                
+                // Se deviceId diferente, é outro dispositivo
+                if (storedDeviceId && storedDeviceId !== currentDeviceId) {
+                  return true
+                }
+              }
+            } catch (e) {
+              // Ignorar erros de parse
+            }
+          }
+          return false
+        })
+
+        if (existingSession) {
+          setError("⚠️ Você já está logado em outro dispositivo com este número de WhatsApp. Por favor, faça logout do outro dispositivo antes de fazer login aqui. Por segurança, apenas um dispositivo pode estar logado por vez.")
+          setIsSubmitting(false)
+          return
+        }
+
+        // Verificar no backend também
         const sessionCheckResponse = await fetch("/api/cliente/check-session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             lojistaId,
-            customerId: data.clienteId,
+            whatsapp: cleanWhatsapp,
             deviceId: typeof window !== 'undefined' ? `${navigator.userAgent}-${Date.now()}` : 'server',
           }),
         })
@@ -270,14 +305,34 @@ function LoginPageContent() {
           return
         }
 
+        // Limpar qualquer sessão anterior do mesmo WhatsApp nesta loja
+        const allStorageKeysForCleanup = Object.keys(localStorage)
+        allStorageKeysForCleanup.forEach(key => {
+          if (key.startsWith(`cliente_`)) {
+            try {
+              const storedData = JSON.parse(localStorage.getItem(key) || '{}')
+              const storedWhatsapp = storedData.whatsapp?.replace(/\D/g, "") || ""
+              const storedLojistaId = storedData.lojistaId
+              
+              // Se encontrar mesmo WhatsApp na mesma loja, limpar
+              if (storedWhatsapp === cleanWhatsapp && storedLojistaId === lojistaId) {
+                localStorage.removeItem(key)
+              }
+            } catch (e) {
+              // Ignorar erros
+            }
+          }
+        })
+
         // Salvar dados no localStorage
+        const deviceId = typeof window !== 'undefined' ? `${navigator.userAgent}-${Date.now()}` : 'server'
         const clienteData = {
           nome,
           whatsapp: cleanWhatsapp,
           lojistaId,
           clienteId: data.clienteId,
           loggedAt: new Date().toISOString(),
-          deviceId: typeof window !== 'undefined' ? `${navigator.userAgent}-${Date.now()}` : 'server',
+          deviceId,
         }
         localStorage.setItem(`cliente_${lojistaId}`, JSON.stringify(clienteData))
 
@@ -309,13 +364,46 @@ function LoginPageContent() {
           throw new Error(data.error || "Erro ao fazer login")
         }
 
-        // Verificar se cliente já está logado em outro dispositivo
+        // Verificar se cliente já está logado em outro dispositivo POR WHATSAPP
+        // Verificar localmente primeiro (verificar se há outro localStorage com mesmo WhatsApp)
+        const allStorageKeysForCheck = Object.keys(localStorage)
+        const existingSessionForLogin = allStorageKeysForCheck.find(key => {
+          if (key.startsWith(`cliente_`)) {
+            try {
+              const storedData = JSON.parse(localStorage.getItem(key) || '{}')
+              const storedWhatsapp = storedData.whatsapp?.replace(/\D/g, "") || ""
+              const storedLojistaId = storedData.lojistaId
+              
+              // Se encontrar mesmo WhatsApp em outra loja ou mesma loja, verificar se é outro dispositivo
+              if (storedWhatsapp === cleanWhatsapp && storedLojistaId === lojistaId) {
+                const storedDeviceId = storedData.deviceId
+                const currentDeviceId = `${navigator.userAgent}-${Date.now()}`
+                
+                // Se deviceId diferente, é outro dispositivo
+                if (storedDeviceId && storedDeviceId !== currentDeviceId) {
+                  return true
+                }
+              }
+            } catch (e) {
+              // Ignorar erros de parse
+            }
+          }
+          return false
+        })
+
+        if (existingSessionForLogin) {
+          setError("⚠️ Você já está logado em outro dispositivo com este número de WhatsApp. Por favor, faça logout do outro dispositivo antes de fazer login aqui. Por segurança, apenas um dispositivo pode estar logado por vez.")
+          setIsSubmitting(false)
+          return
+        }
+
+        // Verificar no backend também
         const sessionCheckResponse = await fetch("/api/cliente/check-session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             lojistaId,
-            customerId: data.cliente.id,
+            whatsapp: cleanWhatsapp,
             deviceId: typeof window !== 'undefined' ? `${navigator.userAgent}-${Date.now()}` : 'server',
           }),
         })
@@ -329,14 +417,34 @@ function LoginPageContent() {
           return
         }
 
+        // Limpar qualquer sessão anterior do mesmo WhatsApp nesta loja
+        const allStorageKeys = Object.keys(localStorage)
+        allStorageKeys.forEach(key => {
+          if (key.startsWith(`cliente_`)) {
+            try {
+              const storedData = JSON.parse(localStorage.getItem(key) || '{}')
+              const storedWhatsapp = storedData.whatsapp?.replace(/\D/g, "") || ""
+              const storedLojistaId = storedData.lojistaId
+              
+              // Se encontrar mesmo WhatsApp na mesma loja, limpar
+              if (storedWhatsapp === cleanWhatsapp && storedLojistaId === lojistaId) {
+                localStorage.removeItem(key)
+              }
+            } catch (e) {
+              // Ignorar erros
+            }
+          }
+        })
+
         // Salvar dados no localStorage
+        const deviceId = typeof window !== 'undefined' ? `${navigator.userAgent}-${Date.now()}` : 'server'
         const clienteData = {
           nome: data.cliente.nome,
           whatsapp: cleanWhatsapp,
           lojistaId,
           clienteId: data.cliente.id,
           loggedAt: new Date().toISOString(),
-          deviceId: typeof window !== 'undefined' ? `${navigator.userAgent}-${Date.now()}` : 'server',
+          deviceId,
         }
         localStorage.setItem(`cliente_${lojistaId}`, JSON.stringify(clienteData))
 
@@ -480,6 +588,7 @@ function LoginPageContent() {
                 placeholder="Senha"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
                 className="w-full rounded-lg border-2 border-white/20 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-500 focus:border-white focus:outline-none focus:ring-1 focus:ring-white transition-all text-lg font-bold"
                 required
               />
@@ -492,6 +601,7 @@ function LoginPageContent() {
                   placeholder="Confirmar senha"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
                   className="w-full rounded-lg border-2 border-white/20 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-500 focus:border-white focus:outline-none focus:ring-1 focus:ring-white transition-all text-lg font-bold"
                   required
                 />
