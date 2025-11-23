@@ -822,24 +822,61 @@ export default function ResultadoPage() {
     if (!currentLook?.imagemUrl) return
 
     try {
-      // Para imagens do Firebase Storage ou outras origens, usar proxy ou método alternativo
+      let imageUrlToDownload = currentLook.imagemUrl
+      
+      // Se houver logo, adicionar marca d'água antes de baixar
+      if (lojistaData?.logoUrl) {
+        try {
+          console.log("[ResultadoPage] Adicionando marca d'água para download...")
+          const watermarkedBlobUrl = await addWatermarkToImage(currentLook.imagemUrl, lojistaData.logoUrl)
+          
+          // Converter blob URL para blob e fazer download
+          const response = await fetch(watermarkedBlobUrl)
+          if (response.ok) {
+            const blob = await response.blob()
+            if (blob && blob.size > 0) {
+              const url = window.URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url
+              a.download = `look-${currentLook.id || Date.now()}.jpg`
+              document.body.appendChild(a)
+              a.click()
+              window.URL.revokeObjectURL(url)
+              window.URL.revokeObjectURL(watermarkedBlobUrl)
+              document.body.removeChild(a)
+              console.log("[ResultadoPage] Download com marca d'água concluído")
+              return
+            }
+          }
+          // Se falhar, limpar e continuar com imagem original
+          URL.revokeObjectURL(watermarkedBlobUrl)
+        } catch (watermarkError) {
+          console.error("[ResultadoPage] Erro ao adicionar marca d'água para download:", watermarkError)
+          // Continuar com download da imagem original se falhar
+        }
+      }
+      
+      // Download sem marca d'água (se não houver logo ou se falhar)
       const imageUrl = currentLook.imagemUrl
       
       // Se for URL do Firebase Storage, tentar usar como link direto primeiro
       if (imageUrl.includes('firebasestorage.googleapis.com') || imageUrl.includes('storage.googleapis.com')) {
-        // Tentar abrir em nova aba para download
-        const link = document.createElement('a')
-        link.href = imageUrl
-        link.download = `look-${currentLook.id || Date.now()}.jpg`
-        link.target = '_blank'
-        link.rel = 'noopener noreferrer'
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        return
+        // Para Firebase Storage, precisamos fazer fetch para aplicar marca d'água se necessário
+        // Mas se não houver logo, fazer download direto
+        if (!lojistaData?.logoUrl) {
+          const link = document.createElement('a')
+          link.href = imageUrl
+          link.download = `look-${currentLook.id || Date.now()}.jpg`
+          link.target = '_blank'
+          link.rel = 'noopener noreferrer'
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          return
+        }
       }
 
-      // Para outras URLs, tentar fetch normal
+      // Para outras URLs, fazer fetch e download
       const response = await fetch(imageUrl, {
         mode: 'cors',
         credentials: 'omit'
@@ -867,7 +904,7 @@ export default function ResultadoPage() {
         alert("Erro ao baixar imagem. Tente novamente.")
       }
     }
-  }, [currentLookIndex, looks])
+  }, [currentLookIndex, looks, lojistaData])
 
   // Gerar novo look (remixar) com as mesmas foto e produtos
   const handleRegenerate = async () => {
