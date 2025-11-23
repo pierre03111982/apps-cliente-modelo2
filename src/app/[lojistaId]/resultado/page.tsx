@@ -851,113 +851,113 @@ export default function ResultadoPage() {
   // Handle download
   const handleDownload = useCallback(async () => {
     const currentLook = looks[currentLookIndex]
-    if (!currentLook?.imagemUrl) return
+    if (!currentLook?.imagemUrl) {
+      alert("Imagem não encontrada para download.")
+      return
+    }
 
-    try {
-      let imageUrlToDownload = currentLook.imagemUrl
-      
-      // Se houver logo, adicionar marca d'água antes de baixar
-      if (lojistaData?.logoUrl) {
-        try {
-          console.log("[ResultadoPage] Adicionando marca d'água para download...")
-          const watermarkedUrl = await addWatermarkToImage(currentLook.imagemUrl, lojistaData.logoUrl)
-          
-          // Se retornou a URL original, significa que falhou (CORS ou outro erro)
-          if (watermarkedUrl === currentLook.imagemUrl) {
-            console.warn("[ResultadoPage] Não foi possível adicionar marca d'água, baixando imagem original")
-            // Continuar com download normal abaixo
-          } else {
-            // Se for blob URL, converter para blob
-            if (watermarkedUrl.startsWith('blob:')) {
-              try {
-                const response = await fetch(watermarkedUrl)
-                if (response.ok) {
-                  const blob = await response.blob()
-                  if (blob && blob.size > 0) {
-                    const url = window.URL.createObjectURL(blob)
-                    const a = document.createElement('a')
-                    a.href = url
-                    a.download = `look-${currentLook.id || Date.now()}.jpg`
-                    document.body.appendChild(a)
-                    a.click()
-                    window.URL.revokeObjectURL(url)
-                    window.URL.revokeObjectURL(watermarkedUrl)
-                    document.body.removeChild(a)
-                    console.log("[ResultadoPage] Download com marca d'água concluído")
-                    return
-                  }
-                }
-                // Se falhar, limpar e continuar
-                URL.revokeObjectURL(watermarkedUrl)
-              } catch (fetchError) {
-                console.warn("[ResultadoPage] Erro ao fazer fetch do blob, baixando original:", fetchError)
-                URL.revokeObjectURL(watermarkedUrl)
-              }
-            } else {
-              // Se for URL HTTP, fazer download direto
-              const link = document.createElement('a')
-              link.href = watermarkedUrl
-              link.download = `look-${currentLook.id || Date.now()}.jpg`
-              link.target = '_blank'
-              link.rel = 'noopener noreferrer'
-              document.body.appendChild(link)
-              link.click()
-              document.body.removeChild(link)
-              console.log("[ResultadoPage] Download com marca d'água concluído")
-              return
-            }
-          }
-        } catch (watermarkError) {
-          console.error("[ResultadoPage] Erro ao adicionar marca d'água para download:", watermarkError)
-          // Continuar com download da imagem original se falhar
-        }
-      }
-      
-      // Download sem marca d'água (se não houver logo ou se falhar)
-      const imageUrl = currentLook.imagemUrl
-      
-      // Se for URL do Firebase Storage, tentar usar como link direto primeiro
-      if (imageUrl.includes('firebasestorage.googleapis.com') || imageUrl.includes('storage.googleapis.com')) {
-        // Para Firebase Storage, precisamos fazer fetch para aplicar marca d'água se necessário
-        // Mas se não houver logo, fazer download direto
-        if (!lojistaData?.logoUrl) {
-          const link = document.createElement('a')
-          link.href = imageUrl
-          link.download = `look-${currentLook.id || Date.now()}.jpg`
-          link.target = '_blank'
-          link.rel = 'noopener noreferrer'
-          document.body.appendChild(link)
-          link.click()
-          document.body.removeChild(link)
-          return
-        }
-      }
-
-      // Para outras URLs, fazer fetch e download
-      const response = await fetch(imageUrl, {
-        mode: 'cors',
-        credentials: 'omit'
-      })
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `look-${currentLook.id || Date.now()}.jpg`
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
-    } catch (error) {
-      console.error("[ResultadoPage] Erro ao baixar imagem:", error)
-      // Se falhar, tentar abrir em nova aba
+    // Se não houver logo, fazer download direto
+    if (!lojistaData?.logoUrl) {
       try {
-        window.open(currentLook.imagemUrl, '_blank', 'noopener,noreferrer')
-      } catch (openError) {
+        const link = document.createElement('a')
+        link.href = currentLook.imagemUrl
+        link.download = `look-${currentLook.id || Date.now()}.jpg`
+        link.target = '_blank'
+        link.rel = 'noopener noreferrer'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        return
+      } catch (error) {
+        console.error("[ResultadoPage] Erro ao baixar imagem:", error)
+        alert("Erro ao baixar imagem. Tente novamente.")
+        return
+      }
+    }
+
+    // Se houver logo, SEMPRE adicionar marca d'água antes de baixar
+    try {
+      console.log("[ResultadoPage] Adicionando marca d'água para download...")
+      console.log("[ResultadoPage] Imagem:", currentLook.imagemUrl)
+      console.log("[ResultadoPage] Logo:", lojistaData.logoUrl)
+      
+      const watermarkedUrl = await addWatermarkToImage(currentLook.imagemUrl, lojistaData.logoUrl)
+      
+      console.log("[ResultadoPage] URL com marca d'água:", watermarkedUrl)
+      
+      // Se retornou a URL original, tentar novamente ou mostrar aviso
+      if (watermarkedUrl === currentLook.imagemUrl) {
+        console.warn("[ResultadoPage] Não foi possível adicionar marca d'água (CORS ou outro erro)")
+        // Tentar fazer download mesmo assim, mas avisar o usuário
+        const confirmDownload = confirm(
+          "Não foi possível adicionar a marca d'água automaticamente. " +
+          "Deseja baixar a imagem sem marca d'água?"
+        )
+        if (!confirmDownload) return
+      }
+      
+      // Se for blob URL, converter para blob e fazer download
+      if (watermarkedUrl.startsWith('blob:')) {
+        try {
+          const response = await fetch(watermarkedUrl)
+          if (!response.ok) {
+            throw new Error(`Erro ao buscar blob: ${response.status}`)
+          }
+          
+          const blob = await response.blob()
+          if (!blob || blob.size === 0) {
+            throw new Error('Blob vazio ou inválido')
+          }
+          
+          const url = window.URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = `look-${currentLook.id || Date.now()}.jpg`
+          document.body.appendChild(a)
+          a.click()
+          window.URL.revokeObjectURL(url)
+          window.URL.revokeObjectURL(watermarkedUrl)
+          document.body.removeChild(a)
+          console.log("[ResultadoPage] ✅ Download com marca d'água concluído com sucesso!")
+          return
+        } catch (fetchError) {
+          console.error("[ResultadoPage] Erro ao fazer fetch do blob:", fetchError)
+          URL.revokeObjectURL(watermarkedUrl)
+          throw fetchError
+        }
+      }
+      
+      // Se for URL HTTP, fazer download direto
+      const link = document.createElement('a')
+      link.href = watermarkedUrl
+      link.download = `look-${currentLook.id || Date.now()}.jpg`
+      link.target = '_blank'
+      link.rel = 'noopener noreferrer'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      console.log("[ResultadoPage] ✅ Download com marca d'água concluído com sucesso!")
+      
+    } catch (watermarkError) {
+      console.error("[ResultadoPage] ❌ Erro ao adicionar marca d'água para download:", watermarkError)
+      alert(
+        "Erro ao adicionar marca d'água na imagem. " +
+        "A imagem será baixada sem marca d'água. " +
+        "Erro: " + (watermarkError instanceof Error ? watermarkError.message : "Erro desconhecido")
+      )
+      
+      // Fallback: baixar imagem original
+      try {
+        const link = document.createElement('a')
+        link.href = currentLook.imagemUrl
+        link.download = `look-${currentLook.id || Date.now()}.jpg`
+        link.target = '_blank'
+        link.rel = 'noopener noreferrer'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      } catch (fallbackError) {
+        console.error("[ResultadoPage] Erro no fallback:", fallbackError)
         alert("Erro ao baixar imagem. Tente novamente.")
       }
     }
