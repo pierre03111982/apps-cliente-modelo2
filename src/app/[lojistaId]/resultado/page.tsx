@@ -340,13 +340,13 @@ export default function ResultadoPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentLookIndex, fromFavoritos, looks, lojistaId])
 
-  // Recarregar favoritos quando o modal for aberto
+  // Recarregar favoritos quando o modal for aberto ou quando der like
   useEffect(() => {
     if (showFavoritesModal && lojistaId) {
       loadFavorites()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showFavoritesModal, lojistaId])
+  }, [showFavoritesModal, lojistaId, votedType])
 
   // Carregar favoritos
   const loadFavorites = useCallback(async () => {
@@ -783,8 +783,10 @@ export default function ResultadoPage() {
         
         console.log("[ResultadoPage] Like salvo com sucesso - imagem será salva automaticamente nos favoritos")
         
-        // Atualizar favoritos imediatamente (a imagem original já foi salva pelo backend)
-        await loadFavorites()
+        // Atualizar favoritos imediatamente com delay para garantir que backend processou
+        setTimeout(async () => {
+          await loadFavorites()
+        }, 1000)
       } else {
         console.error("[ResultadoPage] Erro ao registrar like:", response.status, responseData)
         const errorMessage = responseData.error || "Erro ao salvar like. Tente novamente."
@@ -1272,7 +1274,7 @@ export default function ResultadoPage() {
                   alt={lojistaData.nome || "Logo"}
                   width={64}
                   height={64}
-                  className="h-full w-full object-contain"
+                  className="h-full w-full object-cover"
                 />
               </div>
             )}
@@ -1320,13 +1322,13 @@ export default function ResultadoPage() {
                     {/* Marca d'água com logo da loja no canto superior esquerdo */}
                     {lojistaData?.logoUrl && (
                       <div className="absolute top-2 left-2 z-10 opacity-60">
-                        <div className="h-8 w-8 sm:h-10 sm:w-10 overflow-hidden rounded-full border border-white/30 bg-white/40 p-0.5">
+                        <div className="h-8 w-8 sm:h-10 sm:w-10 overflow-hidden rounded-full border border-white/30 bg-white/40">
                           <Image
                             src={lojistaData.logoUrl}
                             alt={lojistaData.nome || "Logo"}
                             width={40}
                             height={40}
-                            className="h-full w-full object-contain opacity-80"
+                            className="h-full w-full object-cover opacity-80"
                           />
                         </div>
                       </div>
@@ -1560,13 +1562,13 @@ export default function ResultadoPage() {
                         {/* Marca d'água com logo da loja no canto superior esquerdo */}
                         {lojistaData?.logoUrl && (
                           <div className="absolute top-2 left-2 z-10 opacity-60">
-                            <div className="h-6 w-6 sm:h-8 sm:w-8 overflow-hidden rounded-full border border-white/30 bg-white/40 p-0.5">
+                            <div className="h-6 w-6 sm:h-8 sm:w-8 overflow-hidden rounded-full border border-white/30 bg-white/40">
                               <Image
                                 src={lojistaData.logoUrl}
                                 alt={lojistaData.nome || "Logo"}
                                 width={32}
                                 height={32}
-                                className="h-full w-full object-contain opacity-80"
+                                className="h-full w-full object-cover opacity-80"
                               />
                             </div>
                           </div>
@@ -1622,13 +1624,13 @@ export default function ResultadoPage() {
                       {/* Marca d'água com logo da loja no canto superior esquerdo */}
                       {lojistaData?.logoUrl && (
                         <div className="absolute top-4 left-4 z-10 opacity-70">
-                          <div className="h-12 w-12 sm:h-16 sm:w-16 overflow-hidden rounded-full border-2 border-white/50 bg-white/60 p-1 shadow-lg">
+                          <div className="h-12 w-12 sm:h-16 sm:w-16 overflow-hidden rounded-full border-2 border-white/50 bg-white/60 shadow-lg">
                             <Image
                               src={lojistaData.logoUrl}
                               alt={lojistaData.nome || "Logo"}
                               width={64}
                               height={64}
-                              className="h-full w-full object-contain"
+                              className="h-full w-full object-cover"
                             />
                           </div>
                         </div>
@@ -1745,13 +1747,13 @@ export default function ResultadoPage() {
                       {/* Marca d'água com logo da loja no canto superior esquerdo */}
                       {lojistaData?.logoUrl && (
                         <div className="absolute top-4 left-4 z-10 opacity-70">
-                          <div className="h-12 w-12 sm:h-16 sm:w-16 overflow-hidden rounded-full border-2 border-white/50 bg-white/60 p-1 shadow-lg">
+                          <div className="h-12 w-12 sm:h-16 sm:w-16 overflow-hidden rounded-full border-2 border-white/50 bg-white/60 shadow-lg">
                             <Image
                               src={lojistaData.logoUrl}
                               alt={lojistaData.nome || "Logo"}
                               width={64}
                               height={64}
-                              className="h-full w-full object-contain"
+                              className="h-full w-full object-cover"
                             />
                           </div>
                         </div>

@@ -716,7 +716,7 @@ export default function ExperimentarPage() {
         <div className="relative z-10 flex h-screen flex-col items-center justify-center text-white">
               {lojistaData?.logoUrl && (
             <div className="mb-4 h-24 w-24 overflow-hidden rounded-full border-2 border-white/30">
-              <img src={lojistaData.logoUrl} alt="Logo" className="h-full w-full object-contain" />
+              <img src={lojistaData.logoUrl} alt="Logo" className="h-full w-full object-cover" />
                 </div>
               )}
           <p className="font-semibold">Carregando sua experiência...</p>

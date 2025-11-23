@@ -256,7 +256,7 @@ export function ExperimentarView({
                     alt={lojistaData.nome || "Logo"}
                     width={64}
                     height={64}
-                    className="h-full w-full object-contain"
+                    className="h-full w-full object-cover"
                   />
                 </div>
               )}
@@ -949,13 +949,13 @@ export function ExperimentarView({
                         {/* Marca d'água com logo da loja no canto superior esquerdo */}
                         {lojistaData?.logoUrl && (
                           <div className="absolute top-2 left-2 z-10 opacity-60">
-                            <div className="h-6 w-6 sm:h-8 sm:w-8 overflow-hidden rounded-full border border-white/30 bg-white/40 p-0.5">
+                            <div className="h-6 w-6 sm:h-8 sm:w-8 overflow-hidden rounded-full border border-white/30 bg-white/40">
                               <Image
                                 src={lojistaData.logoUrl}
                                 alt={lojistaData.nome || "Logo"}
                                 width={32}
                                 height={32}
-                                className="h-full w-full object-contain opacity-80"
+                                className="h-full w-full object-cover opacity-80"
                               />
                             </div>
                           </div>
@@ -1009,13 +1009,13 @@ export function ExperimentarView({
                   {/* Marca d'água com logo da loja no canto superior esquerdo */}
                   {lojistaData?.logoUrl && (
                     <div className="absolute top-4 left-4 z-10 opacity-60">
-                      <div className="h-12 w-12 sm:h-14 sm:w-14 overflow-hidden rounded-full border border-white/30 bg-white/40 p-0.5">
+                      <div className="h-12 w-12 sm:h-14 sm:w-14 overflow-hidden rounded-full border border-white/30 bg-white/40">
                         <Image
                           src={lojistaData.logoUrl}
                           alt={lojistaData.nome || "Logo"}
                           width={56}
                           height={56}
-                          className="h-full w-full object-contain opacity-80"
+                          className="h-full w-full object-cover opacity-80"
                         />
                       </div>
                     </div>

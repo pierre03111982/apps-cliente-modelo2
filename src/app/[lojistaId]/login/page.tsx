@@ -250,6 +250,26 @@ function LoginPageContent() {
           throw new Error(data.error || "Erro ao cadastrar")
         }
 
+        // Verificar se cliente já está logado em outro dispositivo
+        const sessionCheckResponse = await fetch("/api/cliente/check-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lojistaId,
+            customerId: data.clienteId,
+            deviceId: typeof window !== 'undefined' ? `${navigator.userAgent}-${Date.now()}` : 'server',
+          }),
+        })
+
+        const sessionData = await sessionCheckResponse.json()
+
+        if (sessionCheckResponse.ok && sessionData.alreadyLoggedIn) {
+          // Cliente já está logado em outro dispositivo
+          setError("⚠️ Você já está logado em outro dispositivo. Por favor, faça logout do outro dispositivo antes de fazer login aqui. Por segurança, apenas um dispositivo pode estar logado por vez.")
+          setIsSubmitting(false)
+          return
+        }
+
         // Salvar dados no localStorage
         const clienteData = {
           nome,
@@ -257,6 +277,7 @@ function LoginPageContent() {
           lojistaId,
           clienteId: data.clienteId,
           loggedAt: new Date().toISOString(),
+          deviceId: typeof window !== 'undefined' ? `${navigator.userAgent}-${Date.now()}` : 'server',
         }
         localStorage.setItem(`cliente_${lojistaId}`, JSON.stringify(clienteData))
 
@@ -288,6 +309,26 @@ function LoginPageContent() {
           throw new Error(data.error || "Erro ao fazer login")
         }
 
+        // Verificar se cliente já está logado em outro dispositivo
+        const sessionCheckResponse = await fetch("/api/cliente/check-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lojistaId,
+            customerId: data.cliente.id,
+            deviceId: typeof window !== 'undefined' ? `${navigator.userAgent}-${Date.now()}` : 'server',
+          }),
+        })
+
+        const sessionData = await sessionCheckResponse.json()
+
+        if (sessionCheckResponse.ok && sessionData.alreadyLoggedIn) {
+          // Cliente já está logado em outro dispositivo
+          setError("⚠️ Você já está logado em outro dispositivo. Por favor, faça logout do outro dispositivo antes de fazer login aqui. Por segurança, apenas um dispositivo pode estar logado por vez.")
+          setIsSubmitting(false)
+          return
+        }
+
         // Salvar dados no localStorage
         const clienteData = {
           nome: data.cliente.nome,
@@ -295,6 +336,7 @@ function LoginPageContent() {
           lojistaId,
           clienteId: data.cliente.id,
           loggedAt: new Date().toISOString(),
+          deviceId: typeof window !== 'undefined' ? `${navigator.userAgent}-${Date.now()}` : 'server',
         }
         localStorage.setItem(`cliente_${lojistaId}`, JSON.stringify(clienteData))
 
