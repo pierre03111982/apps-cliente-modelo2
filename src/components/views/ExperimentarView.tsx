@@ -442,18 +442,29 @@ export function ExperimentarView({
                     </button>
                     {/* Imagem do Produto */}
                     {produto.imagemUrl && (
-                      <div className="relative aspect-square w-full">
-                        <Image
-                          src={produto.imagemUrl}
-                          alt={produto.nome}
-                          fill
-                          className="object-cover"
-                          unoptimized={produto.imagemUrl?.includes('firebase') || produto.imagemUrl?.includes('googleapis')}
-                          onError={(e) => {
-                            console.error(`[ExperimentarView] Erro ao carregar imagem: ${produto.imagemUrl}`, e);
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
+                      <div className="relative aspect-square w-full bg-gray-100 flex items-center justify-center">
+                        {(produto.imagemUrl?.includes('storage.googleapis.com') || produto.imagemUrl?.includes('firebasestorage.googleapis.com')) ? (
+                          <img
+                            src={produto.imagemUrl}
+                            alt={produto.nome}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              console.error(`[ExperimentarView] Erro ao carregar imagem: ${produto.imagemUrl}`, e);
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <Image
+                            src={produto.imagemUrl}
+                            alt={produto.nome}
+                            fill
+                            className="object-cover"
+                            onError={(e) => {
+                              console.error(`[ExperimentarView] Erro ao carregar imagem: ${produto.imagemUrl}`, e);
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        )}
                       </div>
                     )}
                     {/* Informações do Produto */}
@@ -629,18 +640,29 @@ export function ExperimentarView({
                     </div>
 
                     {produto.imagemUrl && (
-                      <div className="relative aspect-square w-full">
-                        <Image 
-                          src={produto.imagemUrl} 
-                          alt={produto.nome} 
-                          fill 
-                          className="object-cover"
-                          unoptimized={produto.imagemUrl?.includes('firebase') || produto.imagemUrl?.includes('googleapis')}
-                          onError={(e) => {
-                            console.error(`[ExperimentarView] Erro ao carregar imagem: ${produto.imagemUrl}`, e);
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
+                      <div className="relative aspect-square w-full bg-gray-100 flex items-center justify-center">
+                        {(produto.imagemUrl?.includes('storage.googleapis.com') || produto.imagemUrl?.includes('firebasestorage.googleapis.com')) ? (
+                          <img
+                            src={produto.imagemUrl}
+                            alt={produto.nome}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              console.error(`[ExperimentarView] Erro ao carregar imagem: ${produto.imagemUrl}`, e);
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <Image 
+                            src={produto.imagemUrl} 
+                            alt={produto.nome} 
+                            fill 
+                            className="object-cover"
+                            onError={(e) => {
+                              console.error(`[ExperimentarView] Erro ao carregar imagem: ${produto.imagemUrl}`, e);
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        )}
                       </div>
                     )}
                     <div className="p-2 bg-purple-900">
@@ -751,18 +773,29 @@ export function ExperimentarView({
               {/* Imagem do Produto */}
               {selectedProductDetail.imagemUrl && (
                 <div className="relative w-full min-h-96 rounded-lg overflow-hidden border-2 border-purple-500 bg-white flex items-center justify-center">
-                  <Image
-                    src={selectedProductDetail.imagemUrl}
-                    alt={selectedProductDetail.nome}
-                    width={800}
-                    height={800}
-                    className="object-contain max-h-[600px] w-auto h-auto"
-                    unoptimized={selectedProductDetail.imagemUrl?.includes('firebase') || selectedProductDetail.imagemUrl?.includes('googleapis')}
-                    onError={(e) => {
-                      console.error(`[ExperimentarView] Erro ao carregar imagem: ${selectedProductDetail.imagemUrl}`, e);
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
+                  {(selectedProductDetail.imagemUrl?.includes('storage.googleapis.com') || selectedProductDetail.imagemUrl?.includes('firebasestorage.googleapis.com')) ? (
+                    <img
+                      src={selectedProductDetail.imagemUrl}
+                      alt={selectedProductDetail.nome}
+                      className="max-h-[600px] w-auto h-auto object-contain"
+                      onError={(e) => {
+                        console.error(`[ExperimentarView] Erro ao carregar imagem: ${selectedProductDetail.imagemUrl}`, e);
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <Image
+                      src={selectedProductDetail.imagemUrl}
+                      alt={selectedProductDetail.nome}
+                      width={800}
+                      height={800}
+                      className="object-contain max-h-[600px] w-auto h-auto"
+                      onError={(e) => {
+                        console.error(`[ExperimentarView] Erro ao carregar imagem: ${selectedProductDetail.imagemUrl}`, e);
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  )}
                 </div>
               )}
 
