@@ -100,7 +100,7 @@ export default function ResultadoPage() {
     }
 
     loadData()
-  }, [lojistaId])
+  }, [lojistaId, loadFavorites])
 
   // Verificar se já foi votado
   const checkVoteStatus = async (compositionId: string | null) => {
@@ -361,34 +361,60 @@ export default function ResultadoPage() {
 
   // Carregar favoritos
   const loadFavorites = useCallback(async () => {
-    if (!lojistaId) return
+    if (!lojistaId) {
+      console.warn("[ResultadoPage] loadFavorites: lojistaId não encontrado")
+      return
+    }
 
     try {
       setIsLoadingFavorites(true)
       const stored = localStorage.getItem(`cliente_${lojistaId}`)
-      if (!stored) return
+      if (!stored) {
+        console.warn("[ResultadoPage] loadFavorites: Cliente não encontrado no localStorage")
+        setFavorites([])
+        return
+      }
 
       const clienteData = JSON.parse(stored)
       const clienteId = clienteData.clienteId
 
-      if (!clienteId) return
+      if (!clienteId) {
+        console.warn("[ResultadoPage] loadFavorites: clienteId não encontrado nos dados do localStorage")
+        setFavorites([])
+        return
+      }
+
+      console.log("[ResultadoPage] Carregando favoritos para:", { lojistaId, clienteId })
 
       // Adicionar timestamp para evitar cache
-      const response = await fetch(
-        `/api/cliente/favoritos?lojistaId=${encodeURIComponent(lojistaId)}&customerId=${encodeURIComponent(clienteId)}&_t=${Date.now()}`,
-        {
-          cache: 'no-store',
-          headers: {
-            'Cache-Control': 'no-cache',
-          }
+      const url = `/api/cliente/favoritos?lojistaId=${encodeURIComponent(lojistaId)}&customerId=${encodeURIComponent(clienteId)}&_t=${Date.now()}`
+      console.log("[ResultadoPage] URL da requisição:", url)
+      
+      const response = await fetch(url, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
         }
-      )
+      })
 
-      if (response.ok) {
-        const data = await response.json()
-        const favoritesList = data.favorites || data.favoritos || []
-        
-        console.log("[ResultadoPage] Total de favoritos recebidos:", favoritesList.length)
+      console.log("[ResultadoPage] Resposta da API:", response.status, response.statusText)
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error("[ResultadoPage] Erro ao buscar favoritos:", response.status, errorData)
+        setFavorites([])
+        return
+      }
+
+      const data = await response.json().catch((err) => {
+        console.error("[ResultadoPage] Erro ao parsear JSON:", err)
+        return { favorites: [] }
+      })
+      
+      const favoritesList = data.favorites || data.favoritos || []
+      
+      console.log("[ResultadoPage] Total de favoritos recebidos:", favoritesList.length)
+      console.log("[ResultadoPage] Dados brutos dos favoritos:", favoritesList)
         
         // Filtrar apenas os likes (action === "like" ou tipo === "like" ou votedType === "like")
         // IMPORTANTE: Excluir explicitamente dislikes
@@ -484,11 +510,22 @@ export default function ResultadoPage() {
         const limitedFavorites = sortedFavorites.slice(0, 10)
         
         console.log("[ResultadoPage] Favoritos carregados:", limitedFavorites.length, "de", likesOnly.length, "likes totais (após remover duplicatas)")
+        console.log("[ResultadoPage] Favoritos finais:", limitedFavorites.map((f: any) => ({
+          id: f.id,
+          imagemUrl: f.imagemUrl?.substring(0, 50),
+          action: f.action,
+          createdAt: f.createdAt
+        })))
         
         setFavorites(limitedFavorites)
+      } else {
+        console.warn("[ResultadoPage] Resposta não OK, definindo favoritos vazios")
+        setFavorites([])
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("[ResultadoPage] Erro ao carregar favoritos:", error)
+      console.error("[ResultadoPage] Stack do erro:", error?.stack)
+      setFavorites([])
     } finally {
       setIsLoadingFavorites(false)
     }
