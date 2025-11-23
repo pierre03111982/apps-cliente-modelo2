@@ -776,8 +776,30 @@ export default function ResultadoPage() {
         compositionId = `refined-${imageHash}`
       }
 
+      // Validar se temos todos os dados necessários
+      if (!clienteId) {
+        console.error("[ResultadoPage] Erro: clienteId não encontrado no localStorage")
+        alert("Erro: Cliente não identificado. Faça login novamente.")
+        setLoadingAction(null)
+        return
+      }
+
+      if (!currentLook.imagemUrl || currentLook.imagemUrl.trim() === "") {
+        console.error("[ResultadoPage] Erro: imagemUrl vazia ou ausente:", currentLook)
+        alert("Erro: Imagem não disponível. Não é possível salvar como favorito.")
+        setLoadingAction(null)
+        return
+      }
+
       // Enviar like imediatamente com a imagem original (não bloquear)
-      console.log("[ResultadoPage] Salvando like com imagemUrl original:", currentLook.imagemUrl)
+      console.log("[ResultadoPage] Salvando like:", {
+        lojistaId,
+        clienteId,
+        imagemUrl: currentLook.imagemUrl?.substring(0, 100),
+        compositionId,
+        jobId,
+        produtoNome: currentLook.produtoNome,
+      })
 
       const response = await fetch("/api/actions", {
         method: "POST",
