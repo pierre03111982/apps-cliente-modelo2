@@ -449,16 +449,11 @@ function LoginPageContent() {
 
         const sessionData = await sessionCheckResponse.json()
 
-        // Se o backend disser que já está logado E não for o mesmo dispositivo, bloquear
-        if (sessionCheckResponse.ok && sessionData.alreadyLoggedIn) {
-          // Verificar se é realmente outro dispositivo (deviceId diferente)
-          const backendDeviceId = sessionData.activeDeviceId
-          if (backendDeviceId && backendDeviceId !== currentDeviceIdForLogin) {
-            setError("⚠️ Você já está logado em outro dispositivo. Por favor, faça logout do outro dispositivo antes de fazer login aqui. Por segurança, apenas um dispositivo pode estar logado por vez.")
-            setIsSubmitting(false)
-            return
-          }
-          // Se for o mesmo deviceId, permitir login (mesmo dispositivo)
+        // NOVA LÓGICA: "Último a logar ganha" - o backend já desconecta o dispositivo anterior
+        // Não precisamos bloquear aqui, o backend já gerencia isso
+        if (sessionCheckResponse.ok && sessionData.previousDeviceDisconnected) {
+          console.log("[Login] Dispositivo anterior foi desconectado automaticamente")
+          // Continuar com o login normalmente
         }
 
         // Salvar dados no localStorage
