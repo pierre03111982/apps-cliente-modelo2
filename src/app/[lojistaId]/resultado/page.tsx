@@ -562,10 +562,18 @@ export default function ResultadoPage() {
         console.log("[ResultadoPage] Favoritos carregados:", limitedFavorites.length, "de", likesOnly.length, "likes totais (após remover duplicatas)")
         console.log("[ResultadoPage] Favoritos finais:", limitedFavorites.map((f: any) => ({
           id: f.id,
-          imagemUrl: f.imagemUrl?.substring(0, 50),
+          imagemUrl: f.imagemUrl?.substring(0, 100),
+          hasImagemUrl: !!f.imagemUrl,
+          imagemUrlLength: f.imagemUrl?.length || 0,
           action: f.action,
           createdAt: f.createdAt
         })))
+        
+        // Verificar se há favoritos sem imagemUrl
+        const favoritosSemImagem = limitedFavorites.filter((f: any) => !f.imagemUrl || f.imagemUrl.trim() === "")
+        if (favoritosSemImagem.length > 0) {
+          console.warn("[ResultadoPage] AVISO: Favoritos sem imagemUrl:", favoritosSemImagem.length, favoritosSemImagem.map((f: any) => f.id))
+        }
         
         setFavorites(limitedFavorites)
       } else {
