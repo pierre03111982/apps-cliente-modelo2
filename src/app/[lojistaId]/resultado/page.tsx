@@ -570,79 +570,8 @@ export default function ResultadoPage() {
         compositionId = `refined-${imageHash}`
       }
 
-      // Adicionar marca d'água se houver logo e fazer upload (com timeout para não bloquear)
-      let imagemUrlComWatermark = currentLook.imagemUrl
-      if (lojistaData?.logoUrl && currentLook.imagemUrl) {
-        try {
-          console.log("[ResultadoPage] Iniciando processo de marca d'água...")
-          
-          // Timeout de 10 segundos para o processo de marca d'água
-          const watermarkPromise = (async () => {
-            const watermarkedBlobUrl = await addWatermarkToImage(currentLook.imagemUrl, lojistaData.logoUrl)
-            console.log("[ResultadoPage] Marca d'água criada, fazendo upload...")
-            
-            // Converter blob URL para File e fazer upload
-            const response = await fetch(watermarkedBlobUrl)
-            if (!response.ok) {
-              throw new Error(`Erro ao buscar blob: ${response.status}`)
-            }
-            
-            const blob = await response.blob()
-            if (!blob || blob.size === 0) {
-              throw new Error('Blob vazio ou inválido')
-            }
-            
-            const file = new File([blob], `look-watermarked-${Date.now()}.jpg`, { type: 'image/jpeg' })
-            
-            // Fazer upload da imagem com marca d'água
-            const formData = new FormData()
-            formData.append('photo', file)
-            
-            const uploadResponse = await fetch('/api/upload-photo', {
-              method: 'POST',
-              body: formData,
-            })
-            
-            if (uploadResponse.ok) {
-              const uploadData = await uploadResponse.json()
-              const uploadedUrl = uploadData.url || uploadData.imageUrl
-              if (uploadedUrl && uploadedUrl.startsWith('http')) {
-                console.log("[ResultadoPage] Upload da imagem com marca d'água concluído:", uploadedUrl)
-                // Limpar blob URL temporário
-                URL.revokeObjectURL(watermarkedBlobUrl)
-                return uploadedUrl
-              } else {
-                console.warn("[ResultadoPage] URL de upload inválida, usando imagem original")
-                URL.revokeObjectURL(watermarkedBlobUrl)
-                return currentLook.imagemUrl
-              }
-            } else {
-              const errorData = await uploadResponse.json().catch(() => ({}))
-              console.error("[ResultadoPage] Erro no upload da marca d'água:", uploadResponse.status, errorData)
-              // Limpar blob URL temporário
-              URL.revokeObjectURL(watermarkedBlobUrl)
-              return currentLook.imagemUrl
-            }
-          })()
-          
-          // Aguardar com timeout de 10 segundos
-          const timeoutPromise = new Promise((resolve) => {
-            setTimeout(() => resolve(currentLook.imagemUrl), 10000)
-          })
-          
-          imagemUrlComWatermark = await Promise.race([watermarkPromise, timeoutPromise]) as string
-          
-          if (imagemUrlComWatermark === currentLook.imagemUrl) {
-            console.warn("[ResultadoPage] Timeout ou erro na marca d'água, usando imagem original")
-          }
-        } catch (error) {
-          console.error("[ResultadoPage] Erro ao adicionar marca d'água, usando imagem original:", error)
-          // Se falhar, usar imagem original
-          imagemUrlComWatermark = currentLook.imagemUrl
-        }
-      }
-      
-      console.log("[ResultadoPage] Salvando like com imagemUrl:", imagemUrlComWatermark)
+      // Enviar like imediatamente com a imagem original (não bloquear)
+      console.log("[ResultadoPage] Salvando like com imagemUrl original:", currentLook.imagemUrl)
 
       const response = await fetch("/api/actions", {
         method: "POST",
@@ -656,7 +585,7 @@ export default function ResultadoPage() {
           customerName: clienteNome,
           productName: currentLook.produtoNome,
           productPrice: currentLook.produtoPreco || null,
-          imagemUrl: imagemUrlComWatermark,
+          imagemUrl: currentLook.imagemUrl, // Usar imagem original imediatamente
         }),
       })
 
@@ -667,20 +596,83 @@ export default function ResultadoPage() {
       if (response.ok && responseData.success !== false) {
         setHasVoted(true)
         setVotedType("like")
-        console.log("[ResultadoPage] Like salvo com sucesso, atualizando favoritos...")
-        // Aguardar um pouco antes de atualizar favoritos para garantir que o backend processou
+        setLoadingAction(null) // Liberar o botão imediatamente
+        
+        console.log("[ResultadoPage] Like salvo com sucesso")
+        
+        // Processar marca d'água em background (não bloqueia a resposta)
+        if (lojistaData?.logoUrl && currentLook.imagemUrl) {
+          // Processar marca d'água de forma assíncrona sem bloquear
+          (async () => {
+            try {
+              console.log("[ResultadoPage] Iniciando processo de marca d'água em background...")
+              
+              // Timeout reduzido para 5 segundos
+              const watermarkPromise = (async () => {
+                const watermarkedBlobUrl = await addWatermarkToImage(currentLook.imagemUrl, lojistaData.logoUrl)
+                console.log("[ResultadoPage] Marca d'água criada, fazendo upload...")
+                
+                const response = await fetch(watermarkedBlobUrl)
+                if (!response.ok) {
+                  throw new Error(`Erro ao buscar blob: ${response.status}`)
+                }
+                
+                const blob = await response.blob()
+                if (!blob || blob.size === 0) {
+                  throw new Error('Blob vazio ou inválido')
+                }
+                
+                const file = new File([blob], `look-watermarked-${Date.now()}.jpg`, { type: 'image/jpeg' })
+                const formData = new FormData()
+                formData.append('photo', file)
+                
+                const uploadResponse = await fetch('/api/upload-photo', {
+                  method: 'POST',
+                  body: formData,
+                })
+                
+                if (uploadResponse.ok) {
+                  const uploadData = await uploadResponse.json()
+                  const uploadedUrl = uploadData.url || uploadData.imageUrl
+                  if (uploadedUrl && uploadedUrl.startsWith('http')) {
+                    console.log("[ResultadoPage] Upload da imagem com marca d'água concluído:", uploadedUrl)
+                    URL.revokeObjectURL(watermarkedBlobUrl)
+                    
+                    // Atualizar o favorito com a imagem com marca d'água (opcional)
+                    // Isso pode ser feito em background sem bloquear a UI
+                    return uploadedUrl
+                  }
+                }
+                URL.revokeObjectURL(watermarkedBlobUrl)
+                return null
+              })()
+              
+              const timeoutPromise = new Promise((resolve) => {
+                setTimeout(() => resolve(null), 5000) // Timeout reduzido para 5 segundos
+              })
+              
+              await Promise.race([watermarkPromise, timeoutPromise])
+              console.log("[ResultadoPage] Processo de marca d'água concluído em background")
+            } catch (error) {
+              console.error("[ResultadoPage] Erro ao processar marca d'água em background:", error)
+              // Não mostrar erro ao usuário, pois o like já foi salvo
+            }
+          })()
+        }
+        
+        // Atualizar favoritos após um pequeno delay (não bloqueia)
         setTimeout(async () => {
           await loadFavorites()
-        }, 1000) // Aumentado para 1 segundo para dar mais tempo ao backend
+        }, 500) // Reduzido para 500ms
       } else {
         console.error("[ResultadoPage] Erro ao registrar like:", response.status, responseData)
         const errorMessage = responseData.error || "Erro ao salvar like. Tente novamente."
         alert(errorMessage)
+        setLoadingAction(null)
       }
     } catch (error) {
       console.error("[ResultadoPage] Erro ao registrar like:", error)
       alert("Erro ao salvar like. Tente novamente.")
-    } finally {
       setLoadingAction(null)
     }
   }, [hasVoted, currentLookIndex, looks, lojistaId, lojistaData, loadFavorites])
@@ -739,16 +731,17 @@ export default function ResultadoPage() {
       if (response.ok && responseData.success !== false) {
         setHasVoted(true)
         setVotedType("dislike")
+        setLoadingAction(null) // Liberar o botão imediatamente
         console.log("[ResultadoPage] Dislike salvo com sucesso")
       } else {
         console.error("[ResultadoPage] Erro ao registrar dislike:", response.status, responseData)
         const errorMessage = responseData.error || "Erro ao salvar dislike. Tente novamente."
         alert(errorMessage)
+        setLoadingAction(null)
       }
     } catch (error) {
       console.error("[ResultadoPage] Erro ao registrar dislike:", error)
       alert("Erro ao salvar dislike. Tente novamente.")
-    } finally {
       setLoadingAction(null)
     }
   }, [hasVoted, currentLookIndex, looks, lojistaId])
