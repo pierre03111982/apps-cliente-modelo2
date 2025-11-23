@@ -576,10 +576,6 @@ export default function ResultadoPage() {
         }
         
         setFavorites(limitedFavorites)
-      } else {
-        console.warn("[ResultadoPage] Resposta não OK, definindo favoritos vazios")
-        setFavorites([])
-      }
     } catch (error: any) {
       console.error("[ResultadoPage] Erro ao carregar favoritos:", error)
       console.error("[ResultadoPage] Stack do erro:", error?.stack)
