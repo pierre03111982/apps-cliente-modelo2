@@ -395,16 +395,32 @@ export default function ResultadoPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentLookIndex, fromFavoritos, looks, lojistaId])
 
-  // Recarregar favoritos quando o modal for aberto ou quando der like
+  // Recarregar favoritos quando o modal for aberto OU quando der like (com múltiplas tentativas para garantir)
   useEffect(() => {
     if (showFavoritesModal && lojistaId) {
+      console.log("[ResultadoPage] Modal de favoritos aberto - recarregando favoritos...")
       // Recarregar imediatamente
       loadFavorites()
-      // Recarregar novamente após 1 segundo para garantir sincronização
-      const timeout = setTimeout(() => {
+      // Recarregar novamente após 300ms para garantir que o último like apareça
+      const timeout1 = setTimeout(() => {
+        console.log("[ResultadoPage] Recarregando favoritos após abertura do modal (tentativa 2)...")
         loadFavorites()
-      }, 1000)
-      return () => clearTimeout(timeout)
+      }, 300)
+      // Recarregar novamente após 800ms
+      const timeout2 = setTimeout(() => {
+        console.log("[ResultadoPage] Recarregando favoritos após abertura do modal (tentativa 3)...")
+        loadFavorites()
+      }, 800)
+      // Recarregar novamente após 1500ms (garantir)
+      const timeout3 = setTimeout(() => {
+        console.log("[ResultadoPage] Recarregando favoritos após abertura do modal (tentativa 4)...")
+        loadFavorites()
+      }, 1500)
+      return () => {
+        clearTimeout(timeout1)
+        clearTimeout(timeout2)
+        clearTimeout(timeout3)
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showFavoritesModal, lojistaId, votedType])
