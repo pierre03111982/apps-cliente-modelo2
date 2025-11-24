@@ -60,38 +60,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
-
-      console.error("[Check Vote Proxy] Erro ao buscar:", fetchError);
-      // Em caso de erro, retornar que não votou (não bloquear)
-      return NextResponse.json(
-        { votedType: null, action: null },
-        { status: 200 }
-      );
-    }
-  } catch (error: any) {
-    console.error("[Check Vote Proxy] Erro:", error);
-    return NextResponse.json(
-      { error: "Erro ao verificar voto" },
-      { status: 500 }
-    );
-  }
-}
-
-
-      console.error("[Check Vote Proxy] Erro ao buscar:", fetchError);
-      // Em caso de erro, retornar que não votou (não bloquear)
-      return NextResponse.json(
-        { votedType: null, action: null },
-        { status: 200 }
-      );
-    }
-  } catch (error: any) {
-    console.error("[Check Vote Proxy] Erro:", error);
-    return NextResponse.json(
-      { error: "Erro ao verificar voto" },
-      { status: 500 }
-    );
-  }
-}
-

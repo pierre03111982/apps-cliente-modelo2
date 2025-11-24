@@ -27,21 +27,58 @@ export async function POST(request: NextRequest) {
 
     console.log("[Actions Proxy] Enviando para backend:", { action: payload.action, lojistaId: payload.lojistaId });
 
-    const response = await fetch(`${backendUrl}/api/actions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    // Criar AbortController para timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos
+
+    let response: Response;
+    try {
+      response = await fetch(`${backendUrl}/api/actions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId);
+      console.error("[Actions Proxy] Erro ao conectar com backend:", fetchError);
+      if (fetchError.name === 'AbortError' || fetchError.message?.includes('timeout')) {
+        return NextResponse.json(
+          { success: false, error: "Timeout ao comunicar com o servidor. Tente novamente." },
+          { status: 504 }
+        );
+      }
+      if (fetchError.message?.includes('ECONNREFUSED') || fetchError.message?.includes('fetch failed')) {
+        return NextResponse.json(
+          { success: false, error: "Servidor backend não está disponível. Verifique se está rodando em " + backendUrl },
+          { status: 503 }
+        );
+      }
+      throw fetchError;
+    }
 
     console.log("[Actions Proxy] Resposta do backend:", response.status, response.statusText);
 
-    const data = await response.json().catch((err) => {
-      console.error("[Actions Proxy] Erro ao parsear JSON:", err);
-      return { 
-        success: false, 
-        error: "Erro ao comunicar com o servidor" 
-      };
-    });
+    let data: any;
+    try {
+      const text = await response.text();
+      if (!text) {
+        console.warn("[Actions Proxy] Resposta vazia do backend");
+        data = { success: false, error: "Resposta vazia do servidor" };
+      } else {
+        data = JSON.parse(text);
+      }
+    } catch (parseError) {
+      console.error("[Actions Proxy] Erro ao parsear JSON:", parseError);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "Erro ao processar resposta do servidor" 
+        },
+        { status: 500 }
+      );
+    }
 
     console.log("[Actions Proxy] Dados recebidos:", data);
 
@@ -67,58 +104,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-
-
-    console.log("[Actions Proxy] Dados recebidos:", data);
-
-    if (!response.ok) {
-      console.error("[Actions Proxy] Erro na resposta:", response.status, data);
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: data.error || "Erro interno ao registrar ação." 
-        }, 
-        { status: response.status }
-      );
-    }
-
-    console.log("[Actions Proxy] Sucesso:", data);
-    return NextResponse.json(data);
-  } catch (error: any) {
-    console.error("[Actions Proxy] Erro:", error);
-    console.error("[Actions Proxy] Stack:", error?.stack);
-    return NextResponse.json(
-      { success: false, error: error.message || "Erro interno ao registrar ação." },
-      { status: 500 }
-    );
-  }
-}
-
-
-
-    console.log("[Actions Proxy] Dados recebidos:", data);
-
-    if (!response.ok) {
-      console.error("[Actions Proxy] Erro na resposta:", response.status, data);
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: data.error || "Erro interno ao registrar ação." 
-        }, 
-        { status: response.status }
-      );
-    }
-
-    console.log("[Actions Proxy] Sucesso:", data);
-    return NextResponse.json(data);
-  } catch (error: any) {
-    console.error("[Actions Proxy] Erro:", error);
-    console.error("[Actions Proxy] Stack:", error?.stack);
-    return NextResponse.json(
-      { success: false, error: error.message || "Erro interno ao registrar ação." },
-      { status: 500 }
-    );
-  }
-}
-

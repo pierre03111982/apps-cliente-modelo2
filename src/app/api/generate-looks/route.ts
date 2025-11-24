@@ -9,9 +9,11 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const backendUrl =
-      process.env.NEXT_PUBLIC_BACKEND_URL ?? DEFAULT_LOCAL_BACKEND;
+      process.env.NEXT_PUBLIC_BACKEND_URL ||
+      process.env.NEXT_PUBLIC_PAINELADM_URL ||
+      DEFAULT_LOCAL_BACKEND;
 
-    console.log("[modelo-1/api/generate-looks] Iniciando requisição:", {
+    console.log("[modelo-2/api/generate-looks] Iniciando requisição:", {
       backendUrl,
       hasPersonImageUrl: !!body.personImageUrl,
       productIdsCount: body.productIds?.length || 0,
@@ -19,50 +21,108 @@ export async function POST(request: NextRequest) {
       customerId: body.customerId,
     });
 
-    const paineladmResponse = await fetch(
-      `${backendUrl}/api/lojista/composicoes/generate`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      }
-    );
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minutos de timeout
 
-    const data = await paineladmResponse.json();
+    let paineladmResponse: Response;
+    try {
+      paineladmResponse = await fetch(
+        `${backendUrl}/api/lojista/composicoes/generate`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        }
+      );
+      clearTimeout(timeoutId);
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId);
+      console.error("[modelo-2/api/generate-looks] Erro ao conectar com backend:", fetchError);
+      
+      if (fetchError.name === 'AbortError' || fetchError.message?.includes('timeout')) {
+        return NextResponse.json(
+          {
+            error: "Timeout ao gerar composição. O processo está demorando mais que o esperado.",
+            details: "Tente novamente em alguns instantes.",
+          },
+          { status: 504 }
+        );
+      }
+      
+      if (fetchError.message?.includes('ECONNREFUSED') || fetchError.message?.includes('fetch failed')) {
+        return NextResponse.json(
+          {
+            error: "Servidor backend não está disponível.",
+            details: `Verifique se o backend está rodando em ${backendUrl}`,
+          },
+          { status: 503 }
+        );
+      }
+      
+      throw fetchError;
+    }
+
+    let data: any;
+    try {
+      const text = await paineladmResponse.text();
+      if (!text) {
+        console.error("[modelo-2/api/generate-looks] Resposta vazia do backend");
+        return NextResponse.json(
+          {
+            error: "Resposta vazia do servidor",
+            details: "O backend não retornou dados válidos.",
+          },
+          { status: 500 }
+        );
+      }
+      data = JSON.parse(text);
+    } catch (parseError) {
+      console.error("[modelo-2/api/generate-looks] Erro ao parsear resposta:", parseError);
+      return NextResponse.json(
+        {
+          error: "Erro ao processar resposta do servidor",
+          details: "A resposta do backend não está em formato válido.",
+        },
+        { status: 500 }
+      );
+    }
 
     if (!paineladmResponse.ok) {
-      console.error("[modelo-1/api/generate-looks] Erro do backend:", {
+      console.error("[modelo-2/api/generate-looks] Erro do backend:", {
         status: paineladmResponse.status,
         error: data.error,
         details: data.details,
+        message: data.message,
       });
       
       return NextResponse.json(
         {
-          error: data.error || "Erro ao gerar composição",
+          error: data.error || data.message || "Erro ao gerar composição",
           details: data.details || `Status: ${paineladmResponse.status}`,
         },
         { status: paineladmResponse.status }
       );
     }
 
-    console.log("[modelo-1/api/generate-looks] Sucesso:", {
+    console.log("[modelo-2/api/generate-looks] Sucesso:", {
       composicaoId: data.composicaoId,
       looksCount: data.looks?.length || 0,
     });
 
     return NextResponse.json(data, { status: paineladmResponse.status });
-  } catch (error) {
-    console.error("[modelo-1/api/generate-looks] Erro no proxy:", error);
+  } catch (error: any) {
+    console.error("[modelo-2/api/generate-looks] Erro inesperado no proxy:", error);
+    console.error("[modelo-2/api/generate-looks] Stack:", error?.stack);
     
     const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
     
     return NextResponse.json(
       {
         error: "Erro interno no proxy de geração",
-        details: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? errorMessage : "Erro ao processar requisição.",
       },
       { status: 500 }
     );

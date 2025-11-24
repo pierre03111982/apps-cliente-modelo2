@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { fetchLojistaData, fetchProdutos } from "@/lib/firebaseQueries"
 import type { Produto, LojistaData, GeneratedLook } from "@/lib/types"
@@ -36,6 +36,9 @@ export default function ExperimentarPage() {
   const [isRefineMode, setIsRefineMode] = useState(false)
   const [refineBaseImageUrl, setRefineBaseImageUrl] = useState<string | null>(null)
   const [refineCompositionId, setRefineCompositionId] = useState<string | null>(null)
+  
+  // Referência para o input de upload de foto
+  const photoInputRef = useRef<HTMLInputElement>(null)
 
   // Carregar dados da loja e produtos
   useEffect(() => {
@@ -132,56 +135,150 @@ export default function ExperimentarPage() {
     }
   }, [lojistaId])
 
+  // Flag para evitar execução múltipla do useEffect
+  const photoLoadedRef = useRef(false)
+
   // Verificar se cliente está logado e carregar foto do sessionStorage
   useEffect(() => {
     if (!lojistaId) return
+    
+    // Evitar execução múltipla
+    if (photoLoadedRef.current) return
 
     const checkAuthAndFinalize = () => {
-    const stored = localStorage.getItem(`cliente_${lojistaId}`)
-    if (!stored) {
-      router.push(`/${lojistaId}/login`)
+      const stored = localStorage.getItem(`cliente_${lojistaId}`)
+      if (!stored) {
+        router.push(`/${lojistaId}/login`)
         return // Não finaliza a inicialização, pois vai redirecionar
-    }
+      }
 
       // Se chegou aqui, está autenticado, pode finalizar a inicialização
       setIsInitializing(false);
 
-    // Verificar se está em modo de refinamento
-    const refineMode = sessionStorage.getItem(`refine_mode_${lojistaId}`)
-    const baseImageUrl = sessionStorage.getItem(`refine_baseImage_${lojistaId}`)
-    const compositionId = sessionStorage.getItem(`refine_compositionId_${lojistaId}`)
+      // Verificar se está em modo de refinamento
+      const refineMode = sessionStorage.getItem(`refine_mode_${lojistaId}`)
+      const baseImageUrl = sessionStorage.getItem(`refine_baseImage_${lojistaId}`)
+      const compositionId = sessionStorage.getItem(`refine_compositionId_${lojistaId}`)
 
-    if (refineMode === "true" && baseImageUrl) {
-      setIsRefineMode(true)
-      setRefineBaseImageUrl(baseImageUrl)
-      if (compositionId) {
-        setRefineCompositionId(compositionId)
-      }
-      // Em modo refinamento, mostrar a imagem base ao invés de permitir upload
-      setUserPhotoUrl(baseImageUrl)
-    } else {
-      // Carregar foto do sessionStorage quando volta da Tela 3 (modo normal) ou quando seleciona favorito
-      const savedPhotoUrl = sessionStorage.getItem(`photo_${lojistaId}`)
-      if (savedPhotoUrl) {
-        // Sempre substituir a foto atual pela foto salva (permite substituir foto de upload por favorito)
-        setUserPhotoUrl(savedPhotoUrl)
-        console.log("[ExperimentarPage] Foto carregada do sessionStorage:", savedPhotoUrl)
-      }
+      if (refineMode === "true" && baseImageUrl) {
+        setIsRefineMode(true)
+        setRefineBaseImageUrl(baseImageUrl)
+        if (compositionId) {
+          setRefineCompositionId(compositionId)
+        }
+        // Em modo refinamento, mostrar a imagem base ao invés de permitir upload
+        setUserPhotoUrl(baseImageUrl)
+        photoLoadedRef.current = true
+      } else {
+        // TELA 2 (EXPERIMENTAR): Sempre manter a foto original do upload
+        // Se selecionou favorito, usar a foto do favorito (substitui original)
+        // Caso contrário, restaurar a foto original do cliente
+        
+        const originalPhoto = sessionStorage.getItem(`original_photo_${lojistaId}`)
+        const savedPhotoUrl = sessionStorage.getItem(`photo_${lojistaId}`)
+        
+        // Verificar se veio de seleção de favorito (foto do favorito deve estar em photo_${lojistaId})
+        // Se não houver foto original salva e houver foto salva, pode ser que veio de favorito
+        const isFromFavorite = savedPhotoUrl && 
+                               (savedPhotoUrl.startsWith('http://') || savedPhotoUrl.startsWith('https://')) &&
+                               savedPhotoUrl.includes('storage.googleapis.com') &&
+                               (!originalPhoto || originalPhoto !== savedPhotoUrl)
+        
+        if (isFromFavorite) {
+          // Veio de favorito: usar a foto do favorito (substitui original)
+          setUserPhotoUrl(savedPhotoUrl)
+          console.log("[ExperimentarPage] Foto do favorito carregada (substitui original):", savedPhotoUrl.substring(0, 50))
+          // Atualizar foto original para ser a do favorito
+          sessionStorage.setItem(`original_photo_${lojistaId}`, savedPhotoUrl)
+          photoLoadedRef.current = true
+        } else if (originalPhoto) {
+          // Restaurar foto original do cliente (tela 2 sempre mostra foto original)
+          setUserPhotoUrl(originalPhoto)
+          sessionStorage.setItem(`photo_${lojistaId}`, originalPhoto)
+          console.log("[ExperimentarPage] Foto original do cliente restaurada:", originalPhoto.substring(0, 50))
+          photoLoadedRef.current = true
+        } else if (savedPhotoUrl) {
+          // Se não houver original, usar a foto salva e salvar como original
+          if (savedPhotoUrl.startsWith('blob:')) {
+            setUserPhotoUrl(savedPhotoUrl)
+            sessionStorage.setItem(`original_photo_${lojistaId}`, savedPhotoUrl)
+            console.log("[ExperimentarPage] Foto blob carregada e salva como original:", savedPhotoUrl.substring(0, 50))
+            photoLoadedRef.current = true
+          } else if (savedPhotoUrl.startsWith('http://') || savedPhotoUrl.startsWith('https://')) {
+            setUserPhotoUrl(savedPhotoUrl)
+            sessionStorage.setItem(`original_photo_${lojistaId}`, savedPhotoUrl)
+            console.log("[ExperimentarPage] Foto HTTP carregada e salva como original:", savedPhotoUrl.substring(0, 50))
+            photoLoadedRef.current = true
+          } else {
+            console.warn("[ExperimentarPage] URL de foto inválida no sessionStorage:", savedPhotoUrl)
+            sessionStorage.removeItem(`photo_${lojistaId}`)
+            photoLoadedRef.current = true // Marcar como carregado mesmo sem foto válida
+          }
+        } else {
+          // Nenhuma foto encontrada, marcar como carregado
+          photoLoadedRef.current = true
+        }
 
-      // Limpar produtos selecionados quando volta da Tela 3
-      // Os produtos precisam ser selecionados novamente
-      sessionStorage.removeItem(`products_${lojistaId}`)
-      setSelectedProducts([])
-    }
+        // Limpar produtos selecionados quando volta da Tela 3
+        // Os produtos precisam ser selecionados novamente
+        sessionStorage.removeItem(`products_${lojistaId}`)
+        setSelectedProducts([])
+      }
     }
     
     // Adiciona um pequeno delay para garantir que os dados da loja comecem a carregar primeiro
     // Isso ajuda a evitar um flash rápido da tela de loading se a verificação for muito rápida
     const timer = setTimeout(checkAuthAndFinalize, 100);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      // Resetar flag quando o componente desmontar ou lojistaId mudar
+      photoLoadedRef.current = false;
+    };
 
-  }, [lojistaId, router, userPhotoUrl])
+  }, [lojistaId, router]) // REMOVIDO userPhotoUrl das dependências para evitar loop infinito
+
+  // Validar foto quando userPhotoUrl muda (apenas para URLs blob)
+  useEffect(() => {
+    if (!userPhotoUrl || !userPhotoUrl.startsWith('blob:')) {
+      return // Não validar URLs HTTP/HTTPS ou se não houver foto
+    }
+    
+    // Verificar se a URL blob ainda é válida
+    const img = new Image()
+    let isMounted = true
+    
+    img.onload = () => {
+      if (isMounted) {
+        console.log("[ExperimentarPage] Foto validada com sucesso:", userPhotoUrl.substring(0, 50) + "...")
+      }
+    }
+    
+    img.onerror = () => {
+      if (isMounted) {
+        console.error("[ExperimentarPage] URL blob inválida, removendo:", userPhotoUrl.substring(0, 50) + "...")
+        // URL blob inválida, limpar apenas se ainda for a mesma URL
+        // Isso evita limpar uma URL que foi substituída enquanto a validação estava em andamento
+        const urlToCheck = userPhotoUrl // Capturar URL atual
+        setUserPhotoUrl((currentUrl) => {
+          // Só limpar se ainda for a mesma URL que estava sendo validada
+          if (currentUrl === urlToCheck) {
+            sessionStorage.removeItem(`photo_${lojistaId}`)
+            return null
+          }
+          return currentUrl
+        })
+        setUserPhoto(null)
+      }
+    }
+    
+    img.src = userPhotoUrl
+    
+    return () => {
+      // Cleanup: cancelar validação se componente desmontar ou URL mudar
+      isMounted = false
+    }
+  }, [userPhotoUrl, lojistaId])
 
   // Carregar favoritos
   const loadFavorites = async () => {
@@ -303,71 +400,198 @@ export default function ExperimentarPage() {
 
   // Upload de foto
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files?.[0]) {
-      const file = event.target.files[0]
-      
-      // Limpar URL anterior se existir (para liberar memória)
-      if (userPhotoUrl && userPhotoUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(userPhotoUrl)
+    const file = event.target.files?.[0]
+    
+    if (!file) {
+      console.warn("[ExperimentarPage] Nenhum arquivo selecionado")
+      // Resetar input mesmo se não houver arquivo
+      if (event.target) {
+        event.target.value = ""
       }
-      
-      // Criar URL do novo arquivo
-      const newPhotoUrl = URL.createObjectURL(file)
-      
-      // Substituir foto atual pela nova
-      setUserPhoto(file)
-      setUserPhotoUrl(newPhotoUrl)
-      
-      // Salvar no sessionStorage para persistir
-      sessionStorage.setItem(`photo_${lojistaId}`, newPhotoUrl)
-      
-      console.log("[ExperimentarPage] Foto substituída com sucesso")
+      return
     }
     
+    // Validar tipo de arquivo
+    if (!file.type.startsWith('image/')) {
+      console.error("[ExperimentarPage] Arquivo não é uma imagem:", file.type)
+      alert("Por favor, selecione um arquivo de imagem válido.")
+      if (event.target) {
+        event.target.value = ""
+      }
+      return
+    }
+    
+    console.log("[ExperimentarPage] 📸 Arquivo selecionado:", {
+      name: file.name,
+      type: file.type,
+      size: file.size
+    })
+    
+    // Limpar URL anterior se existir (para liberar memória)
+    if (userPhotoUrl && userPhotoUrl.startsWith('blob:')) {
+      try {
+        URL.revokeObjectURL(userPhotoUrl)
+        console.log("[ExperimentarPage] URL blob anterior revogada")
+      } catch (e) {
+        console.warn("[ExperimentarPage] Erro ao revogar URL anterior:", e)
+      }
+    }
+    
+    // Criar URL do novo arquivo
+    const newPhotoUrl = URL.createObjectURL(file)
+    console.log("[ExperimentarPage] ✅ Nova URL blob criada:", newPhotoUrl.substring(0, 50) + "...")
+    
+    // IMPORTANTE: Aplicar a mesma regra do botão de favoritos
+    // Quando uma foto é selecionada pelo botão da câmera, ela deve substituir tanto photo quanto original_photo
+    // Isso garante que ao voltar da tela 3, a foto selecionada pelo botão da câmera seja mantida
+    
+    // IMPORTANTE: Atualizar estados de forma síncrona para garantir que a foto seja exibida imediatamente
+    setUserPhoto(file)
+    setUserPhotoUrl(newPhotoUrl)
+    
+    // Salvar no sessionStorage para persistir
+    sessionStorage.setItem(`photo_${lojistaId}`, newPhotoUrl)
+    // SEMPRE salvar como original também (mesma regra do favorito)
+    // Isso garante que ao voltar da tela 3, a foto selecionada pelo botão da câmera seja mantida
+    sessionStorage.setItem(`original_photo_${lojistaId}`, newPhotoUrl)
+    console.log("[ExperimentarPage] ✅ Foto salva no sessionStorage como photo e original_photo (mesma regra do favorito)")
+    
+    // Limpar produtos selecionados quando trocar foto (precisa selecionar novamente)
+    setSelectedProducts([])
+    sessionStorage.removeItem(`products_${lojistaId}`)
+    
+    console.log("[ExperimentarPage] ✅✅✅ Foto carregada e exibida com sucesso:", {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type,
+      blobUrl: newPhotoUrl.substring(0, 50) + "...",
+      userPhotoUrlState: newPhotoUrl.substring(0, 50) + "..."
+    })
+    
     // Resetar input para permitir selecionar o mesmo arquivo novamente
-    event.target.value = ""
+    // Usar setTimeout para garantir que o estado foi atualizado primeiro
+    setTimeout(() => {
+      if (event.target) {
+        event.target.value = ""
+      }
+      // Também resetar a referência se existir
+      if (photoInputRef.current) {
+        photoInputRef.current.value = ""
+      }
+    }, 100)
   }
 
   // Remover foto
   const handleRemovePhoto = () => {
-    // Limpar URL se for blob
-    if (userPhotoUrl && userPhotoUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(userPhotoUrl)
+    // Confirmar antes de remover
+    if (!confirm("Tem certeza que deseja remover a foto? Você precisará fazer upload novamente.")) {
+      return
     }
     
+    // Limpar URL se for blob (liberar memória)
+    if (userPhotoUrl && userPhotoUrl.startsWith('blob:')) {
+      try {
+        URL.revokeObjectURL(userPhotoUrl)
+      } catch (e) {
+        console.warn("[ExperimentarPage] Erro ao revogar URL:", e)
+      }
+    }
+    
+    // Limpar estados
     setUserPhoto(null)
     setUserPhotoUrl(null)
-    sessionStorage.removeItem(`photo_${lojistaId}`)
     
+    // Limpar sessionStorage
+    sessionStorage.removeItem(`photo_${lojistaId}`)
+    // Limpar foto original também (permitir novo upload)
+    sessionStorage.removeItem(`original_photo_${lojistaId}`)
+    console.log("[ExperimentarPage] Foto e foto original removidas do sessionStorage")
+    
+    // Limpar produtos selecionados quando remove foto
+    setSelectedProducts([])
+    sessionStorage.removeItem(`products_${lojistaId}`)
+    
+    // Resetar input
     const input = document.getElementById("photo-upload") as HTMLInputElement
     if (input) {
       input.value = ""
     }
+    
+    console.log("[ExperimentarPage] Foto removida com sucesso")
   }
 
   // Trocar foto - permite selecionar nova foto mesmo quando já existe uma
   const handleChangePhoto = () => {
-    const input = document.getElementById("photo-upload") as HTMLInputElement
+    // Usar a referência primeiro (mais confiável)
+    let input = photoInputRef.current
+    
+    // Se não encontrou pela referência, tentar pelo ID
+    if (!input) {
+      input = document.getElementById("photo-upload") as HTMLInputElement
+    }
+    
+    // Se ainda não encontrou, tentar pelo querySelector
+    if (!input) {
+      input = document.querySelector('input[type="file"][accept="image/*"]') as HTMLInputElement
+    }
+    
     if (input) {
       // Resetar input antes de abrir para garantir que onChange sempre dispare
       input.value = ""
-      input.click()
+      
+      // Pequeno delay para garantir que o reset foi processado
+      setTimeout(() => {
+        // Abrir seletor de arquivo
+        input?.click()
+        console.log("[ExperimentarPage] ✅ Seletor de arquivo aberto para trocar foto")
+      }, 10)
+    } else {
+      console.error("[ExperimentarPage] ❌ Input de upload não encontrado. Tentando criar um temporário...")
+      
+      // Criar input temporário se não encontrar
+      const tempInput = document.createElement('input')
+      tempInput.type = 'file'
+      tempInput.accept = 'image/*'
+      tempInput.style.display = 'none'
+      tempInput.onchange = (e) => {
+        const target = e.target as HTMLInputElement
+        if (target.files?.[0]) {
+          // Criar um evento sintético para passar para handlePhotoUpload
+          const syntheticEvent = {
+            target: target
+          } as React.ChangeEvent<HTMLInputElement>
+          handlePhotoUpload(syntheticEvent)
+        }
+        document.body.removeChild(tempInput)
+      }
+      document.body.appendChild(tempInput)
+      tempInput.click()
     }
   }
 
   // Voltar do modo refinamento para tela 2 normal com foto original
   const handleBackFromRefinement = () => {
+    // Restaurar foto original do cliente (tela 2 sempre mostra foto original)
+    const originalPhoto = sessionStorage.getItem(`original_photo_${lojistaId}`)
+    if (originalPhoto) {
+      sessionStorage.setItem(`photo_${lojistaId}`, originalPhoto)
+      setUserPhotoUrl(originalPhoto)
+      setUserPhoto(null) // Limpar arquivo se houver
+      console.log("[ExperimentarPage] Foto original restaurada ao sair do modo refinamento")
+    } else {
+      // Se não houver original, tentar usar a foto atual
+      const currentPhoto = sessionStorage.getItem(`photo_${lojistaId}`)
+      if (currentPhoto) {
+        setUserPhotoUrl(currentPhoto)
+        console.log("[ExperimentarPage] Usando foto atual ao sair do modo refinamento")
+      }
+    }
+    
     // Limpar modo refinamento
     sessionStorage.removeItem(`refine_mode_${lojistaId}`)
     sessionStorage.removeItem(`refine_baseImage_${lojistaId}`)
     sessionStorage.removeItem(`refine_compositionId_${lojistaId}`)
-    
-    // Restaurar foto original do sessionStorage
-    const originalPhoto = sessionStorage.getItem(`photo_${lojistaId}`)
-    if (originalPhoto) {
-      setUserPhotoUrl(originalPhoto)
-      setUserPhoto(null) // Limpar arquivo se houver
-    }
+    sessionStorage.removeItem(`refined_photo_${lojistaId}`)
     
     // Limpar estado de refinamento
     setIsRefineMode(false)
@@ -518,6 +742,10 @@ export default function ExperimentarPage() {
 
         // Salvar o look refinado
         sessionStorage.setItem(`looks_${lojistaId}`, JSON.stringify([refinedLook]))
+        // Manter a última foto gerada (refinada) na tela de adicionar acessório
+        // Não substituir a foto original do upload
+        sessionStorage.setItem(`refined_photo_${lojistaId}`, responseData.refinedImageUrl)
+        // Manter a foto base para possível refinamento futuro
         sessionStorage.setItem(`photo_${lojistaId}`, refineBaseImageUrl)
         sessionStorage.setItem(`products_${lojistaId}`, JSON.stringify(selectedProducts))
 
@@ -568,8 +796,11 @@ export default function ExperimentarPage() {
       console.log("[handleVisualize] ✅ Foto enviada:", personImageUrl?.substring(0, 50) + "...")
 
       // 2. Preparar dados para geração
-      const productIds = selectedProducts.map((p) => p.id).filter(Boolean)
-      if (productIds.length === 0) {
+      const productImageUrls = selectedProducts
+        .map((p) => p.imagemUrl)
+        .filter(Boolean) as string[]
+
+      if (productImageUrls.length === 0) {
         throw new Error("Nenhum produto válido selecionado")
       }
 
@@ -578,17 +809,20 @@ export default function ExperimentarPage() {
       const clienteData = stored ? JSON.parse(stored) : null
       const clienteId = clienteData?.clienteId || null
 
+      // Obter URL do backend (paineladm)
+      const backendUrl = getBackendUrl()
+
+      // 3. Gerar imagem usando a nova API do paineladm (Gemini + Imagen)
       const payload = {
-        personImageUrl,
-        productIds,
         lojistaId,
         customerId: clienteId,
-        scenePrompts: [],
-        options: { quality: "high", skipWatermark: true },
+        userImageUrl: personImageUrl,
+        productImageUrl: productImageUrls.length === 1 ? productImageUrls[0] : productImageUrls,
       }
 
-      // 3. Gerar looks (usar proxy interno)
-      const response = await fetch("/api/generate-looks", {
+      console.log("[handleVisualize] Chamando API do paineladm:", `${backendUrl}/api/ai/generate`)
+
+      const response = await fetch(`${backendUrl}/api/ai/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -604,8 +838,18 @@ export default function ExperimentarPage() {
       const responseData = await response.json()
 
       // 4. Salvar resultados e navegar
-      if (responseData.looks && Array.isArray(responseData.looks) && responseData.looks.length > 0) {
-        sessionStorage.setItem(`looks_${lojistaId}`, JSON.stringify(responseData.looks))
+      if (responseData.imageUrl) {
+        // Formatar como look para compatibilidade com a tela de resultado
+        const generatedLook = {
+          id: responseData.compositionId || `generated-${Date.now()}`,
+          titulo: "Look Gerado",
+          imagemUrl: responseData.imageUrl,
+          produtoNome: selectedProducts.map((p) => p.nome).join(" + "),
+          produtoPreco: selectedProducts.reduce((sum, p) => sum + (p.preco || 0), 0),
+          compositionId: responseData.compositionId || null,
+        }
+
+        sessionStorage.setItem(`looks_${lojistaId}`, JSON.stringify([generatedLook]))
         // Salvar a URL da foto que foi enviada ao backend (personImageUrl)
         sessionStorage.setItem(`photo_${lojistaId}`, personImageUrl || userPhotoUrl || "")
         sessionStorage.setItem(`products_${lojistaId}`, JSON.stringify(selectedProducts))
@@ -757,6 +1001,7 @@ export default function ExperimentarPage() {
       favorites={favorites}
       router={router}
       lojistaId={lojistaId}
+      photoInputRef={photoInputRef}
     />
   )
 }

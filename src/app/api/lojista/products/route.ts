@@ -32,23 +32,80 @@ export async function GET(request: NextRequest) {
       url += `&categoria=${encodeURIComponent(categoria)}`;
     }
 
-    const response = await fetch(url, {
-      cache: "no-store",
-      next: { revalidate: 0 },
-      headers: {
-        "Cache-Control": "no-store, no-cache, must-revalidate",
-      },
-    });
+    console.log("[modelo-2/api/lojista/products] Buscando produtos em:", url);
 
-    const data = await response.json();
+    let response: Response;
+    try {
+      // Criar AbortController para timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos
 
-    return NextResponse.json(data, { status: response.status });
-  } catch (error) {
-    console.error("[modelo-1/api/lojista/products] Erro:", error);
-    return NextResponse.json(
-      { error: "Erro ao buscar produtos" },
-      { status: 500 }
-    );
+      response = await fetch(url, {
+        cache: "no-store",
+        next: { revalidate: 0 },
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+        },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+    } catch (fetchError: any) {
+      console.error("[modelo-2/api/lojista/products] Erro ao conectar com backend:", fetchError);
+      
+      // Se for erro de conexão, retornar array vazio em vez de erro 500
+      if (fetchError.name === 'AbortError' || fetchError.message?.includes('timeout')) {
+        console.warn("[modelo-2/api/lojista/products] Timeout ao conectar com backend. Retornando array vazio.");
+        return NextResponse.json([], { status: 200 });
+      }
+
+      if (fetchError.message?.includes('ECONNREFUSED') || fetchError.message?.includes('fetch failed')) {
+        console.warn("[modelo-2/api/lojista/products] Backend não disponível. Retornando array vazio.");
+        return NextResponse.json([], { status: 200 });
+      }
+
+      throw fetchError;
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { error: errorText || `Erro ${response.status} ao buscar produtos` };
+      }
+      console.error("[modelo-2/api/lojista/products] Erro do backend:", response.status, errorData);
+      
+      // Se o backend retornar erro mas não for crítico, retornar array vazio
+      if (response.status >= 500) {
+        console.warn("[modelo-2/api/lojista/products] Erro do servidor backend. Retornando array vazio.");
+        return NextResponse.json([], { status: 200 });
+      }
+      
+      return NextResponse.json(errorData, { status: response.status });
+    }
+
+    let data;
+    try {
+      const text = await response.text();
+      if (!text) {
+        console.warn("[modelo-2/api/lojista/products] Resposta vazia do backend. Retornando array vazio.");
+        return NextResponse.json([], { status: 200 });
+      }
+      data = JSON.parse(text);
+    } catch (parseError) {
+      console.error("[modelo-2/api/lojista/products] Erro ao parsear resposta:", parseError);
+      return NextResponse.json([], { status: 200 });
+    }
+
+    // Garantir que sempre retornamos um array
+    const produtos = Array.isArray(data) ? data : [];
+    console.log(`[modelo-2/api/lojista/products] Retornando ${produtos.length} produtos`);
+    return NextResponse.json(produtos, { status: 200 });
+  } catch (error: any) {
+    console.error("[modelo-2/api/lojista/products] Erro inesperado:", error);
+    // Em caso de erro inesperado, retornar array vazio em vez de erro 500
+    return NextResponse.json([], { status: 200 });
   }
 }
-

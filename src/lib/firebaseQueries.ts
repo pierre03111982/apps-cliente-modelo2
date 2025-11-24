@@ -22,15 +22,19 @@ export async function fetchLojistaData(
 ): Promise<LojistaData | null> {
   console.log("[fetchLojistaData] Iniciando busca para lojistaId:", lojistaId)
 
-  // TENTATIVA 1: Buscar via API do Painel (para evitar erro de permissão do Firestore Client)
+  // TENTATIVA 1: Buscar via API Proxy do Next.js (para evitar erro de permissão do Firestore Client e CORS)
   try {
-    // Tentar URL local ou de produção
-    // Em desenvolvimento, o painel roda na 3000. Em produção, usar a URL configurada.
-    const painelUrl = process.env.NEXT_PUBLIC_PAINEL_URL || "http://localhost:3000";
+    // Usar a rota proxy do próprio Next.js em vez de acessar o backend diretamente
+    // Isso evita problemas de CORS e funciona tanto em desenvolvimento quanto em produção
+    const apiUrl = typeof window !== 'undefined' 
+      ? '/api/lojista/perfil'  // No cliente, usar rota relativa
+      : (process.env.NEXT_PUBLIC_CLIENT_APP_URL || process.env.NEXT_PUBLIC_CLIENT_APP_DEV_URL || 'http://localhost:3005') + '/api/lojista/perfil'; // No servidor, usar URL completa
     
-    console.log(`[fetchLojistaData] Tentando buscar via API: ${painelUrl}/api/lojista/perfil?lojistaId=${lojistaId}`);
+    const url = `${apiUrl}?lojistaId=${encodeURIComponent(lojistaId)}`;
     
-    const response = await fetch(`${painelUrl}/api/lojista/perfil?lojistaId=${lojistaId}`, {
+    console.log(`[fetchLojistaData] Tentando buscar via API Proxy: ${url}`);
+    
+    const response = await fetch(url, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -42,7 +46,18 @@ export async function fetchLojistaData(
       const data = await response.json();
       console.log("[fetchLojistaData] Dados recebidos da API:", data);
       
+      // Verificar se há erro na resposta
+      if (data?.error) {
+        console.warn("[fetchLojistaData] API retornou erro:", data.error);
+        throw new Error(data.error);
+      }
+      
       if (data && (data.nome || data.descricao)) {
+        console.log("[fetchLojistaData] ✅ Dados válidos encontrados:", {
+          nome: data.nome,
+          hasLogo: !!data.logoUrl,
+          lojistaId
+        });
         return {
           id: lojistaId,
           nome: data.nome || "Loja",
@@ -58,12 +73,18 @@ export async function fetchLojistaData(
           descontoRedesSociaisExpiraEm: data.descontoRedesSociaisExpiraEm || null,
           // appModel não é usado diretamente no frontend do modelo 2, mas está disponível se precisar
         };
+      } else {
+        console.warn("[fetchLojistaData] Resposta da API não contém dados válidos:", data);
       }
     } else {
-      console.warn("[fetchLojistaData] API retornou erro:", response.status);
+      const errorText = await response.text().catch(() => 'Erro desconhecido');
+      console.warn("[fetchLojistaData] API retornou erro:", response.status, errorText);
     }
-  } catch (apiError) {
+  } catch (apiError: any) {
     console.error("[fetchLojistaData] Erro ao buscar da API:", apiError);
+    console.error("[fetchLojistaData] Tipo do erro:", apiError?.name);
+    console.error("[fetchLojistaData] Mensagem:", apiError?.message);
+    // Não lançar erro aqui, deixar tentar Firebase como fallback
   }
 
   // TENTATIVA 2: Fallback para Firestore Client (código original)
