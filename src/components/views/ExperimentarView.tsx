@@ -21,7 +21,7 @@ import {
 import { ClockAnimation } from "../ClockAnimation"
 import { LoadingSpinner } from "../LoadingSpinner"
 import { SafeImage } from "../ui/SafeImage"
-import { Button } from "../ui/button"
+import { Button } from "../ui/Button"
 import { CLOSET_BACKGROUND_IMAGE } from "@/lib/constants" // Esta constante não será mais usada
 import type { LojistaData, Produto, GeneratedLook } from "@/lib/types"
 
