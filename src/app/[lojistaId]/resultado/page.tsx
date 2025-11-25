@@ -7,6 +7,9 @@ import { ArrowLeft, ThumbsUp, ThumbsDown, Share2, ShoppingCart, Heart, RefreshCw
 import { ClockAnimation } from "@/components/ClockAnimation"
 import { LoadingSpinner } from "@/components/LoadingSpinner"
 import { StaticVideoBackground } from "@/components/StaticVideoBackground"
+import { SendToDisplayButton } from "@/components/SendToDisplayButton"
+import { StoreConnectionIndicator } from "@/components/StoreConnectionIndicator"
+import { useStoreSession } from "@/hooks/useStoreSession"
 import { CLOSET_BACKGROUND_IMAGE } from "@/lib/constants"
 import { fetchLojistaData } from "@/lib/firebaseQueries"
 import type { LojistaData, GeneratedLook } from "@/lib/types"
@@ -24,6 +27,9 @@ export default function ResultadoPage() {
   const params = useParams()
   const router = useRouter()
   const lojistaId = params?.lojistaId as string
+
+  // Hook para gerenciar conexão com a loja (Display)
+  const { isConnected, connectedStoreId, disconnect } = useStoreSession(lojistaId)
 
   const [lojistaData, setLojistaData] = useState<LojistaData | null>(null)
   const [looks, setLooks] = useState<GeneratedLook[]>([])
@@ -1424,6 +1430,13 @@ export default function ResultadoPage() {
       {/* Imagem de fundo estática (frame do vídeo parado) */}
       <StaticVideoBackground videoSrc="/video2tela2.mp4" />
 
+      {/* Indicador de conexão com a loja */}
+      <StoreConnectionIndicator
+        isConnected={isConnected}
+        storeName={lojistaData?.nome}
+        onDisconnect={disconnect}
+      />
+
       {/* Conteúdo Principal */}
       <div className="relative z-10 min-h-screen flex flex-col p-4 items-center justify-center space-y-3">
         
@@ -1520,6 +1533,17 @@ export default function ResultadoPage() {
                           />
                         </div>
                       </div>
+                    )}
+                    
+                    {/* Botão de transmitir para o display (canto inferior esquerdo) - aparece após votar */}
+                    {hasVoted && currentLook.imagemUrl && (
+                      <SendToDisplayButton
+                        imageUrl={currentLook.imagemUrl}
+                        lojistaId={lojistaId}
+                        position="bottom-left"
+                        size="lg"
+                        className="z-20"
+                      />
                     )}
                 </div>
               </div>
@@ -1779,6 +1803,15 @@ export default function ResultadoPage() {
                             </div>
                           </div>
                         )}
+                        
+                        {/* Botão de transmitir para o display (canto inferior esquerdo) */}
+                        <SendToDisplayButton
+                          imageUrl={favorito.imagemUrl}
+                          lojistaId={lojistaId}
+                          position="bottom-left"
+                          size="sm"
+                          className="z-20"
+                        />
                       </div>
                     )}
                     {favorito.productName && (
@@ -1841,6 +1874,15 @@ export default function ResultadoPage() {
                           </div>
                         </div>
                       )}
+                      
+                      {/* Botão de transmitir para o display (canto inferior esquerdo) */}
+                      <SendToDisplayButton
+                        imageUrl={selectedFavoriteDetail.imagemUrl}
+                        lojistaId={lojistaId}
+                        position="bottom-left"
+                        size="lg"
+                        className="z-20"
+                      />
                     </div>
                   </div>
                 )}

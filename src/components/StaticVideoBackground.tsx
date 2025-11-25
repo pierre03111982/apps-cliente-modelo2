@@ -97,15 +97,16 @@ export function StaticVideoBackground({ videoSrc, className = "" }: StaticVideoB
       {/* Canvas oculto para renderizar frame */}
       <canvas ref={canvasRef} className="absolute opacity-0 pointer-events-none" />
 
-      {/* Imagem estática de fundo */}
+      {/* Imagem estática de fundo - FIXA ao viewport (não move ao rolar) */}
       {imageUrl ? (
         <div
-          className="absolute inset-0 h-full w-full"
+          className="fixed inset-0 h-screen w-screen"
           style={{
             backgroundImage: `url(${imageUrl})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
+            backgroundAttachment: "fixed", // Fixa ao viewport
           }}
         >
           {/* Overlay sutil para garantir legibilidade */}
@@ -114,9 +115,10 @@ export function StaticVideoBackground({ videoSrc, className = "" }: StaticVideoB
       ) : (
         // Fallback: gradiente similar ao estilo do vídeo enquanto carrega
         <div
-          className="absolute inset-0 h-full w-full"
+          className="fixed inset-0 h-screen w-screen"
           style={{
             background: "linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%)",
+            backgroundAttachment: "fixed", // Fixa ao viewport
           }}
         >
           <div className="absolute inset-0 bg-black/20" />
