@@ -16,6 +16,7 @@ function LoginPageContent() {
   const lojistaId = params?.lojistaId as string
 
   const [lojistaData, setLojistaData] = useState<LojistaData | null>(null)
+  const [isLoadingLojistaData, setIsLoadingLojistaData] = useState(true)
 
   const [isLoading, setIsLoading] = useState(false)
   const [mode, setMode] = useState<"login" | "register">("login")
@@ -113,6 +114,7 @@ function LoginPageContent() {
     console.log("[LoginPage] 🔍 Iniciando busca de dados para lojistaId:", lojistaId)
 
     const loadLojistaData = async () => {
+      setIsLoadingLojistaData(true)
       try {
         // Tentar buscar do backend primeiro (API interna do modelo 2)
         try {
@@ -147,6 +149,7 @@ function LoginPageContent() {
                   descontoRedesSociais: perfilData.descontoRedesSociais || null,
                   descontoRedesSociaisExpiraEm: perfilData.descontoRedesSociaisExpiraEm || null,
                 })
+                setIsLoadingLojistaData(false)
                 return
               }
             }
@@ -160,52 +163,20 @@ function LoginPageContent() {
         // Se não encontrou via API, tentar Firebase
         console.log("[LoginPage] Tentando buscar via Firebase...")
         const data = await fetchLojistaData(lojistaId)
-        if (data) {
+        if (data && data.nome && data.nome !== lojistaId) {
           console.log("[LoginPage] ✅ Dados carregados via Firebase:", data.nome)
           setLojistaData(data)
         } else {
           console.warn("[LoginPage] ⚠️ Nenhum dado encontrado para lojistaId:", lojistaId)
-          // Fallback: usar lojistaId como nome temporário
-          setLojistaData({
-            id: lojistaId,
-            nome: lojistaId,
-            logoUrl: null,
-            descricao: null,
-            redesSociais: {
-              instagram: null,
-              facebook: null,
-              tiktok: null,
-              whatsapp: null,
-            },
-            salesConfig: {
-              whatsappLink: null,
-              ecommerceUrl: null,
-            },
-            descontoRedesSociais: null,
-            descontoRedesSociaisExpiraEm: null,
-          })
+          // Não definir dados se não encontrar (não mostrar código)
+          setLojistaData(null)
         }
       } catch (err) {
         console.error("[LoginPage] Erro ao carregar dados da loja:", err)
-        // Em caso de erro, ainda assim mostrar algo
-        setLojistaData({
-          id: lojistaId,
-          nome: lojistaId,
-          logoUrl: null,
-          descricao: null,
-          redesSociais: {
-            instagram: null,
-            facebook: null,
-            tiktok: null,
-            whatsapp: null,
-          },
-          salesConfig: {
-            whatsappLink: null,
-            ecommerceUrl: null,
-          },
-          descontoRedesSociais: null,
-          descontoRedesSociaisExpiraEm: null,
-        })
+        // Em caso de erro, não mostrar nada (não mostrar código)
+        setLojistaData(null)
+      } finally {
+        setIsLoadingLojistaData(false)
       }
     }
 
@@ -504,37 +475,41 @@ function LoginPageContent() {
       {/* 2. Conteúdo do Formulário */}
       <div className="relative z-10 min-h-screen w-full flex flex-col items-center justify-center px-4 py-8">
         {/* Caixa com Logo e Nome da Loja */}
-        <div className="w-full max-w-sm mb-4">
-          <div
-            className="rounded-xl border-2 border-white/30 backdrop-blur-md px-3 sm:px-3 py-2 shadow-xl flex flex-col items-center justify-center gap-2 sm:gap-2"
-            style={{
-              background:
-                "linear-gradient(to right, rgba(0,0,0,0.5), rgba(147,51,234,0.5), rgba(59,130,246,0.5), rgba(147,51,234,0.5), rgba(0,0,0,0.5))",
-              backdropFilter: "blur(12px)",
-              WebkitBackdropFilter: "blur(12px)",
-            }}
-          >
-            {lojistaData?.logoUrl && (
-              <div className="h-12 w-12 sm:h-14 sm:w-14 overflow-hidden rounded-full border-2 border-white/30 flex-shrink-0">
-                <Image
-                  src={lojistaData.logoUrl}
-                  alt={lojistaData.nome || "Logo"}
-                  width={64}
-                  height={64}
-                  className="h-full w-full object-cover"
-                  unoptimized
-                />
-              </div>
-            )}
-            <h3
-              className="text-base sm:text-lg md:text-xl font-bold text-white text-center"
-              style={{ textShadow: "0px 1px 3px black, 0px 1px 3px black" }}
-              translate="no"
+        {(lojistaData?.nome || lojistaData?.logoUrl) && (
+          <div className="w-full max-w-sm mb-4">
+            <div
+              className="rounded-xl border-2 border-white/30 backdrop-blur-md px-3 sm:px-3 py-2 shadow-xl flex flex-col items-center justify-center gap-2 sm:gap-2"
+              style={{
+                background:
+                  "linear-gradient(to right, rgba(0,0,0,0.5), rgba(147,51,234,0.5), rgba(59,130,246,0.5), rgba(147,51,234,0.5), rgba(0,0,0,0.5))",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+              }}
             >
-              {lojistaData?.nome || lojistaId || "Loja"}
-            </h3>
+              {lojistaData?.logoUrl && (
+                <div className="h-12 w-12 sm:h-14 sm:w-14 overflow-hidden rounded-full border-2 border-white/30 flex-shrink-0">
+                  <Image
+                    src={lojistaData.logoUrl}
+                    alt={lojistaData.nome || "Logo"}
+                    width={64}
+                    height={64}
+                    className="h-full w-full object-cover"
+                    unoptimized
+                  />
+                </div>
+              )}
+              {lojistaData?.nome && (
+                <h3
+                  className="text-base sm:text-lg md:text-xl font-bold text-white text-center"
+                  style={{ textShadow: "0px 1px 3px black, 0px 1px 3px black" }}
+                  translate="no"
+                >
+                  {lojistaData.nome}
+                </h3>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         <div
           className="w-full max-w-sm space-y-4 rounded-2xl border-2 border-white/30 p-5 backdrop-blur shadow-2xl"
