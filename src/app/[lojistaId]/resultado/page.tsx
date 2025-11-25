@@ -1803,15 +1803,6 @@ export default function ResultadoPage() {
                             </div>
                           </div>
                         )}
-                        
-                        {/* Botão de transmitir para o display (canto inferior esquerdo) */}
-                        <SendToDisplayButton
-                          imageUrl={favorito.imagemUrl}
-                          lojistaId={lojistaId}
-                          position="bottom-left"
-                          size="sm"
-                          className="z-20"
-                        />
                       </div>
                     )}
                     {favorito.productName && (

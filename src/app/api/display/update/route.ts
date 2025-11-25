@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getFirestoreClient, isFirebaseConfigured } from "@/lib/firebase"
-import { doc, setDoc, Timestamp } from "firebase/firestore"
 
 export const dynamic = 'force-dynamic'
 
 /**
  * API para atualizar o display específico com uma nova imagem
+ * Faz proxy para o backend (paineladm) que usa Firebase Admin SDK
  * Usado na Fase 10 para enviar imagens para displays específicos
  */
 export async function POST(request: NextRequest) {
@@ -20,51 +19,102 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!isFirebaseConfigured) {
-      return NextResponse.json(
-        { error: "Firebase não configurado" },
-        { status: 500 }
-      )
-    }
+    // Resolver URL do backend (paineladm)
+    const backendUrl =
+      process.env.NEXT_PUBLIC_BACKEND_URL ||
+      process.env.NEXT_PUBLIC_PAINELADM_URL ||
+      "http://localhost:3000"
 
-    const db = getFirestoreClient()
-    if (!db) {
-      return NextResponse.json(
-        { error: "Firestore não disponível" },
-        { status: 500 }
-      )
-    }
-
-    // Atualizar documento do display
-    const displayRef = doc(db, "displays", displayUuid)
-    
-    await setDoc(
-      displayRef,
-      {
-        activeImage: imageUrl,
-        timestamp: Timestamp.now(),
-        lojistaId: lojistaId || null,
-        updatedAt: Timestamp.now(),
-      },
-      { merge: true }
-    )
-
-    console.log("[display/update] Display atualizado:", {
+    console.log("[display/update] Enviando para backend:", {
+      backendUrl,
       displayUuid,
-      imageUrl: imageUrl.substring(0, 50) + "...",
       lojistaId,
+      imageUrl: imageUrl.substring(0, 50) + "...",
     })
 
-    return NextResponse.json({
-      success: true,
-      displayUuid,
-    })
+    // Fazer proxy para o backend (paineladm) que usa Firebase Admin SDK
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 segundos
+
+    try {
+      const response = await fetch(`${backendUrl}/api/display/update`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          displayUuid,
+          imageUrl,
+          lojistaId,
+        }),
+        signal: controller.signal,
+      })
+
+      clearTimeout(timeoutId)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        let errorData: any = {}
+        try {
+          errorData = JSON.parse(errorText)
+        } catch (e) {
+          // Se não conseguir parsear, usar o texto como está
+        }
+
+        console.error("[display/update] Erro do backend:", {
+          status: response.status,
+          error: errorData,
+        })
+
+        return NextResponse.json(
+          {
+            error: errorData.error || "Erro ao atualizar display",
+            details: errorData.details || errorText,
+          },
+          { status: response.status }
+        )
+      }
+
+      const data = await response.json()
+
+      console.log("[display/update] ✅ Display atualizado com sucesso:", {
+        displayUuid,
+        lojistaId,
+      })
+
+      return NextResponse.json(data)
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId)
+      console.error("[display/update] Erro ao conectar com backend:", fetchError)
+
+      if (fetchError.name === "AbortError" || fetchError.message?.includes("timeout")) {
+        return NextResponse.json(
+          { error: "Timeout ao conectar com o servidor" },
+          { status: 503 }
+        )
+      }
+
+      if (
+        fetchError.message?.includes("ECONNREFUSED") ||
+        fetchError.message?.includes("fetch failed")
+      ) {
+        return NextResponse.json(
+          {
+            error: "Não foi possível conectar com o servidor",
+            details: `Verifique se o painel está rodando em ${backendUrl}`,
+          },
+          { status: 503 }
+        )
+      }
+
+      throw fetchError
+    }
   } catch (error: any) {
-    console.error("[display/update] Erro:", error)
+    console.error("[display/update] Erro geral:", error)
     return NextResponse.json(
       {
         error: "Erro ao atualizar display",
-        details: error.message,
+        details: error.message || "Erro desconhecido",
       },
       { status: 500 }
     )
