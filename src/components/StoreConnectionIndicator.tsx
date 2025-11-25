@@ -54,7 +54,7 @@ export function StoreConnectionIndicator({
                   onDisconnect()
                   setShowDialog(false)
                 }}
-                variant="outline"
+                variant="ghost"
                 className="flex-1"
               >
                 Desconectar
