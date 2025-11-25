@@ -21,6 +21,7 @@ import {
 import { ClockAnimation } from "../ClockAnimation"
 import { LoadingSpinner } from "../LoadingSpinner"
 import { SafeImage } from "../ui/SafeImage"
+import { Button } from "../ui/button"
 import { CLOSET_BACKGROUND_IMAGE } from "@/lib/constants" // Esta constante não será mais usada
 import type { LojistaData, Produto, GeneratedLook } from "@/lib/types"
 
@@ -193,16 +194,16 @@ export function ExperimentarView({
     <div className="relative min-h-screen w-full overflow-x-hidden overflow-y-auto text-zinc-800 antialiased">
       {/* Overlay de Loading Centralizado quando gerando */}
       {isGenerating && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="flex flex-col items-center justify-center gap-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="flex flex-col items-center justify-center gap-6 animate-scale-in">
             <div className="relative">
               <LoadingSpinner size={120} />
               <div className="absolute inset-0 flex items-center justify-center">
                 <ClockAnimation size={60} />
               </div>
             </div>
-            <div className="text-center">
-              <p className="text-xl font-bold text-white mb-2">
+            <div className="text-center animate-fade-in">
+              <p className="text-xl font-bold text-white mb-2 transition-all duration-300">
                 {creativePhrases[currentPhraseIndex] || creativePhrases[0]}
               </p>
               <p className="text-sm text-white/80">Aguarde enquanto criamos seu look...</p>
@@ -494,11 +495,19 @@ export function ExperimentarView({
                     </button>
                     {/* Imagem do Produto */}
                     {produto.imagemUrl && (
-                      <div className="relative aspect-square w-full bg-gray-100 flex items-center justify-center" style={{ position: 'relative' }}>
+                      <div 
+                        className="relative w-full bg-gray-100 flex items-center justify-center overflow-hidden" 
+                        style={{ 
+                          position: 'relative',
+                          aspectRatio: '1 / 1',
+                          minHeight: 0
+                        }}
+                      >
                         <SafeImage
                           src={produto.imagemUrl}
                           alt={produto.nome}
                           className="w-full h-full object-cover"
+                          containerClassName="w-full h-full"
                           loading="lazy"
                         />
                       </div>
@@ -676,11 +685,19 @@ export function ExperimentarView({
                     </div>
 
                     {produto.imagemUrl && (
-                      <div className="relative aspect-square w-full bg-gray-100 flex items-center justify-center" style={{ position: 'relative' }}>
+                      <div 
+                        className="relative w-full bg-gray-100 flex items-center justify-center overflow-hidden" 
+                        style={{ 
+                          position: 'relative',
+                          aspectRatio: '1 / 1',
+                          minHeight: 0
+                        }}
+                      >
                         <SafeImage
                           src={produto.imagemUrl}
                           alt={produto.nome}
                           className="w-full h-full object-cover"
+                          containerClassName="w-full h-full"
                           loading="lazy"
                         />
                       </div>
@@ -703,30 +720,30 @@ export function ExperimentarView({
         </div>
       </div>
 
-      {/* Botão FAB - Visualize (oculto quando gerando) */}
-      {(userPhotoUrl) && selectedProducts.length > 0 && !isGenerating && (
+      {/* Botão FAB - Visualize (fixo no rodapé com z-index alto) */}
+      {(userPhotoUrl) && selectedProducts.length > 0 && (
         <div 
-          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 rounded-full shadow-2xl transition-all duration-500 w-auto"
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[9999] transition-all duration-500"
           style={{ 
-            background: 'linear-gradient(45deg, rgba(37,99,235,1), rgba(147,51,234,1), rgba(249,115,22,1), rgba(34,197,94,1))',
-            zIndex: 9999,
-            position: 'fixed'
+            position: 'fixed',
+            zIndex: 9999
           }}
         >
-          <button 
-            onClick={handleCreateClick} 
-            disabled={isGenerating} 
-            className="flex items-center justify-center gap-2 sm:gap-3 rounded-full px-5 sm:px-7 py-3.5 sm:py-4.5 md:py-5 text-sm sm:text-base md:text-lg font-bold text-white transition-all duration-300 disabled:cursor-not-allowed w-full h-full animate-pulse-glow hover:scale-105"
+          <Button
+            onClick={handleCreateClick}
+            isLoading={isGenerating}
+            disabled={isGenerating}
+            variant="primary"
+            size="lg"
+            className="rounded-full shadow-2xl animate-pulse-glow hover:scale-105 gap-2 sm:gap-3 px-5 sm:px-7 py-3.5 sm:py-4.5 md:py-5 text-sm sm:text-base md:text-lg font-bold border-4 border-white"
             style={{
               background: 'linear-gradient(45deg, rgba(37,99,235,1), rgba(147,51,234,1), rgba(249,115,22,1), rgba(34,197,94,1))',
-              border: '4px solid white',
-              borderWidth: '4px',
             }}
           >
             <Wand2 className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7" />
             <span className="hidden sm:inline">CRIAR LOOK</span>
             <span className="sm:hidden">CRIAR</span>
-          </button>
+          </Button>
         </div>
       )}
 

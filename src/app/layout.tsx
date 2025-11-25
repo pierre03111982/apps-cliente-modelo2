@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
   title: "App Cliente | ExperimenteAI",
@@ -34,7 +35,35 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body translate="no">{children}</body>
+      <body translate="no">
+        {children}
+        <Toaster
+          position="top-center"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: "#1f2937",
+              color: "#fff",
+              borderRadius: "12px",
+              padding: "16px",
+              fontSize: "14px",
+              fontWeight: "500",
+            },
+            success: {
+              iconTheme: {
+                primary: "#10b981",
+                secondary: "#fff",
+              },
+            },
+            error: {
+              iconTheme: {
+                primary: "#ef4444",
+                secondary: "#fff",
+              },
+            },
+          }}
+        />
+      </body>
     </html>
   );
 }

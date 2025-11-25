@@ -110,8 +110,8 @@ export function SafeImage({
         src={src}
         alt={alt}
         className={cn(
-          "block max-w-full h-auto",
-          isLoading && "opacity-0",
+          "block max-w-full h-auto transition-opacity duration-300",
+          isLoading ? "opacity-0" : "opacity-100 animate-fade-in",
           className
         )}
         style={{

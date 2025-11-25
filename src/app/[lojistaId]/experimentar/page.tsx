@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import { fetchLojistaData, fetchProdutos } from "@/lib/firebaseQueries"
 import type { Produto, LojistaData, GeneratedLook } from "@/lib/types"
 import { ExperimentarView } from "@/components/views/ExperimentarView"
+import toast from "react-hot-toast"
 
 // Resolver backend URL
 const getBackendUrl = () => {
@@ -414,7 +415,7 @@ export default function ExperimentarPage() {
     // Validar tipo de arquivo
     if (!file.type.startsWith('image/')) {
       console.error("[ExperimentarPage] Arquivo não é uma imagem:", file.type)
-      alert("Por favor, selecione um arquivo de imagem válido.")
+      toast.error("Por favor, selecione um arquivo de imagem válido.")
       if (event.target) {
         event.target.value = ""
       }
@@ -682,12 +683,12 @@ export default function ExperimentarPage() {
   // Refinar look (adicionar acessórios)
   const handleRefine = async () => {
     if (!refineBaseImageUrl || selectedProducts.length === 0) {
-      alert("Selecione um produto para adicionar ao look")
+      toast.error("Selecione um produto para adicionar ao look")
       return
     }
 
     if (selectedProducts.length > 1) {
-      alert("Em modo de refinamento, você pode selecionar apenas 1 produto.")
+      toast.error("Em modo de refinamento, você pode selecionar apenas 1 produto.")
       return
     }
 
@@ -861,7 +862,9 @@ export default function ExperimentarPage() {
       }
     } catch (error: any) {
       console.error("[handleVisualize] Erro:", error)
-      setGenerationError(error.message || "Erro ao gerar looks. Tente novamente.")
+      const errorMessage = error.message || "Erro ao gerar looks. Tente novamente."
+      setGenerationError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setIsGenerating(false)
     }
@@ -916,10 +919,10 @@ export default function ExperimentarPage() {
           // Fallback: copiar para área de transferência
           try {
             await navigator.clipboard.writeText(appLink)
-            alert("Link copiado para a área de transferência!")
+            toast.success("Link copiado para a área de transferência!")
           } catch (clipboardError) {
             console.error("Erro ao copiar link:", clipboardError)
-            alert(`Link do aplicativo: ${appLink}`)
+            toast.error(`Erro ao copiar. Link: ${appLink}`)
           }
         }
       }
@@ -927,10 +930,10 @@ export default function ExperimentarPage() {
       // Fallback: copiar para área de transferência
       try {
         await navigator.clipboard.writeText(appLink)
-        alert("Link copiado para a área de transferência!")
+        toast.success("Link copiado para a área de transferência!")
       } catch (error) {
         console.error("Erro ao copiar link:", error)
-        alert(`Link do aplicativo: ${appLink}`)
+        toast.error(`Erro ao copiar. Link: ${appLink}`)
       }
     }
   }
