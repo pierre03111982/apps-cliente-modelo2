@@ -1500,8 +1500,15 @@ export default function ResultadoPage() {
             <div className="w-full rounded-xl overflow-hidden">
               <div className="relative rounded-2xl border-2 border-white/50 p-2 shadow-lg bg-white/10 inline-block w-full">
                 <div 
-                  className="relative border-2 border-dashed border-white/30 rounded-xl p-1 inline-block w-full cursor-pointer"
-                  onClick={() => setShowImageDetailModal(true)}
+                  className={`relative border-2 border-dashed border-white/30 rounded-xl p-1 inline-block w-full ${
+                    hasVoted ? 'cursor-pointer' : 'cursor-default'
+                  }`}
+                  onClick={() => {
+                    // Só abrir modal se já votou (like ou dislike)
+                    if (hasVoted) {
+                      setShowImageDetailModal(true)
+                    }
+                  }}
                 >
                     <img
                       src={currentLook.imagemUrl}
