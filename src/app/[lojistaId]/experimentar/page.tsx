@@ -989,19 +989,8 @@ export default function ExperimentarPage() {
   if (isInitializing) {
   return (
       <div className="relative min-h-screen w-full overflow-hidden">
-      <div className="fixed inset-0 z-0 overflow-hidden">
-        <video
-          src="/video2tela2.mp4"
-          loop
-          muted
-          autoPlay
-          playsInline
-          className="absolute inset-0 h-full w-full object-cover"
-        >
-          <source src="/video2tela2.mp4" type="video/mp4" />
-          Seu navegador não suporta a tag de vídeo.
-        </video>
-      </div>
+      {/* Fundo preto - vídeo apenas na tela de login */}
+      <div className="fixed inset-0 z-0 overflow-hidden bg-black"></div>
         <div className="relative z-10 flex h-screen flex-col items-center justify-center text-white">
               {lojistaData?.logoUrl && (
             <div className="mb-4 h-24 w-24 overflow-hidden rounded-full border-2 border-white/30">

@@ -1420,20 +1420,8 @@ export default function ResultadoPage() {
       )}
       
       
-      {/* Vídeo de Fundo Fixo */}
-      <div className="fixed inset-0 z-0 overflow-hidden">
-        <video
-          src="/video2tela2.mp4"
-          loop
-          muted
-          autoPlay
-          playsInline
-          className="absolute inset-0 h-full w-full object-cover"
-        >
-          <source src="/video2tela2.mp4" type="video/mp4" />
-          Seu navegador não suporta a tag de vídeo.
-        </video>
-      </div>
+      {/* Fundo preto - vídeo apenas na tela de login */}
+      <div className="fixed inset-0 z-0 overflow-hidden bg-black"></div>
 
       {/* Conteúdo Principal */}
       <div className="relative z-10 min-h-screen flex flex-col p-4 items-center justify-center space-y-3">

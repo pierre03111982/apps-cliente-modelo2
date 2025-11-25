@@ -238,25 +238,8 @@ export function ExperimentarView({
         </div>
       )}
 
-      {/* 1. Vídeo de Fundo - Fixo */}
-      <div className="fixed inset-0 z-0 overflow-hidden bg-black">
-        <video
-          src="/video2tela2.mp4"
-          loop
-          muted
-          autoPlay
-          playsInline
-          preload="auto"
-          className="absolute inset-0 h-full w-full object-cover"
-          onError={(e) => {
-            console.error("[ExperimentarView] Erro ao carregar vídeo de fundo:", e)
-            // Se o vídeo falhar, manter fundo preto (já está no container)
-          }}
-        >
-          <source src="/video2tela2.mp4" type="video/mp4" />
-          Seu navegador não suporta a tag de vídeo.
-        </video>
-      </div>
+      {/* 1. Fundo Preto - Sem vídeo (apenas na tela de login) */}
+      <div className="fixed inset-0 z-0 overflow-hidden bg-black"></div>
 
       {/* 2. Conteúdo Principal */}
       <div className="relative z-10 min-h-screen p-4 pb-24">
