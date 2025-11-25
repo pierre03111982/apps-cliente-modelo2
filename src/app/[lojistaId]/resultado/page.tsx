@@ -1449,12 +1449,15 @@ export default function ResultadoPage() {
               WebkitBackdropFilter: "blur(12px)",
             }}
           >
-            <button
-              onClick={() => router.push(`/${params.lojistaId}/experimentar`)}
-              className="absolute left-3 top-1/2 -translate-y-1/2 p-1 text-white hover:opacity-80 transition"
-            >
-              <ArrowLeftCircle className="h-6 w-6" />
-            </button>
+            {/* Botão voltar só aparece após votação */}
+            {hasVoted && (
+              <button
+                onClick={() => router.push(`/${params.lojistaId}/experimentar`)}
+                className="absolute left-3 top-1/2 -translate-y-1/2 p-1 text-white hover:opacity-80 transition"
+              >
+                <ArrowLeftCircle className="h-6 w-6" />
+              </button>
+            )}
 
             {lojistaData?.logoUrl && (
               <div className="h-12 w-12 sm:h-14 sm:w-14 overflow-hidden rounded-full border-2 border-white/30 flex-shrink-0">

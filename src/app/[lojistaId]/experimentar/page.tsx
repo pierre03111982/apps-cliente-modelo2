@@ -1,10 +1,13 @@
 "use client"
 
 import { useEffect, useMemo, useState, useRef } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { fetchLojistaData, fetchProdutos } from "@/lib/firebaseQueries"
 import type { Produto, LojistaData, GeneratedLook } from "@/lib/types"
 import { ExperimentarView } from "@/components/views/ExperimentarView"
+import { DisplayView } from "@/components/views/DisplayView"
+import { useStoreSession } from "@/hooks/useStoreSession"
+import { StoreConnectionIndicator } from "@/components/StoreConnectionIndicator"
 import toast from "react-hot-toast"
 
 // Resolver backend URL
@@ -19,7 +22,14 @@ const getBackendUrl = () => {
 export default function ExperimentarPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const lojistaId = params?.lojistaId as string
+  
+  // Verificar se está em modo display
+  const isDisplayMode = searchParams?.get("display") === "1"
+  
+  // Hook para gerenciar conexão com a loja (Fase 9)
+  const { isConnected, connectedStoreId, disconnect } = useStoreSession(lojistaId)
 
   const [isInitializing, setIsInitializing] = useState(true); // Novo estado
   const [lojistaData, setLojistaData] = useState<LojistaData | null>(null)
@@ -139,8 +149,15 @@ export default function ExperimentarPage() {
   const photoLoadedRef = useRef(false)
 
   // Verificar se cliente está logado e carregar foto do sessionStorage
+  // IMPORTANTE: Se estiver em modo display, NÃO verificar login (display funciona sem login)
   useEffect(() => {
     if (!lojistaId) return
+    
+    // Se estiver em modo display, não precisa de login - pular verificação
+    if (isDisplayMode) {
+      setIsInitializing(false)
+      return
+    }
     
     // Evitar execução múltipla
     if (photoLoadedRef.current) return
@@ -230,13 +247,13 @@ export default function ExperimentarPage() {
     // Isso ajuda a evitar um flash rápido da tela de loading se a verificação for muito rápida
     const timer = setTimeout(checkAuthAndFinalize, 100);
 
-    return () => {
-      clearTimeout(timer);
-      // Resetar flag quando o componente desmontar ou lojistaId mudar
-      photoLoadedRef.current = false;
-    };
+            return () => {
+              clearTimeout(timer);
+              // Resetar flag quando o componente desmontar ou lojistaId mudar
+              photoLoadedRef.current = false;
+            };
 
-  }, [lojistaId, router]) // REMOVIDO userPhotoUrl das dependências para evitar loop infinito
+          }, [lojistaId, router, isDisplayMode]) // Adicionar isDisplayMode às dependências
 
   // Validar foto quando userPhotoUrl muda (apenas para URLs blob)
   useEffect(() => {
@@ -813,11 +830,15 @@ export default function ExperimentarPage() {
       const backendUrl = getBackendUrl()
 
       // 3. Gerar imagem usando a nova API do paineladm (Gemini + Imagen)
+      // Se estiver conectado à loja, enviar flag broadcast para aparecer no display
+      const targetDisplay = sessionStorage.getItem("target_display")
       const payload = {
         lojistaId,
         customerId: clienteId,
         userImageUrl: personImageUrl,
         productImageUrl: productImageUrls.length === 1 ? productImageUrls[0] : productImageUrls,
+        broadcast: isConnected && connectedStoreId === lojistaId, // Fase 9: Broadcast para display
+        targetDisplay: targetDisplay || undefined, // Fase 10: Display específico
       }
 
       console.log("[handleVisualize] Chamando API do paineladm:", `${backendUrl}/api/ai/generate`)
@@ -839,6 +860,28 @@ export default function ExperimentarPage() {
 
       // 4. Salvar resultados e navegar
       if (responseData.imageUrl) {
+        // Fase 10: Se estiver conectado à loja e tiver target_display, enviar para o display
+        if (isConnected && connectedStoreId === lojistaId) {
+          const targetDisplay = sessionStorage.getItem("target_display")
+          if (targetDisplay) {
+            try {
+              await fetch("/api/display/update", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  displayUuid: targetDisplay,
+                  imageUrl: responseData.imageUrl,
+                  lojistaId,
+                }),
+              })
+              console.log("[handleVisualize] ✅ Imagem enviada para display:", targetDisplay)
+            } catch (displayError) {
+              console.warn("[handleVisualize] Erro ao enviar para display:", displayError)
+              // Não quebrar o fluxo se houver erro no display
+            }
+          }
+        }
+
         // Formatar como look para compatibilidade com a tela de resultado
         const generatedLook = {
           id: responseData.compositionId || `generated-${Date.now()}`,
@@ -972,8 +1015,21 @@ export default function ExperimentarPage() {
     );
   }
 
-                return (
-    <ExperimentarView
+  // Se estiver em modo display, renderizar DisplayView
+  if (isDisplayMode) {
+    return <DisplayView lojistaData={lojistaData} />
+  }
+
+  // Renderizar modo normal (celular)
+  return (
+    <>
+      {/* Indicador de conexão com a loja (Fase 9) */}
+      <StoreConnectionIndicator
+        isConnected={isConnected}
+        storeName={lojistaData?.nome || undefined}
+        onDisconnect={disconnect}
+      />
+      <ExperimentarView
       lojistaData={lojistaData}
       isLoadingCatalog={isLoadingCatalog}
       filteredCatalog={filteredCatalog}
@@ -1005,5 +1061,6 @@ export default function ExperimentarPage() {
       lojistaId={lojistaId}
       photoInputRef={photoInputRef}
     />
+    </>
   )
 }
