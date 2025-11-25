@@ -53,10 +53,27 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
   }, [])
 
   // Gerar URL do QR Code (Fase 10: incluir target_display)
+  // IMPORTANTE: QR Code deve apontar para o APP do cliente, não para o display
   const getQrCodeUrl = () => {
     if (typeof window === "undefined" || !displayUuid) return ""
     
-    const baseUrl = window.location.origin
+    // Detectar se está em desenvolvimento
+    const isDev = window.location.hostname === "localhost"
+    
+    // Determinar URL base do app cliente
+    let baseUrl: string
+    if (isDev) {
+      // Em desenvolvimento, usar localhost com porta do modelo-2
+      const port = process.env.NEXT_PUBLIC_MODELO2_PORT || "3005"
+      baseUrl = `http://localhost:${port}`
+    } else {
+      // Em produção, usar domínio do app cliente (não do display!)
+      // Usar variável de ambiente se disponível, senão usar domínio padrão
+      const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN || "app.experimenteai.com.br"
+      const protocol = process.env.NEXT_PUBLIC_APP_PROTOCOL || "https"
+      baseUrl = `${protocol}://${appDomain}`
+    }
+    
     const url = `${baseUrl}/${lojistaId}/experimentar?connect=true&lojista=${lojistaId}&target_display=${displayUuid}`
     return url
   }

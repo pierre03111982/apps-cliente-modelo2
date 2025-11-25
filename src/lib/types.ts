@@ -17,12 +17,15 @@ export type Produto = {
   nome: string
   preco?: number | null
   imagemUrl?: string | null
+  imagemUrlCatalogo?: string | null
+  imagemUrlOriginal?: string | null
   categoria?: string | null
   tamanhos?: string[]
   cores?: string[]
   medidas?: string
   estoque?: number | null
   obs?: string
+  descontoProduto?: number | null
 }
 
 export type GeneratedLook = {

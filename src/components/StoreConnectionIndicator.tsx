@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Cast, X } from "lucide-react"
+import { Cast } from "lucide-react"
 import { Button } from "./ui/Button"
 
 interface StoreConnectionIndicatorProps {

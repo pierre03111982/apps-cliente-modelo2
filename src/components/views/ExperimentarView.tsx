@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import Image from "next/image"
 import {
   Upload,
@@ -22,7 +22,6 @@ import { ClockAnimation } from "../ClockAnimation"
 import { LoadingSpinner } from "../LoadingSpinner"
 import { SafeImage } from "../ui/SafeImage"
 import { Button } from "../ui/Button"
-import { CLOSET_BACKGROUND_IMAGE } from "@/lib/constants" // Esta constante não será mais usada
 import type { LojistaData, Produto, GeneratedLook } from "@/lib/types"
 
 export interface ExperimentarViewProps {
@@ -96,6 +95,33 @@ export function ExperimentarView({
   const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0)
   const phraseIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const [selectedFavoriteDetail, setSelectedFavoriteDetail] = useState<any | null>(null)
+
+  const redesDiscount = useMemo(() => {
+    const base = lojistaData?.descontoRedesSociais ?? 0
+    const expiraEm = lojistaData?.descontoRedesSociaisExpiraEm
+    const isValid = base > 0 && (!expiraEm || new Date(expiraEm) >= new Date())
+    return isValid ? base : 0
+  }, [lojistaData?.descontoRedesSociais, lojistaData?.descontoRedesSociaisExpiraEm])
+
+  const getSpecialDiscount = (produto?: Produto | null) =>
+    produto?.descontoProduto && produto.descontoProduto > 0 ? produto.descontoProduto : 0
+
+  const getTotalDiscount = (produto?: Produto | null) => {
+    const total = redesDiscount + getSpecialDiscount(produto)
+    return Math.max(0, Math.min(total, 80))
+  }
+
+  const hasDiscountApplied = (produto?: Produto | null) =>
+    descontoAplicado && getTotalDiscount(produto) > 0
+
+  const getProdutoImagem = (produto?: Produto | null) =>
+    produto?.imagemUrlCatalogo || produto?.imagemUrl || null
+
+  const prioritizedCatalog = useMemo(() => {
+    const especiais = filteredCatalog.filter((produto) => (produto.descontoProduto ?? 0) > 0)
+    const comuns = filteredCatalog.filter((produto) => (produto.descontoProduto ?? 0) <= 0)
+    return [...especiais, ...especiais, ...comuns]
+  }, [filteredCatalog])
 
   // Frases criativas animadas
   const creativePhrases = [
@@ -213,14 +239,19 @@ export function ExperimentarView({
       )}
 
       {/* 1. Vídeo de Fundo - Fixo */}
-      <div className="fixed inset-0 z-0 overflow-hidden">
+      <div className="fixed inset-0 z-0 overflow-hidden bg-black">
         <video
           src="/video2tela2.mp4"
           loop
           muted
           autoPlay
           playsInline
+          preload="auto"
           className="absolute inset-0 h-full w-full object-cover"
+          onError={(e) => {
+            console.error("[ExperimentarView] Erro ao carregar vídeo de fundo:", e)
+            // Se o vídeo falhar, manter fundo preto (já está no container)
+          }}
         >
           <source src="/video2tela2.mp4" type="video/mp4" />
           Seu navegador não suporta a tag de vídeo.
@@ -494,7 +525,7 @@ export function ExperimentarView({
                       <X className="h-3 w-3" />
                     </button>
                     {/* Imagem do Produto */}
-                    {produto.imagemUrl && (
+                    {getProdutoImagem(produto) && (
                       <div 
                         className="relative w-full bg-gray-100 flex items-center justify-center overflow-hidden" 
                         style={{ 
@@ -504,7 +535,7 @@ export function ExperimentarView({
                         }}
                       >
                         <SafeImage
-                          src={produto.imagemUrl}
+                          src={getProdutoImagem(produto)!}
                           alt={produto.nome}
                           className="w-full h-full object-cover"
                           containerClassName="w-full h-full"
@@ -518,40 +549,30 @@ export function ExperimentarView({
                         {produto.nome}
                       </h3>
                       <div className="flex flex-col gap-0.5">
-                        {(() => {
-                          const desconto = lojistaData?.descontoRedesSociais;
-                          const expiraEm = lojistaData?.descontoRedesSociaisExpiraEm;
-                          const descontoValido =
-                            desconto &&
-                            desconto > 0 &&
-                            (!expiraEm || new Date(expiraEm) >= new Date());
-                          if (descontoAplicado && descontoValido) {
-                            return (
-                              <>
-                                <p className="text-left text-[9px] text-purple-300 line-through">
-                                  {formatPrice(produto.preco)}
-                                </p>
-                                <div className="flex items-center gap-0.5 flex-wrap">
-                                  <p className="text-left text-[10px] font-bold text-amber-300">
-                                    {formatPrice(
-                                      produto.preco
-                                        ? produto.preco * (1 - desconto / 100)
-                                        : 0
-                                    )}
-                                  </p>
-                                  <p className="text-left text-[7px] font-semibold text-green-400 leading-tight">
-                                    Desconto aplicado
-                                  </p>
-                                </div>
-                              </>
-                            );
-                          }
-                          return (
-                            <p className="text-left text-[10px] font-bold text-amber-300">
+                        {hasDiscountApplied(produto) && produto.preco ? (
+                          <>
+                            <p className="text-left text-[9px] text-purple-300 line-through">
                               {formatPrice(produto.preco)}
                             </p>
-                          );
-                        })()}
+                            <div className="flex items-center gap-0.5 flex-wrap">
+                              <p className="text-left text-[10px] font-bold text-amber-300">
+                                {formatPrice(produto.preco * (1 - getTotalDiscount(produto) / 100))}
+                              </p>
+                              <p className="text-left text-[7px] font-semibold text-green-400 leading-tight">
+                                {getTotalDiscount(produto).toFixed(1).replace(".0", "")}% OFF
+                              </p>
+                            </div>
+                          </>
+                        ) : (
+                          <p className="text-left text-[10px] font-bold text-amber-300">
+                            {formatPrice(produto.preco)}
+                          </p>
+                        )}
+                        {getSpecialDiscount(produto) > 0 && (
+                          <p className="text-left text-[8px] font-semibold text-pink-200">
+                            +{getSpecialDiscount(produto)}% especial
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -599,17 +620,24 @@ export function ExperimentarView({
                 {lojistaData?.redesSociais?.tiktok ? (<button onClick={() => handleSocialClick(lojistaData.redesSociais.tiktok!.startsWith('http') ? lojistaData.redesSociais.tiktok! : `https://tiktok.com/@${lojistaData.redesSociais.tiktok!.replace('@', '')}`)} disabled={isGenerating || isButtonExpanded} className={`flex items-center justify-center w-10 h-10 rounded-full bg-black text-white transition hover:scale-110 ${isGenerating || isButtonExpanded ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}><Music2 className="h-5 w-5" /></button>) : (<div className="flex items-center justify-center w-10 h-10 rounded-full bg-black text-white opacity-50"><Music2 className="h-5 w-5" /></div>)}
                 <button onClick={handleShareApp} disabled={isGenerating || isButtonExpanded} className={`flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 text-white transition hover:scale-110 ${isGenerating || isButtonExpanded ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`} title="Compartilhar aplicativo"><Share2 className="h-5 w-5" /></button>
               </div>
-              {(() => { const desconto = lojistaData?.descontoRedesSociais; const expiraEm = lojistaData?.descontoRedesSociaisExpiraEm; if (!desconto || desconto <= 0) { return null } if (expiraEm) { const dataExpiracao = new Date(expiraEm); const agora = new Date(); if (dataExpiracao < agora) { return null } } return (
+              {redesDiscount > 0 && (
                 <>
                   <p className="text-base font-semibold text-white text-center flex items-center justify-center gap-1.5">
                     <span className="font-bold text-yellow-400 text-base">GANHE</span>
-                    <span className="text-xl md:text-2xl font-black text-yellow-400 drop-shadow-lg">{desconto}%</span>
+                    <span className="text-xl md:text-2xl font-black text-yellow-400 drop-shadow-lg">{redesDiscount}%</span>
                     <span className="font-semibold text-white text-base">de</span>
                     <span className="font-bold text-yellow-400 text-base">DESCONTO!</span>
                   </p>
-                  {descontoAplicado && (<p className="text-xs font-semibold text-green-400 text-center animate-pulse">✓ Desconto aplicado!</p>)}
+                  <p className="text-[11px] text-white text-center max-w-md">
+                    Esse bônus soma com o <span className="font-semibold text-pink-200">Desconto Especial</span> de cada produto.
+                  </p>
+                  {descontoAplicado && (
+                    <p className="text-xs font-semibold text-green-400 text-center animate-pulse">
+                      ✓ Desconto aplicado! Os preços já consideram {redesDiscount}% + descontos especiais.
+                    </p>
+                  )}
                 </>
-              )})()}
+              )}
             </div>
           </div>
 
@@ -646,10 +674,10 @@ export function ExperimentarView({
 
             {/* Grid de Produtos */}
             {isLoadingCatalog ? (<div className="py-12 text-center text-zinc-600">Carregando produtos...</div>) : filteredCatalog.length === 0 ? (<div className="py-12 text-center text-zinc-500">Nenhum produto encontrado.</div>) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4 overflow-y-auto pb-4 pr-2 custom-scrollbar justify-items-center" style={{ maxHeight: '900px' }}>
-                {filteredCatalog.map((produto) => { const isSelected = selectedProducts.some((p) => p.id === produto.id); return (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4 overflow-y-auto pb-4 pr-2 custom-scrollbar" style={{ maxHeight: '900px' }}>
+                {prioritizedCatalog.map((produto, index) => { const isSelected = selectedProducts.some((p) => p.id === produto.id); const imagemPrincipal = getProdutoImagem(produto); const specialDiscount = getSpecialDiscount(produto); const totalDiscount = getTotalDiscount(produto); const applyDiscount = hasDiscountApplied(produto); return (
                   <div
-                    key={produto.id}
+                    key={`${produto.id}-${index}`}
                     onClick={(e) => {
                       if (!isGenerating && !isButtonExpanded) {
                         handleProductCardClick(produto, e)
@@ -684,7 +712,7 @@ export function ExperimentarView({
                       </div>
                     </div>
 
-                    {produto.imagemUrl && (
+                    {imagemPrincipal && (
                       <div 
                         className="relative w-full bg-gray-100 flex items-center justify-center overflow-hidden" 
                         style={{ 
@@ -694,7 +722,7 @@ export function ExperimentarView({
                         }}
                       >
                         <SafeImage
-                          src={produto.imagemUrl}
+                          src={imagemPrincipal}
                           alt={produto.nome}
                           className="w-full h-full object-cover"
                           containerClassName="w-full h-full"
@@ -702,15 +730,41 @@ export function ExperimentarView({
                         />
                       </div>
                     )}
+                    {specialDiscount > 0 && (
+                      <div className="absolute top-2 right-2 z-10 rounded-full bg-pink-600/90 px-2 py-1 text-[10px] font-bold text-white shadow-lg shadow-pink-500/30">
+                        +{specialDiscount}% especial
+                      </div>
+                    )}
                     <div className="p-2 bg-purple-900">
                       <h3 className="text-left text-xs font-semibold text-white line-clamp-2 h-8">
                         {produto.nome}
                       </h3>
-                      <div className="mt-1 flex flex-col gap-0.5">{(() => { const desconto = lojistaData?.descontoRedesSociais; const expiraEm = lojistaData?.descontoRedesSociaisExpiraEm; const descontoValido = desconto && desconto > 0 && (!expiraEm || new Date(expiraEm) >= new Date()); if (descontoAplicado && descontoValido) { return (<><p className="text-left text-xs text-purple-300 line-through">{formatPrice(produto.preco)}</p><p className="text-left text-sm font-bold text-amber-300">{formatPrice(produto.preco ? produto.preco * (1 - (desconto / 100)) : 0)}</p></>) } return (
-                        <p className="text-left text-sm font-bold text-amber-300">
-                          {formatPrice(produto.preco)}
-                        </p>
-                      )})()}</div>
+                      <div className="mt-1 flex flex-col gap-0.5">
+                        {applyDiscount && produto.preco ? (
+                          <>
+                            <p className="text-left text-xs text-purple-300 line-through">
+                              {formatPrice(produto.preco)}
+                            </p>
+                            <p className="text-left text-sm font-bold text-amber-300">
+                              {formatPrice(produto.preco * (1 - totalDiscount / 100))}
+                            </p>
+                            <p className="text-[10px] font-semibold text-green-300">
+                              {totalDiscount.toFixed(1).replace(".0", "")}% OFF {specialDiscount > 0 ? "(inclui especial)" : ""}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-left text-sm font-bold text-amber-300">
+                            {formatPrice(produto.preco)}
+                          </p>
+                        )}
+                        {specialDiscount > 0 && (
+                          <p className="text-[10px] font-semibold text-pink-200">
+                            {applyDiscount
+                              ? `Redes ${redesDiscount}% + Especial ${specialDiscount}%`
+                              : `Desconto especial disponível (+${specialDiscount}%)`}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )})}
@@ -769,10 +823,10 @@ export function ExperimentarView({
 
             <div className="space-y-4">
               {/* Imagem do Produto */}
-              {selectedProductDetail.imagemUrl && (
+              {getProdutoImagem(selectedProductDetail) && (
                 <div className="relative w-full min-h-96 rounded-lg overflow-hidden border-2 border-purple-500 bg-white flex items-center justify-center" style={{ position: 'relative' }}>
                   <SafeImage
-                    src={selectedProductDetail.imagemUrl}
+                    src={getProdutoImagem(selectedProductDetail)!}
                     alt={selectedProductDetail.nome}
                     className="max-h-[600px] w-auto h-auto object-contain"
                     loading="lazy"
@@ -787,28 +841,26 @@ export function ExperimentarView({
 
               {/* Preço */}
               <div className="p-4 bg-purple-900 rounded-lg">
-                {(() => {
-                  const desconto = lojistaData?.descontoRedesSociais
-                  const expiraEm = lojistaData?.descontoRedesSociaisExpiraEm
-                  const descontoValido = desconto && desconto > 0 && (!expiraEm || new Date(expiraEm) >= new Date())
-                  
-                  if (descontoAplicado && descontoValido) {
-                    return (
-                      <div className="space-y-1">
-                        <p className="text-lg text-purple-300 line-through">{formatPrice(selectedProductDetail.preco)}</p>
-                        <p className="text-2xl font-bold text-amber-300">
-                          {formatPrice(selectedProductDetail.preco ? selectedProductDetail.preco * (1 - (desconto / 100)) : 0)}
-                        </p>
-                        <p className="text-xs font-semibold text-green-400 whitespace-nowrap">Desconto aplicado</p>
-                      </div>
-                    )
-                  }
-                  return (
+                {hasDiscountApplied(selectedProductDetail) && selectedProductDetail.preco ? (
+                  <div className="space-y-1">
+                    <p className="text-lg text-purple-300 line-through">{formatPrice(selectedProductDetail.preco)}</p>
                     <p className="text-2xl font-bold text-amber-300">
-                      {formatPrice(selectedProductDetail.preco)}
+                      {formatPrice(selectedProductDetail.preco * (1 - getTotalDiscount(selectedProductDetail) / 100))}
                     </p>
-                  )
-                })()}
+                    <p className="text-xs font-semibold text-green-400 whitespace-nowrap">
+                      {getTotalDiscount(selectedProductDetail).toFixed(1).replace(".0", "")}% OFF liberado
+                    </p>
+                    {getSpecialDiscount(selectedProductDetail) > 0 && (
+                      <p className="text-[11px] font-semibold text-pink-200">
+                        Redescanais {redesDiscount}% + Especial {getSpecialDiscount(selectedProductDetail)}%
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-2xl font-bold text-amber-300">
+                    {formatPrice(selectedProductDetail.preco)}
+                  </p>
+                )}
               </div>
 
               {/* Categoria */}

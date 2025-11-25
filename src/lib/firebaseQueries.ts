@@ -163,18 +163,37 @@ export async function fetchProdutos(
 
         produtos = snapshot.docs.map((docSnapshot) => {
           const data = docSnapshot.data()
+          const imagemUrlCatalogo =
+            typeof data.imagemUrlCatalogo === "string" ? data.imagemUrlCatalogo : null
+          const imagemUrlOriginal =
+            typeof data.imagemUrlOriginal === "string" ? data.imagemUrlOriginal : null
+          const descontoEspecialRaw = data.descontoProduto
+          let descontoEspecial: number | null = null
+          if (typeof descontoEspecialRaw === "number") {
+            descontoEspecial = descontoEspecialRaw
+          } else if (typeof descontoEspecialRaw === "string") {
+            const parsed = parseFloat(descontoEspecialRaw.replace(",", "."))
+            descontoEspecial = isNaN(parsed) ? null : parsed
+          }
 
           return {
             id: docSnapshot.id,
             nome: typeof data.nome === "string" ? data.nome : "Produto",
             preco: typeof data.preco === "number" ? data.preco : null,
-            imagemUrl: typeof data.imagemUrl === "string" ? data.imagemUrl : null,
+            imagemUrl:
+              imagemUrlCatalogo ||
+              (typeof data.imagemUrl === "string" ? data.imagemUrl : null),
+            imagemUrlCatalogo,
+            imagemUrlOriginal:
+              imagemUrlOriginal ||
+              (typeof data.imagemUrl === "string" ? data.imagemUrl : null),
             categoria: typeof data.categoria === "string" ? data.categoria : null,
             tamanhos: Array.isArray(data.tamanhos) ? (data.tamanhos as string[]) : [],
             cores: Array.isArray(data.cores) ? (data.cores as string[]) : [],
             medidas: typeof data.medidas === "string" ? data.medidas : undefined,
             estoque: typeof data.estoque === "number" ? data.estoque : null,
             obs: typeof data.obs === "string" ? data.obs : undefined,
+            descontoProduto: descontoEspecial,
           }
         })
       }

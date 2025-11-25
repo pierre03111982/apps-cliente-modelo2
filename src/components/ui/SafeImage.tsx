@@ -81,11 +81,12 @@ export function SafeImage({
   if (hasError) {
     return (
       <div
-        className={cn("flex items-center justify-center bg-gray-100", className)}
+        className={cn("flex flex-col items-center justify-center bg-gray-100 min-h-[200px] p-4", className)}
         style={{ position: "relative", ...style }}
-        title={title}
+        title={title || "Erro ao carregar imagem"}
       >
         {placeholderSvg}
+        <p className="mt-2 text-xs text-gray-500 text-center">Imagem não disponível</p>
       </div>
     )
   }
