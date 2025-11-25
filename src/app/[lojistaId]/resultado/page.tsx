@@ -6,6 +6,7 @@ import Image from "next/image"
 import { ArrowLeft, ThumbsUp, ThumbsDown, Share2, ShoppingCart, Heart, RefreshCw, Home, Instagram, Facebook, Music2, MessageCircle, X, Sparkles, ArrowLeftCircle, Check, Download } from "lucide-react"
 import { ClockAnimation } from "@/components/ClockAnimation"
 import { LoadingSpinner } from "@/components/LoadingSpinner"
+import { StaticVideoBackground } from "@/components/StaticVideoBackground"
 import { CLOSET_BACKGROUND_IMAGE } from "@/lib/constants"
 import { fetchLojistaData } from "@/lib/firebaseQueries"
 import type { LojistaData, GeneratedLook } from "@/lib/types"
@@ -1420,8 +1421,8 @@ export default function ResultadoPage() {
       )}
       
       
-      {/* Fundo preto - vídeo apenas na tela de login */}
-      <div className="fixed inset-0 z-0 overflow-hidden bg-black"></div>
+      {/* Imagem de fundo estática (frame do vídeo parado) */}
+      <StaticVideoBackground videoSrc="/video2tela2.mp4" />
 
       {/* Conteúdo Principal */}
       <div className="relative z-10 min-h-screen flex flex-col p-4 items-center justify-center space-y-3">

@@ -6,6 +6,7 @@ import { fetchLojistaData, fetchProdutos } from "@/lib/firebaseQueries"
 import type { Produto, LojistaData, GeneratedLook } from "@/lib/types"
 import { ExperimentarView } from "@/components/views/ExperimentarView"
 import { DisplayView } from "@/components/views/DisplayView"
+import { StaticVideoBackground } from "@/components/StaticVideoBackground"
 import { useStoreSession } from "@/hooks/useStoreSession"
 import { StoreConnectionIndicator } from "@/components/StoreConnectionIndicator"
 import toast from "react-hot-toast"
@@ -989,8 +990,8 @@ export default function ExperimentarPage() {
   if (isInitializing) {
   return (
       <div className="relative min-h-screen w-full overflow-hidden">
-      {/* Fundo preto - vídeo apenas na tela de login */}
-      <div className="fixed inset-0 z-0 overflow-hidden bg-black"></div>
+      {/* Imagem de fundo estática (frame do vídeo parado) */}
+      <StaticVideoBackground videoSrc="/video2tela2.mp4" />
         <div className="relative z-10 flex h-screen flex-col items-center justify-center text-white">
               {lojistaData?.logoUrl && (
             <div className="mb-4 h-24 w-24 overflow-hidden rounded-full border-2 border-white/30">
