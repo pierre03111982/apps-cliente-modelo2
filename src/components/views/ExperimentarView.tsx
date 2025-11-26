@@ -466,7 +466,8 @@ export function ExperimentarView({
             }`}
           >
             {/* Upload de Foto */}
-            <div className={`${userPhotoUrl ? 'w-full sm:max-w-[48%] md:max-w-[42%]' : 'w-full'}`}>
+            <div className={`relative ${userPhotoUrl ? 'w-full sm:max-w-[48%] md:max-w-[42%]' : 'w-full'}`}>
+              {renderActionButtons({ allowFavorites: true, allowCamera: true })}
               {userPhotoUrl && !isRefineMode ? (
                 // Exibir foto quando disponível
                 <div className="relative inline-block w-full" style={{ position: 'relative' }}>
@@ -506,7 +507,6 @@ export function ExperimentarView({
                   >
                     <X className="h-5 w-5" />
                   </button>
-                  {renderActionButtons({ allowCamera: true, allowFavorites: true })}
                   <input
                     ref={photoInputRef}
                     id="photo-upload"
@@ -545,7 +545,6 @@ export function ExperimentarView({
                   <div className="absolute top-2 left-2 bg-purple-600/90 text-white px-3 py-1 rounded-lg text-xs font-semibold">
                     Adicionar Acessório
                   </div>
-                  {renderActionButtons({ allowFavorites: true })}
                 </div>
               ) : (
                 <div className="relative inline-block w-full" style={{ position: 'relative' }}>
@@ -574,7 +573,6 @@ export function ExperimentarView({
                       className="hidden"
                     />
                   </label>
-                  {renderActionButtons({ allowCamera: true, allowFavorites: true })}
                 </div>
               )}
             </div>
