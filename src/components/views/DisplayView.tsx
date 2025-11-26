@@ -48,6 +48,10 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
   // Cache de imagens pré-carregadas para troca mais rápida
   const imageCache = useRef<Map<string, HTMLImageElement>>(new Map())
 
+  // Orientação do display (horizontal ou vertical)
+  const orientation = lojistaData?.displayOrientation || "horizontal"
+  const isVertical = orientation === "vertical"
+
   // Rotação de frases criativas
   useEffect(() => {
     if (viewMode === "idle") {
@@ -241,11 +245,13 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
   if (viewMode === "idle" || !activeImage) {
     return (
       <div 
-        className="relative min-h-screen w-full text-white flex flex-col items-center justify-center p-8 overflow-hidden"
+        className={`relative w-full h-full text-white flex flex-col items-center justify-center ${isVertical ? 'p-4' : 'p-8'} overflow-hidden`}
         style={{
           background: "linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%)",
           backgroundSize: "400% 400%",
-          animation: "gradient-shift 15s ease infinite"
+          animation: "gradient-shift 15s ease infinite",
+          minHeight: "100vh",
+          height: "100vh"
         }}
       >
         {/* Animações de fundo decorativas */}
@@ -257,8 +263,8 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
 
         {/* Logo da Loja (se disponível) */}
         {lojistaData?.logoUrl && (
-          <div className="absolute top-8 left-8 z-10">
-            <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-white/30 shadow-2xl bg-white/10 backdrop-blur-md">
+          <div className={`absolute ${isVertical ? 'top-6 left-6' : 'top-8 left-8'} z-10`}>
+            <div className={`${isVertical ? 'w-20 h-20' : 'w-28 h-28'} rounded-full overflow-hidden border-4 border-white/30 shadow-2xl bg-white/10 backdrop-blur-md`}>
               <img
                 src={lojistaData.logoUrl}
                 alt={lojistaData.nome || "Logo"}
@@ -268,98 +274,171 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
           </div>
         )}
 
-        {/* Conteúdo Principal */}
-        <div className="relative z-10 flex flex-col lg:flex-row items-center justify-center gap-16 max-w-7xl w-full">
-          {/* QR Code com design melhorado */}
-          <div className="flex flex-col items-center gap-8">
-            <div 
-              className="relative bg-white/95 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border-4 border-white/50 transform transition-transform hover:scale-105"
-              style={{
-                boxShadow: "0 20px 60px rgba(0,0,0,0.3), 0 0 40px rgba(255,255,255,0.2) inset"
-              }}
-            >
-              <QRCodeSVG
-                value={getQrCodeUrl()}
-                size={320}
-                level="H"
-                includeMargin={true}
-              />
-              {/* Decoração no canto do QR Code */}
-              <div className="absolute -top-3 -right-3 w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center shadow-lg">
-                <Sparkles className="w-8 h-8 text-white" />
-              </div>
-            </div>
-            
-            {/* Texto abaixo do QR Code */}
-            <div className="text-center space-y-3">
-              <h2 className="text-3xl font-black text-white drop-shadow-2xl">
-                Escaneie para Começar
-              </h2>
-              <p className="text-lg text-white/90 max-w-md font-medium drop-shadow-lg">
-                Aponte a câmera do seu celular para o código e descubra sua próxima paixão fashion
-              </p>
-            </div>
-          </div>
-
-          {/* Texto de Boas-vindas com frase criativa */}
-          <div className="flex flex-col gap-8 max-w-xl text-center lg:text-left">
-            {/* Logo/Nome da loja */}
+        {/* Conteúdo Principal - Layout diferente para vertical */}
+        {isVertical ? (
+          // Layout Vertical (TV na vertical) - Otimizado para preencher a tela
+          <div className="relative z-10 flex flex-col items-center justify-center gap-6 w-full h-full px-8 py-12">
+            {/* Nome da loja no topo - compacto */}
             {lojistaData?.nome && (
-              <div className="space-y-4">
-                <h1 className="text-6xl lg:text-7xl font-black text-white drop-shadow-2xl leading-tight">
-                  Bem-vindo à<br />
-                  <span 
-                    className="bg-gradient-to-r from-yellow-200 via-pink-200 to-purple-200 bg-clip-text text-transparent"
-                    style={{ textShadow: "none" }}
-                  >
-                    {lojistaData.nome}
-                  </span>
+              <div className="text-center space-y-1 mb-2">
+                <h1 className="text-3xl font-black text-white drop-shadow-2xl">
+                  Bem-vindo à
                 </h1>
+                <span 
+                  className="text-4xl font-black bg-gradient-to-r from-yellow-200 via-pink-200 to-purple-200 bg-clip-text text-transparent block"
+                  style={{ textShadow: "none" }}
+                >
+                  {lojistaData.nome}
+                </span>
               </div>
             )}
 
-            {/* Frase criativa rotativa */}
-            <div className="flex flex-col gap-6">
+            {/* QR Code centralizado - maior para TV */}
+            <div className="flex flex-col items-center gap-4 flex-1 justify-center">
+              <div 
+                className="relative bg-white/95 backdrop-blur-xl rounded-3xl p-5 shadow-2xl border-4 border-white/50"
+                style={{
+                  boxShadow: "0 20px 60px rgba(0,0,0,0.3), 0 0 40px rgba(255,255,255,0.2) inset"
+                }}
+              >
+                <QRCodeSVG
+                  value={getQrCodeUrl()}
+                  size={320}
+                  level="L"
+                  includeMargin={true}
+                  fgColor="#000000"
+                  bgColor="#ffffff"
+                />
+                {/* Decoração no canto do QR Code */}
+                <div className="absolute -top-3 -right-3 w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center shadow-lg">
+                  <Sparkles className="w-8 h-8 text-white" />
+                </div>
+              </div>
+              
+              {/* Texto abaixo do QR Code */}
+              <div className="text-center space-y-2">
+                <h2 className="text-2xl font-black text-white drop-shadow-2xl">
+                  Escaneie para Começar
+                </h2>
+                <p className="text-base text-white/90 max-w-md font-medium drop-shadow-lg">
+                  Aponte a câmera do seu celular para o código e descubra sua próxima paixão fashion
+                </p>
+              </div>
+            </div>
+
+            {/* Frase criativa no rodapé - compacta */}
+            <div className="mt-4">
               <div 
                 key={currentPhraseIndex}
-                className="flex items-center gap-4 bg-white/20 backdrop-blur-md rounded-2xl p-6 border border-white/30 shadow-xl transform transition-all duration-500 animate-fade-in"
+                className="flex items-center justify-center gap-3 bg-white/20 backdrop-blur-md rounded-2xl px-5 py-3 border border-white/30 shadow-xl transform transition-all duration-500 animate-fade-in"
               >
-                <div className={`p-4 rounded-xl bg-gradient-to-br ${currentPhrase.color} shadow-lg`}>
-                  <IconComponent className="w-8 h-8 text-white" />
+                <div className={`p-2 rounded-xl bg-gradient-to-br ${currentPhrase.color} shadow-lg`}>
+                  <IconComponent className="w-5 h-5 text-white" />
                 </div>
-                <p className="text-2xl font-bold text-white drop-shadow-lg flex-1">
+                <p className="text-base font-bold text-white drop-shadow-lg">
                   {currentPhrase.text}
                 </p>
               </div>
+            </div>
+          </div>
+        ) : (
+          // Layout Horizontal (padrão)
+          <div className="relative z-10 flex flex-col lg:flex-row items-center justify-center gap-16 max-w-7xl w-full">
+            {/* QR Code com design melhorado */}
+            <div className="flex flex-col items-center gap-8">
+              <div 
+                className="relative bg-white/95 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border-4 border-white/50 transform transition-transform hover:scale-105"
+                style={{
+                  boxShadow: "0 20px 60px rgba(0,0,0,0.3), 0 0 40px rgba(255,255,255,0.2) inset"
+                }}
+              >
+                <QRCodeSVG
+                  value={getQrCodeUrl()}
+                  size={320}
+                  level="L"
+                  includeMargin={true}
+                  fgColor="#000000"
+                  bgColor="#ffffff"
+                />
+                {/* Decoração no canto do QR Code */}
+                <div className="absolute -top-3 -right-3 w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center shadow-lg">
+                  <Sparkles className="w-8 h-8 text-white" />
+                </div>
+              </div>
+              
+              {/* Texto abaixo do QR Code */}
+              <div className="text-center space-y-3">
+                <h2 className="text-3xl font-black text-white drop-shadow-2xl">
+                  Escaneie para Começar
+                </h2>
+                <p className="text-lg text-white/90 max-w-md font-medium drop-shadow-lg">
+                  Aponte a câmera do seu celular para o código e descubra sua próxima paixão fashion
+                </p>
+              </div>
+            </div>
 
-              {/* Lista de benefícios */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 text-white/90 text-lg">
-                  <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
-                  <span className="font-semibold">Provador Virtual com IA</span>
+            {/* Texto de Boas-vindas com frase criativa */}
+            <div className="flex flex-col gap-8 max-w-xl text-center lg:text-left">
+              {/* Logo/Nome da loja */}
+              {lojistaData?.nome && (
+                <div className="space-y-4">
+                  <h1 className="text-6xl lg:text-7xl font-black text-white drop-shadow-2xl leading-tight">
+                    Bem-vindo à<br />
+                    <span 
+                      className="bg-gradient-to-r from-yellow-200 via-pink-200 to-purple-200 bg-clip-text text-transparent"
+                      style={{ textShadow: "none" }}
+                    >
+                      {lojistaData.nome}
+                    </span>
+                  </h1>
                 </div>
-                <div className="flex items-center gap-3 text-white/90 text-lg">
-                  <div className="w-2 h-2 bg-pink-400 rounded-full animate-pulse" style={{ animationDelay: "0.2s" }} />
-                  <span className="font-semibold">Experimente antes de comprar</span>
+              )}
+
+              {/* Frase criativa rotativa */}
+              <div className="flex flex-col gap-6">
+                <div 
+                  key={currentPhraseIndex}
+                  className="flex items-center gap-4 bg-white/20 backdrop-blur-md rounded-2xl p-6 border border-white/30 shadow-xl transform transition-all duration-500 animate-fade-in"
+                >
+                  <div className={`p-4 rounded-xl bg-gradient-to-br ${currentPhrase.color} shadow-lg`}>
+                    <IconComponent className="w-8 h-8 text-white" />
+                  </div>
+                  <p className="text-2xl font-bold text-white drop-shadow-lg flex-1">
+                    {currentPhrase.text}
+                  </p>
                 </div>
-                <div className="flex items-center gap-3 text-white/90 text-lg">
-                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse" style={{ animationDelay: "0.4s" }} />
-                  <span className="font-semibold">Looks personalizados para você</span>
+
+                {/* Lista de benefícios */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 text-white/90 text-lg">
+                    <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
+                    <span className="font-semibold">Provador Virtual com IA</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-white/90 text-lg">
+                    <div className="w-2 h-2 bg-pink-400 rounded-full animate-pulse" style={{ animationDelay: "0.2s" }} />
+                    <span className="font-semibold">Experimente antes de comprar</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-white/90 text-lg">
+                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse" style={{ animationDelay: "0.4s" }} />
+                    <span className="font-semibold">Looks personalizados para você</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Rodapé decorativo */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10">
-          <div className="flex items-center gap-3 bg-white/20 backdrop-blur-md rounded-full px-6 py-3 border border-white/30 shadow-lg">
-            <div className="w-3 h-3 bg-green-400 rounded-full animate-ping" />
-            <span className="text-white font-semibold drop-shadow-lg">
-              Aguardando você criar seu primeiro look...
-            </span>
+        {/* Rodapé decorativo - apenas em modo horizontal */}
+        {!isVertical && (
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10">
+            <div className="flex items-center gap-3 bg-white/20 backdrop-blur-md rounded-full px-6 py-3 border border-white/30 shadow-lg">
+              <div className="w-3 h-3 bg-green-400 rounded-full animate-ping" />
+              <span className="text-white font-semibold drop-shadow-lg">
+                Aguardando você criar seu primeiro look...
+              </span>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* CSS para animação de gradiente */}
         <style jsx>{`
@@ -409,24 +488,26 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
 
       {/* Sidebar com QR Code (quando em modo active) */}
       <div className="absolute left-8 top-1/2 -translate-y-1/2 w-64 z-10 flex flex-col items-center justify-center bg-white/10 backdrop-blur-xl rounded-3xl p-6 border border-white/20 shadow-2xl">
-        <div className="mb-4 text-center">
-          <Sparkles className="w-6 h-6 text-yellow-300 mx-auto mb-2" />
-          <h3 className="text-lg font-bold text-white drop-shadow-lg">
-            Novo Cliente?
-          </h3>
+          <div className="mb-4 text-center">
+            <Sparkles className="w-6 h-6 text-yellow-300 mx-auto mb-2" />
+            <h3 className="text-lg font-bold text-white drop-shadow-lg">
+              Novo Cliente?
+            </h3>
+          </div>
+          <div className="bg-white p-3 rounded-xl mb-4 shadow-xl transform hover:scale-105 transition-transform">
+            <QRCodeSVG
+              value={getQrCodeUrl()}
+              size={180}
+              level="L"
+              includeMargin={true}
+              fgColor="#000000"
+              bgColor="#ffffff"
+            />
+          </div>
+          <p className="text-xs text-white/90 text-center font-medium drop-shadow-md">
+            Escaneie e crie<br />seu look único
+          </p>
         </div>
-        <div className="bg-white p-3 rounded-xl mb-4 shadow-xl transform hover:scale-105 transition-transform">
-          <QRCodeSVG
-            value={getQrCodeUrl()}
-            size={180}
-            level="H"
-            includeMargin={true}
-          />
-        </div>
-        <p className="text-xs text-white/90 text-center font-medium drop-shadow-md">
-          Escaneie e crie<br />seu look único
-        </p>
-      </div>
 
       {/* Imagem Principal - Ajustada para tamanho máximo quando transmitindo */}
       <div className="flex-1 flex items-center justify-center ml-72 mr-8">
@@ -466,12 +547,12 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
 
       {/* Mensagem motivacional no rodapé */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10">
-        <div className="bg-white/20 backdrop-blur-md rounded-full px-6 py-3 border border-white/30 shadow-lg">
-          <p className="text-white font-semibold drop-shadow-lg text-center">
-            ✨ Você está sendo visto! ✨
-          </p>
+          <div className="bg-white/20 backdrop-blur-md rounded-full px-6 py-3 border border-white/30 shadow-lg">
+            <p className="text-white font-semibold drop-shadow-lg text-center">
+              ✨ Você está sendo visto! ✨
+            </p>
+          </div>
         </div>
-      </div>
 
       {/* CSS para animações */}
       <style jsx>{`
