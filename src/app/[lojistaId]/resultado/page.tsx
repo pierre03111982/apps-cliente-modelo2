@@ -471,12 +471,20 @@ export default function ResultadoPage() {
         const favoritesList = data.favorites || data.favoritos || []
         
         // Filtrar apenas os likes (action === "like" ou tipo === "like" ou votedType === "like")
+        // IMPORTANTE: Ignorar favoritos com URLs blob (temporárias) que não funcionam
         const likesOnly = favoritesList.filter((f: any) => {
           const hasImage = f.imagemUrl && f.imagemUrl.trim() !== ""
+          const isBlobUrl = f.imagemUrl && f.imagemUrl.startsWith('blob:')
           const isLike = f.action === "like" || f.tipo === "like" || f.votedType === "like"
           // Se não tiver campo de ação, assumir que é like (compatibilidade com dados antigos)
-          return hasImage && (isLike || (!f.action && !f.tipo && !f.votedType))
+          // Rejeitar URLs blob (temporárias) que não funcionam
+          return hasImage && !isBlobUrl && (isLike || (!f.action && !f.tipo && !f.votedType))
         })
+        
+        if (likesOnly.length < favoritesList.length) {
+          const blobCount = favoritesList.length - likesOnly.length
+          console.warn(`[ResultadoPage] ${blobCount} favorito(s) ignorado(s) por ter URL blob inválida`)
+        }
         
         // Ordenar por data de criação (mais recente primeiro)
         const sortedFavorites = likesOnly.sort((a: any, b: any) => {
