@@ -109,6 +109,7 @@ export function ExperimentarView({
   const scanFrameRef = useRef<number | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const barcodeDetectorRef = useRef<any>(null)
+  const hasUserPhoto = Boolean(userPhotoUrl)
 
   const redesDiscount = useMemo(() => {
     const base = lojistaData?.descontoRedesSociais ?? 0
@@ -336,23 +337,25 @@ export function ExperimentarView({
   const actionButtonBase =
     "w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-white/70 shadow-lg flex items-center justify-center text-white transition hover:scale-105 focus:outline-none"
 
-  const renderActionButtons = (config: { allowCamera?: boolean; allowFavorites?: boolean }) => (
+  const renderActionButtons = (config: { allowCamera?: boolean; allowFavorites?: boolean; allowDisplay?: boolean }) => (
     <div className="absolute right-3 bottom-3 flex flex-col items-center gap-3 z-20">
-      <button
-        type="button"
-        onClick={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          if (!isScannerOpen) {
-            startScanner()
-          }
-        }}
-        className={`${actionButtonBase} ${isDisplayConnected ? "bg-green-600 hover:bg-green-500" : "bg-indigo-600 hover:bg-indigo-500"}`}
-        title={isDisplayConnected ? "Display conectado" : "Conectar ao display"}
-        disabled={isScannerOpen}
-      >
-        <Cast className="h-6 w-6" />
-      </button>
+      {config.allowDisplay && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            if (!isScannerOpen) {
+              startScanner()
+            }
+          }}
+          className={`${actionButtonBase} ${isDisplayConnected ? "bg-green-600 hover:bg-green-500" : "bg-indigo-600 hover:bg-indigo-500"}`}
+          title={isDisplayConnected ? "Display conectado" : "Conectar ao display"}
+          disabled={isScannerOpen}
+        >
+          <Cast className="h-6 w-6" />
+        </button>
+      )}
 
       {config.allowCamera && (
         <button
@@ -467,7 +470,7 @@ export function ExperimentarView({
           >
             {/* Upload de Foto */}
             <div className={`relative ${userPhotoUrl ? 'w-full sm:max-w-[48%] md:max-w-[42%]' : 'w-full'}`}>
-              {renderActionButtons({ allowFavorites: true, allowCamera: true })}
+              {renderActionButtons({ allowFavorites: true, allowCamera: hasUserPhoto, allowDisplay: hasUserPhoto })}
               {userPhotoUrl && !isRefineMode ? (
                 // Exibir foto quando disponível
                 <div className="relative inline-block w-full" style={{ position: 'relative' }}>
