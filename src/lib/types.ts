@@ -52,6 +52,7 @@ export type LojistaData = {
   salesConfig: SalesConfig
   descontoRedesSociais?: number | null
   descontoRedesSociaisExpiraEm?: string | null
+  displayOrientation?: "horizontal" | "vertical" | null
   produtos?: Produto[]
 }
 
