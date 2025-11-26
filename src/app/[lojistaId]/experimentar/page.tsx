@@ -686,24 +686,98 @@ export default function ExperimentarPage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationError, setGenerationError] = useState<string | null>(null)
 
+  // Função para comprimir imagem antes do upload
+  const compressImage = (file: File, maxWidth: number = 1920, maxHeight: number = 1920, quality: number = 0.85): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const img = new Image()
+        img.onload = () => {
+          // Calcular novas dimensões mantendo proporção
+          let width = img.width
+          let height = img.height
+          
+          if (width > maxWidth || height > maxHeight) {
+            const ratio = Math.min(maxWidth / width, maxHeight / height)
+            width = width * ratio
+            height = height * ratio
+          }
+          
+          // Criar canvas para redimensionar e comprimir
+          const canvas = document.createElement('canvas')
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')
+          
+          if (!ctx) {
+            reject(new Error('Não foi possível criar contexto do canvas'))
+            return
+          }
+          
+          // Desenhar imagem redimensionada
+          ctx.drawImage(img, 0, 0, width, height)
+          
+          // Converter para blob com compressão
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error('Erro ao comprimir imagem'))
+                return
+              }
+              
+              // Criar novo File a partir do blob
+              const compressedFile = new File([blob], file.name, {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              })
+              
+              console.log(`[compressImage] Imagem comprimida: ${(file.size / 1024 / 1024).toFixed(2)}MB -> ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`)
+              resolve(compressedFile)
+            },
+            'image/jpeg',
+            quality
+          )
+        }
+        img.onerror = () => reject(new Error('Erro ao carregar imagem'))
+        img.src = e.target?.result as string
+      }
+      reader.onerror = () => reject(new Error('Erro ao ler arquivo'))
+      reader.readAsDataURL(file)
+    })
+  }
+
   // Upload de foto para o backend (usar proxy interno)
   const uploadPersonPhoto = async (file: File): Promise<string> => {
-    const formData = new FormData()
-    formData.append("photo", file)
-    formData.append("lojistaId", lojistaId)
+    try {
+      // Comprimir imagem antes do upload (máximo 1920x1920, qualidade 85%)
+      let fileToUpload = file
+      
+      // Só comprimir se o arquivo for maior que 1MB
+      if (file.size > 1024 * 1024) {
+        console.log("[uploadPersonPhoto] Comprimindo imagem antes do upload...")
+        fileToUpload = await compressImage(file, 1920, 1920, 0.85)
+      }
+      
+      const formData = new FormData()
+      formData.append("photo", fileToUpload)
+      formData.append("lojistaId", lojistaId)
 
-    const response = await fetch("/api/upload-photo", {
-      method: "POST",
-      body: formData,
-    })
+      const response = await fetch("/api/upload-photo", {
+        method: "POST",
+        body: formData,
+      })
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.error || `Erro ao fazer upload: ${response.status}`)
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || `Erro ao fazer upload: ${response.status}`)
+      }
+
+      const data = await response.json()
+      return data.imageUrl
+    } catch (error: any) {
+      console.error("[uploadPersonPhoto] Erro:", error)
+      throw error
     }
-
-    const data = await response.json()
-    return data.imageUrl
   }
 
   // Refinar look (adicionar acessórios)
@@ -758,13 +832,15 @@ export default function ExperimentarPage() {
 
       if (responseData.refinedImageUrl) {
         // Criar um novo look com a imagem refinada
+        // Usar o novo compositionId retornado pela API (se disponível) ou o original
+        const newCompositionId = responseData.compositionId || refineCompositionId || null;
         const refinedLook: GeneratedLook = {
           id: `refined-${Date.now()}`,
           titulo: "Look Refinado",
           imagemUrl: responseData.refinedImageUrl,
           produtoNome: selectedProducts.map(p => p.nome).join(" + "),
           produtoPreco: selectedProducts.reduce((sum, p) => sum + (p.preco || 0), 0),
-          compositionId: refineCompositionId || null,
+          compositionId: newCompositionId, // Usar novo ID se disponível
         }
 
         // Salvar o look refinado
@@ -781,8 +857,29 @@ export default function ExperimentarPage() {
         sessionStorage.removeItem(`refine_baseImage_${lojistaId}`)
         sessionStorage.removeItem(`refine_compositionId_${lojistaId}`)
 
+        // IMPORTANTE: Preservar conexão com display ao navegar para resultado
+        // Garantir que target_display e connected_store_id sejam mantidos
+        const currentTargetDisplay = sessionStorage.getItem("target_display")
+        const currentConnectedStoreId = sessionStorage.getItem("connected_store_id")
+        
+        if (currentTargetDisplay) {
+          console.log("[handleRefine] Preservando conexão com display:", {
+            targetDisplay: currentTargetDisplay,
+            connectedStoreId: currentConnectedStoreId,
+          })
+          // Os valores já estão no sessionStorage, não precisamos fazer nada
+          // Apenas garantir que não serão limpos
+        }
+
         // Marcar que uma nova imagem foi gerada (para resetar hasVoted na tela de resultado)
         sessionStorage.setItem(`new_looks_generated_${lojistaId}`, "true")
+        
+        console.log("[handleRefine] Navegando para resultado com look refinado:", {
+          compositionId: newCompositionId,
+          imageUrl: responseData.refinedImageUrl.substring(0, 50) + "...",
+          targetDisplay: currentTargetDisplay,
+        })
+        
         // Navegar para resultado
         router.push(`/${lojistaId}/resultado`)
       } else {

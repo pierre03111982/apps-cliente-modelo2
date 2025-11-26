@@ -198,6 +198,18 @@ export default function ResultadoPage() {
   useEffect(() => {
     if (!lojistaId) return
 
+    // Debug: Verificar conexão com display ao carregar
+    if (typeof window !== "undefined") {
+      const targetDisplay = sessionStorage.getItem("target_display")
+      const connectedStoreId = sessionStorage.getItem("connected_store_id")
+      console.log("[ResultadoPage] Estado de conexão com display ao carregar:", {
+        targetDisplay,
+        connectedStoreId,
+        lojistaId,
+        isConnected: connectedStoreId === lojistaId,
+      })
+    }
+
     const loadLooksAndCheckVote = async () => {
       // Verificar se veio de favoritos
       const fromFavoritosFlag = sessionStorage.getItem(`from_favoritos_${lojistaId}`)

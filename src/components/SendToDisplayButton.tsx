@@ -37,8 +37,27 @@ export function SendToDisplayButton({
     ? sessionStorage.getItem("connected_store_id") === lojistaId 
     : false
 
+  // Debug: Log informações de conexão
+  if (typeof window !== "undefined" && imageUrl) {
+    console.log("[SendToDisplayButton] Estado de conexão:", {
+      isConnected,
+      connectedStoreId: sessionStorage.getItem("connected_store_id"),
+      lojistaId,
+      targetDisplay,
+      hasImageUrl: !!imageUrl,
+      imageUrl: imageUrl.substring(0, 50) + "...",
+    })
+  }
+
   // Não mostrar se não estiver conectado ou não tiver displayUuid
   if (!isConnected || !targetDisplay || !imageUrl) {
+    if (typeof window !== "undefined" && imageUrl) {
+      console.warn("[SendToDisplayButton] Botão não será exibido:", {
+        isConnected,
+        targetDisplay,
+        hasImageUrl: !!imageUrl,
+      })
+    }
     return null
   }
 
@@ -65,29 +84,54 @@ export function SendToDisplayButton({
   const isRelative = className.includes("relative")
 
   const handleSendToDisplay = async () => {
-    if (!imageUrl || !targetDisplay || isSending || sent) return
+    if (!imageUrl || !targetDisplay || isSending || sent) {
+      console.warn("[SendToDisplayButton] handleSendToDisplay bloqueado:", {
+        hasImageUrl: !!imageUrl,
+        targetDisplay,
+        isSending,
+        sent,
+      })
+      return
+    }
+
+    console.log("[SendToDisplayButton] Iniciando transmissão para display:", {
+      displayUuid: targetDisplay,
+      lojistaId,
+      imageUrl: imageUrl.substring(0, 50) + "...",
+    })
 
     setIsSending(true)
     markDisplayInteraction()
 
     try {
       // Otimização: Pré-carregar a imagem para garantir que está pronta
+      console.log("[SendToDisplayButton] Pré-carregando imagem...")
       await new Promise((resolve, reject) => {
         const img = new Image()
-        img.onload = () => resolve(img)
-        img.onerror = reject
+        img.onload = () => {
+          console.log("[SendToDisplayButton] Imagem pré-carregada com sucesso")
+          resolve(img)
+        }
+        img.onerror = (err) => {
+          console.warn("[SendToDisplayButton] Erro ao pré-carregar imagem:", err)
+          reject(err)
+        }
         img.src = imageUrl
-        // Timeout de 3 segundos para pré-carregamento
-        setTimeout(() => reject(new Error("Timeout ao pré-carregar imagem")), 3000)
-      }).catch(() => {
+        // Timeout de 5 segundos para pré-carregamento (aumentado)
+        setTimeout(() => reject(new Error("Timeout ao pré-carregar imagem")), 5000)
+      }).catch((err) => {
         // Continuar mesmo se pré-carregamento falhar
-        console.warn("[SendToDisplayButton] Aviso: não foi possível pré-carregar imagem")
+        console.warn("[SendToDisplayButton] Aviso: não foi possível pré-carregar imagem:", err)
       })
 
       // Otimizar: usar AbortController para timeout mais rápido e melhor resposta
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 5000) // Timeout reduzido para 5 segundos
+      const timeoutId = setTimeout(() => {
+        console.warn("[SendToDisplayButton] Timeout atingido (15s), abortando requisição")
+        controller.abort()
+      }, 15000) // Timeout aumentado para 15 segundos (para imagens maiores)
 
+      console.log("[SendToDisplayButton] Enviando requisição para /api/display/update...")
       const response = await fetch("/api/display/update", {
         method: "POST",
         headers: {
@@ -103,10 +147,22 @@ export function SendToDisplayButton({
 
       clearTimeout(timeoutId)
 
+      console.log("[SendToDisplayButton] Resposta recebida:", {
+        status: response.status,
+        ok: response.ok,
+      })
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || "Erro ao enviar para o display")
+        console.error("[SendToDisplayButton] Erro na resposta:", {
+          status: response.status,
+          errorData,
+        })
+        throw new Error(errorData.error || `Erro ao enviar para o display (${response.status})`)
       }
+
+      const responseData = await response.json().catch(() => ({}))
+      console.log("[SendToDisplayButton] ✅ Transmissão bem-sucedida:", responseData)
 
       setSent(true)
       toast.success("Foto enviada para o display!", {
@@ -119,11 +175,25 @@ export function SendToDisplayButton({
         setSent(false)
       }, 2000)
     } catch (error: any) {
-      console.error("[SendToDisplayButton] Erro ao enviar para display:", error)
+      console.error("[SendToDisplayButton] Erro ao enviar para display:", {
+        error,
+        name: error?.name,
+        message: error?.message,
+        stack: error?.stack,
+      })
+      
       if (error.name === "AbortError") {
-        toast.error("Tempo de resposta excedido. Tente novamente.")
+        toast.error("Tempo de resposta excedido. Tente novamente.", {
+          duration: 3000,
+        })
+      } else if (error.message?.includes("Failed to fetch") || error.message?.includes("NetworkError")) {
+        toast.error("Erro de conexão. Verifique sua internet e tente novamente.", {
+          duration: 3000,
+        })
       } else {
-        toast.error(error.message || "Erro ao enviar foto para o display")
+        toast.error(error.message || "Erro ao enviar foto para o display", {
+          duration: 3000,
+        })
       }
     } finally {
       setIsSending(false)
