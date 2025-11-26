@@ -414,3 +414,6 @@ console.log("[api/cliente/favoritos] Favoritos encontrados:", count)
 **Última atualização**: 2025-01-27
 **Versão**: 1.0.0
 
+
+
+

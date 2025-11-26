@@ -60,3 +60,6 @@ if (Test-Path ".next") {
 Write-Host ""
 Write-Host "✅ Todas as verificações passaram! Pronto para deploy." -ForegroundColor Green
 
+
+
+

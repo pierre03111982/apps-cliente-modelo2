@@ -39,18 +39,91 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
 
   const [viewMode, setViewMode] = useState<ViewMode>("idle")
   const [activeImage, setActiveImage] = useState<string | null>(null)
-  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null)
+  const [isLoadingNewImage, setIsLoadingNewImage] = useState(false)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastUpdateMetaRef = useRef<{ url: string | null; updatedAt: number }>({ url: null, updatedAt: 0 })
   const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0)
   
   // Fase 10: UUID único para este display
   const [displayUuid, setDisplayUuid] = useState<string | null>(null)
+
+  const [orientation, setOrientation] = useState<"horizontal" | "vertical">(lojistaData?.displayOrientation || "horizontal")
   
   // Cache de imagens pré-carregadas para troca mais rápida
   const imageCache = useRef<Map<string, HTMLImageElement>>(new Map())
 
   // Orientação do display (horizontal ou vertical)
-  const orientation = lojistaData?.displayOrientation || "horizontal"
   const isVertical = orientation === "vertical"
+
+  const clearDisplayTimeout = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
+  }
+
+  const startDisplayTimeout = () => {
+    clearDisplayTimeout()
+    timeoutRef.current = setTimeout(() => {
+      console.log("[DisplayView] Timeout de 120 segundos: voltando para modo idle")
+      setViewMode("idle")
+      setActiveImage(null)
+      setIsLoadingNewImage(false)
+      timeoutRef.current = null
+    }, 120000)
+  }
+
+  const preloadImageWithTimeout = (url: string) => {
+    if (imageCache.current.has(url)) {
+      return Promise.resolve()
+    }
+
+    return new Promise<void>((resolve) => {
+      const img = new Image()
+      let resolved = false
+
+      const finalize = (cacheImage = false) => {
+        if (!resolved) {
+          resolved = true
+          if (cacheImage) {
+            imageCache.current.set(url, img)
+          }
+          resolve()
+        }
+      }
+
+      const timeout = setTimeout(() => {
+        console.warn("[DisplayView] Pré-carregamento demorou mais de 5s, exibindo assim mesmo")
+        finalize()
+      }, 5000)
+
+      img.onload = () => {
+        clearTimeout(timeout)
+        finalize(true)
+      }
+
+      img.onerror = () => {
+        clearTimeout(timeout)
+        console.warn("[DisplayView] Erro ao carregar imagem, exibindo mesmo assim")
+        finalize()
+      }
+
+      img.src = url
+    })
+  }
+
+  const normalizeTimestamp = (timestamp: any) => {
+    if (!timestamp) return Date.now()
+    if (timestamp instanceof Timestamp) return timestamp.toMillis()
+    if (timestamp instanceof Date) return timestamp.getTime()
+    if (typeof timestamp === "number") return timestamp
+    if (typeof timestamp.seconds === "number") return timestamp.seconds * 1000
+    return Date.now()
+  }
+
+  useEffect(() => {
+    setOrientation(lojistaData?.displayOrientation || "horizontal")
+  }, [lojistaData?.displayOrientation])
 
   // Rotação de frases criativas
   useEffect(() => {
@@ -61,6 +134,24 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
       return () => clearInterval(interval)
     }
   }, [viewMode])
+
+  // Assinar mudanças do perfil do lojista para orientação em tempo real
+  useEffect(() => {
+    if (!lojistaId || !isFirebaseConfigured) return
+    const db = getFirestoreClient()
+    if (!db) return
+
+    const lojistaRef = doc(db, "lojistas", lojistaId)
+    const unsubscribe = onSnapshot(lojistaRef, (snapshot) => {
+      const data = snapshot.data()
+      const newOrientation = data?.displayOrientation
+      if (newOrientation === "horizontal" || newOrientation === "vertical") {
+        setOrientation(newOrientation)
+      }
+    })
+
+    return () => unsubscribe()
+  }, [lojistaId])
 
   // Inicializar ou recuperar display_uuid
   useEffect(() => {
@@ -122,138 +213,109 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
 
     console.log("[DisplayView] Iniciando listener para display_uuid:", displayUuid)
 
-    // Fase 10: Escutar coleção displays/{display_uuid}
     const displayRef = doc(db, "displays", displayUuid)
+    let isMounted = true
 
     const unsubscribe = onSnapshot(
       displayRef,
       (docSnapshot) => {
+        if (!isMounted) return
+
         if (!docSnapshot.exists()) {
           console.log("[DisplayView] Display não encontrado, voltando para idle")
+          clearDisplayTimeout()
           setViewMode("idle")
           setActiveImage(null)
+          setIsLoadingNewImage(false)
           return
         }
 
         const data = docSnapshot.data()
-        
+        const newImageUrl = data.activeImage as string | undefined
+        const updateTime = normalizeTimestamp(data.updatedAt || data.timestamp)
+        const ageInSeconds = (Date.now() - updateTime) / 1000
+
         console.log("[DisplayView] Atualização recebida do display:", {
-          hasImage: !!data.activeImage,
-          timestamp: data.timestamp
+          hasImage: !!newImageUrl,
+          updatedAt: updateTime,
+          ageInSeconds,
         })
 
-        if (data.activeImage) {
-          // Verificar se a atualização é recente (últimos 180 segundos para dar margem)
-          const timestamp = data.timestamp
-          let updateTime: number
-
-          if (timestamp instanceof Timestamp) {
-            updateTime = timestamp.toMillis()
-          } else if (timestamp instanceof Date) {
-            updateTime = timestamp.getTime()
-          } else if (timestamp?.seconds) {
-            updateTime = timestamp.seconds * 1000
-          } else if (typeof timestamp === "number") {
-            updateTime = timestamp
-          } else {
-            // Se não houver timestamp, assumir que é recente
-            updateTime = Date.now()
-          }
-
-          const now = Date.now()
-          const ageInSeconds = (now - updateTime) / 1000
-
-          console.log("[DisplayView] Idade da atualização:", ageInSeconds, "segundos")
-
-          // Se foi atualizado nos últimos 180 segundos, mostrar na tela (margem maior que o timeout de 120s)
-          if (ageInSeconds <= 180) {
-            console.log("[DisplayView] ✅ Mostrando nova imagem na tela")
-            
-            // Limpar timeout anterior se existir
-            if (timeoutId) {
-              clearTimeout(timeoutId)
-            }
-
-            // Otimização: Pré-carregar imagem antes de atualizar estado para troca mais rápida
-            const newImageUrl = data.activeImage
-            if (newImageUrl !== activeImage) {
-              // Verificar se já está no cache
-              if (!imageCache.current.has(newImageUrl)) {
-                // Pré-carregar a nova imagem e adicionar ao cache
-                const img = new Image()
-                img.src = newImageUrl
-                imageCache.current.set(newImageUrl, img)
-              }
-              
-              // Atualizar estado imediatamente (não esperar carregamento completo)
-              // O navegador vai usar o cache e mostrar rapidamente
-              setActiveImage(newImageUrl)
-              setViewMode("active")
-            } else {
-              // Mesma imagem, apenas garantir que está ativa
-              setViewMode("active")
-            }
-
-            // Iniciar timeout de 120 segundos (2 minutos)
-            // IMPORTANTE: Sempre iniciar o timeout, mesmo se a imagem já estava sendo exibida
-            // Isso garante que o tempo de 120 segundos seja respeitado
-            if (timeoutId) {
-              clearTimeout(timeoutId)
-            }
-            
-            const newTimeoutId = setTimeout(() => {
-              console.log("[DisplayView] Timeout de 120 segundos: voltando para modo idle")
-              setViewMode("idle")
-              setActiveImage(null)
-              setTimeoutId(null)
-            }, 120000) // 120 segundos (2 minutos) - tempo exato de exibição
-
-            setTimeoutId(newTimeoutId)
-            console.log("[DisplayView] ✅ Timeout de 120 segundos iniciado para a imagem")
-          } else {
-            console.log("[DisplayView] Atualização muito antiga (mais de 180 segundos), ignorando")
-            // Se muito antiga, limpar
-            setViewMode("idle")
-            setActiveImage(null)
-            // Limpar timeout se existir
-            if (timeoutId) {
-              clearTimeout(timeoutId)
-              setTimeoutId(null)
-            }
-          }
-        } else {
-          // Sem imagem ativa, voltar para idle
+        if (!newImageUrl) {
+          clearDisplayTimeout()
           setViewMode("idle")
           setActiveImage(null)
+          setIsLoadingNewImage(false)
+          return
         }
+
+        if (ageInSeconds > 180) {
+          console.log("[DisplayView] Atualização muito antiga (mais de 180 segundos), ignorando")
+          return
+        }
+
+        const lastMeta = lastUpdateMetaRef.current
+        if (
+          lastMeta &&
+          lastMeta.url === newImageUrl &&
+          updateTime <= lastMeta.updatedAt
+        ) {
+          console.log("[DisplayView] Atualização duplicada detectada, ignorando")
+          return
+        }
+
+        lastUpdateMetaRef.current = { url: newImageUrl, updatedAt: updateTime }
+        clearDisplayTimeout()
+        setViewMode("active")
+
+        const applyImageToScreen = () => {
+          if (!isMounted) return
+          setActiveImage(newImageUrl)
+          setIsLoadingNewImage(false)
+          startDisplayTimeout()
+        }
+
+        if (imageCache.current.has(newImageUrl)) {
+          console.log("[DisplayView] Imagem encontrada no cache, aplicando imediatamente")
+          setIsLoadingNewImage(false)
+          applyImageToScreen()
+          return
+        }
+
+        console.log("[DisplayView] Pré-carregando nova imagem do display...")
+        setIsLoadingNewImage(true)
+        preloadImageWithTimeout(newImageUrl).finally(applyImageToScreen)
       },
       (error) => {
         console.error("[DisplayView] Erro ao escutar display:", error)
-        // Continuar funcionando mesmo com erro de permissão (modo degradado)
       }
     )
 
     return () => {
+      isMounted = false
       unsubscribe()
-      if (timeoutId) {
-        clearTimeout(timeoutId)
-      }
+      clearDisplayTimeout()
     }
-  }, [lojistaId, displayUuid, timeoutId])
+  }, [lojistaId, displayUuid])
 
   const currentPhrase = creativePhrases[currentPhraseIndex]
   const IconComponent = currentPhrase.icon
 
   // Renderizar modo idle (QR Code)
-  if (viewMode === "idle" || !activeImage) {
+  const shouldRenderIdle = viewMode === "idle" && !isLoadingNewImage
+
+  if (shouldRenderIdle || (!activeImage && !isLoadingNewImage)) {
     return (
       <div 
-        className={`relative w-full h-full text-white flex flex-col items-center justify-center ${isVertical ? 'p-4' : 'p-8'} overflow-hidden`}
+        className={`relative w-full h-full min-h-screen text-white overflow-hidden ${
+          isVertical
+            ? "flex flex-col items-center justify-center gap-10 p-6"
+            : "flex flex-row flex-wrap lg:flex-nowrap items-center justify-center gap-16 p-10"
+        }`}
         style={{
           background: "linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%)",
           backgroundSize: "400% 400%",
           animation: "gradient-shift 15s ease infinite",
-          minHeight: "100vh",
           height: "100vh"
         }}
       >
@@ -463,6 +525,77 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
   }
 
   // Renderizar modo active (Mostrando imagem)
+  if (isVertical) {
+    return (
+      <div
+        className="relative min-h-screen w-full text-white flex flex-col items-center justify-between gap-6 p-6 animate-fade-in overflow-hidden"
+        style={{
+          background: "linear-gradient(160deg, #312e81 0%, #7e22ce 60%, #a855f7 100%)",
+        }}
+      >
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
+          <div className="absolute top-0 left-0 w-72 h-72 bg-white/5 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-0 right-0 w-72 h-72 bg-white/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        </div>
+
+        {/* Logo e indicador */}
+        <div className="w-full flex items-center justify-between">
+          {lojistaData?.logoUrl && (
+            <div className="flex items-center gap-3">
+              <div className="w-16 h-16 rounded-full overflow-hidden border-3 border-white/40 shadow-xl bg-white/10 backdrop-blur-md">
+                <img src={lojistaData.logoUrl} alt={lojistaData.nome || "Logo"} className="w-full h-full object-cover" />
+              </div>
+              <div>
+                <p className="text-sm uppercase tracking-[0.2em] text-white/70">Display ON</p>
+                <p className="text-lg font-semibold text-white drop-shadow">{lojistaData.nome}</p>
+              </div>
+            </div>
+          )}
+          <div className="flex items-center gap-2 bg-white/15 border border-white/30 rounded-full px-4 py-2 shadow-lg backdrop-blur-md">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+            </span>
+            <span className="text-xs font-semibold">Transmitindo agora</span>
+          </div>
+        </div>
+
+        {/* Imagem principal */}
+        <div className="relative flex-1 w-full rounded-3xl overflow-hidden border-4 border-white/30 shadow-2xl bg-white/5 backdrop-blur-sm">
+          <SafeImage
+            src={activeImage}
+            alt="Look gerado"
+            className="w-full h-full object-cover"
+            containerClassName="w-full h-full flex items-center justify-center"
+            loading="eager"
+          />
+
+          <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/20 to-transparent pointer-events-none" />
+          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+
+          {isLoadingNewImage && (
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-black/45 backdrop-blur-sm">
+              <div className="h-12 w-12 border-4 border-white/40 border-t-white rounded-full animate-spin" />
+              <p className="text-sm font-semibold text-white drop-shadow-lg text-center px-6">
+                Preparando novo look...
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* QR code na base */}
+        <div className="w-full flex flex-col items-center gap-4">
+          <div className="bg-white/90 rounded-2xl p-4 shadow-2xl">
+            <QRCodeSVG value={getQrCodeUrl()} size={220} level="L" includeMargin fgColor="#000000" bgColor="#ffffff" />
+          </div>
+          <p className="text-sm text-white/90 text-center max-w-sm">
+            Escaneie para criar seu look agora mesmo.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div 
       className="relative min-h-screen w-full text-white flex items-center justify-center p-8 animate-fade-in overflow-hidden"
@@ -532,6 +665,15 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
             {/* Overlay decorativo no topo da imagem */}
             <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/20 to-transparent pointer-events-none" />
             <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+
+            {isLoadingNewImage && (
+              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-black/45 backdrop-blur-sm">
+                <div className="h-12 w-12 border-4 border-white/40 border-t-white rounded-full animate-spin" />
+                <p className="text-sm font-semibold text-white drop-shadow-lg text-center px-6">
+                  Preparando novo look...
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

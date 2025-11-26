@@ -69,3 +69,6 @@ npm run build
 - Verificar URLs configuradas
 - Verificar headers CORS
 
+
+
+

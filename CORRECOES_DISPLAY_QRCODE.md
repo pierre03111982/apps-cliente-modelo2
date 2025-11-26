@@ -87,3 +87,6 @@
 3. Considerar adicionar retry automático para imagens que falham
 4. Considerar comprimir vídeo para carregamento mais rápido
 
+
+
+

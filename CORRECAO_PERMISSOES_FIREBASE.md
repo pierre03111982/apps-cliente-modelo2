@@ -64,3 +64,6 @@ E então criar uma Cloud Function para permitir escrita do app cliente sem auten
 
 Após publicar, o erro de permissões deve desaparecer e o display conseguirá ler as atualizações.
 
+
+
+
