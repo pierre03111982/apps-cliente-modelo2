@@ -23,6 +23,7 @@ import { LoadingSpinner } from "../LoadingSpinner"
 import { SafeImage } from "../ui/SafeImage"
 import { Button } from "../ui/Button"
 import { VideoBackground } from "../VideoBackground"
+import { SendToDisplayButton } from "../SendToDisplayButton"
 import type { LojistaData, Produto, GeneratedLook } from "@/lib/types"
 
 export interface ExperimentarViewProps {
@@ -986,6 +987,19 @@ export function ExperimentarView({
                             </div>
                           </div>
                         )}
+                        {/* Botão de transmitir para o display (canto inferior esquerdo) - relativo ao card */}
+                        <div 
+                          className="absolute bottom-2 left-2 z-20"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <SendToDisplayButton
+                            imageUrl={favorito.imagemUrl}
+                            lojistaId={lojistaId}
+                            position="bottom-left"
+                            size="sm"
+                            className="relative"
+                          />
+                        </div>
                       </div>
                     )}
                     {favorito.productName && (
@@ -1046,6 +1060,16 @@ export function ExperimentarView({
                       </div>
                     </div>
                   )}
+                  {/* Botão de transmitir para o display (canto inferior esquerdo) - dentro da imagem */}
+                  <div className="absolute bottom-2 left-2 z-20" onClick={(e) => e.stopPropagation()}>
+                    <SendToDisplayButton
+                      imageUrl={selectedFavoriteDetail.imagemUrl}
+                      lojistaId={lojistaId}
+                      position="bottom-left"
+                      size="md"
+                      className="relative"
+                    />
+                  </div>
                 </div>
               </div>
             )}

@@ -842,16 +842,65 @@ export default function ExperimentarPage() {
 
       console.log("[handleVisualize] Chamando API do paineladm:", `${backendUrl}/api/ai/generate`)
 
-      const response = await fetch(`${backendUrl}/api/ai/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
+      // Adicionar timeout e melhor tratamento de erros
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 120000) // 2 minutos de timeout
+
+      let response: Response
+      try {
+        response = await fetch(`${backendUrl}/api/ai/generate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        })
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId)
+        
+        // Tratar diferentes tipos de erro de fetch
+        if (fetchError.name === "AbortError") {
+          throw new Error("Tempo de resposta excedido. O servidor está demorando muito para processar. Tente novamente.")
+        }
+        
+        if (fetchError.message?.includes("fetch failed") || fetchError.message?.includes("Failed to fetch")) {
+          throw new Error(`Não foi possível conectar com o servidor. Verifique se o painel está rodando em ${backendUrl}`)
+        }
+        
+        if (fetchError.message?.includes("ECONNREFUSED") || fetchError.message?.includes("NetworkError")) {
+          throw new Error(`Servidor não está respondendo. Verifique se o painel está rodando em ${backendUrl}`)
+        }
+        
+        throw new Error(`Erro de conexão: ${fetchError.message || "Erro desconhecido"}`)
+      }
+
+      clearTimeout(timeoutId)
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        // Usar mensagem amigável do backend se disponível, senão usar mensagem genérica
-        const errorMessage = errorData.error || `Erro ao gerar composição (${response.status})`
+        let errorData: any = {}
+        try {
+          const errorText = await response.text()
+          try {
+            errorData = JSON.parse(errorText)
+          } catch {
+            errorData = { error: errorText || `Erro HTTP ${response.status}` }
+          }
+        } catch {
+          errorData = { error: `Erro HTTP ${response.status}` }
+        }
+        
+        // Mensagens mais amigáveis para diferentes códigos de erro
+        let errorMessage = errorData.error || `Erro ao gerar composição (${response.status})`
+        
+        if (response.status === 500) {
+          errorMessage = "Erro interno do servidor. Tente novamente em alguns instantes."
+        } else if (response.status === 503) {
+          errorMessage = "Serviço temporariamente indisponível. Tente novamente em alguns instantes."
+        } else if (response.status === 429) {
+          errorMessage = "Muitas requisições. Aguarde alguns instantes antes de tentar novamente."
+        } else if (response.status === 400) {
+          errorMessage = errorData.error || "Dados inválidos. Verifique se selecionou uma foto e produtos."
+        }
+        
         throw new Error(errorMessage)
       }
 

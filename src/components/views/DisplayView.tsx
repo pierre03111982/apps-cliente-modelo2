@@ -136,7 +136,7 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
         })
 
         if (data.activeImage) {
-          // Verificar se a atualização é recente (últimos 60 segundos)
+          // Verificar se a atualização é recente (últimos 180 segundos para dar margem)
           const timestamp = data.timestamp
           let updateTime: number
 
@@ -158,8 +158,8 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
 
           console.log("[DisplayView] Idade da atualização:", ageInSeconds, "segundos")
 
-          // Se foi atualizado nos últimos 60 segundos, mostrar na tela
-          if (ageInSeconds <= 60) {
+          // Se foi atualizado nos últimos 180 segundos, mostrar na tela (margem maior que o timeout de 120s)
+          if (ageInSeconds <= 180) {
             console.log("[DisplayView] ✅ Mostrando nova imagem na tela")
             
             // Limpar timeout anterior se existir
@@ -188,19 +188,31 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
             }
 
             // Iniciar timeout de 120 segundos (2 minutos)
+            // IMPORTANTE: Sempre iniciar o timeout, mesmo se a imagem já estava sendo exibida
+            // Isso garante que o tempo de 120 segundos seja respeitado
+            if (timeoutId) {
+              clearTimeout(timeoutId)
+            }
+            
             const newTimeoutId = setTimeout(() => {
-              console.log("[DisplayView] Timeout: voltando para modo idle")
+              console.log("[DisplayView] Timeout de 120 segundos: voltando para modo idle")
               setViewMode("idle")
               setActiveImage(null)
               setTimeoutId(null)
-            }, 120000) // 120 segundos (2 minutos)
+            }, 120000) // 120 segundos (2 minutos) - tempo exato de exibição
 
             setTimeoutId(newTimeoutId)
+            console.log("[DisplayView] ✅ Timeout de 120 segundos iniciado para a imagem")
           } else {
-            console.log("[DisplayView] Atualização muito antiga, ignorando")
+            console.log("[DisplayView] Atualização muito antiga (mais de 180 segundos), ignorando")
             // Se muito antiga, limpar
             setViewMode("idle")
             setActiveImage(null)
+            // Limpar timeout se existir
+            if (timeoutId) {
+              clearTimeout(timeoutId)
+              setTimeoutId(null)
+            }
           }
         } else {
           // Sem imagem ativa, voltar para idle
