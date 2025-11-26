@@ -1088,6 +1088,7 @@ export default function ExperimentarPage() {
       photoInputRef={photoInputRef}
       isDisplayConnected={isConnected && connectedStoreId === lojistaId}
       onDisplayConnect={(storeId, targetDisplay) => connect(storeId, targetDisplay)}
+      handleBackFromRefinement={handleBackFromRefinement}
     />
     </>
   )

@@ -137,6 +137,9 @@ function DemoPageContent() {
         favorites={[]}
         router={{ push: () => {} }}
         lojistaId="demo"
+        handleBackFromRefinement={() => {}}
+        isDisplayConnected={false}
+        onDisplayConnect={() => {}}
       />
     )
   }
