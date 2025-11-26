@@ -89,21 +89,22 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
     // Detectar se está em desenvolvimento
     const isDev = window.location.hostname === "localhost"
     
-    // Determinar URL base do app cliente
+    // Determinar URL base - SEMPRE usar subdomínio de display para garantir que mostre a tela do display
     let baseUrl: string
     if (isDev) {
       // Em desenvolvimento, usar localhost com porta do modelo-2
-      const port = process.env.NEXT_PUBLIC_MODELO2_PORT || "3005"
+      const port = process.env.NEXT_PUBLIC_MODELO2_PORT || process.env.NEXT_PUBLIC_MODELO_2_PORT || "3005"
       baseUrl = `http://localhost:${port}`
     } else {
-      // Em produção, usar domínio do app cliente (não do display!)
-      // Usar variável de ambiente se disponível, senão usar domínio padrão
-      const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN || "app.experimenteai.com.br"
-      const protocol = process.env.NEXT_PUBLIC_APP_PROTOCOL || "https"
-      baseUrl = `${protocol}://${appDomain}`
+      // Em produção, SEMPRE usar subdomínio de display para garantir que mostre a tela do display
+      const displayDomain = process.env.NEXT_PUBLIC_DISPLAY_DOMAIN || "display.experimenteai.com.br"
+      const protocol = process.env.NEXT_PUBLIC_DISPLAY_PROTOCOL || "https"
+      baseUrl = `${protocol}://${displayDomain}`
     }
     
-    const url = `${baseUrl}/${lojistaId}/experimentar?connect=true&lojista=${lojistaId}&target_display=${displayUuid}`
+    // Sempre incluir display=1 para garantir que mostre a tela do display
+    const url = `${baseUrl}/${lojistaId}/experimentar?display=1&connect=true&lojista=${lojistaId}&target_display=${displayUuid}`
+    console.log("[DisplayView] QR Code URL gerada:", url)
     return url
   }
 
