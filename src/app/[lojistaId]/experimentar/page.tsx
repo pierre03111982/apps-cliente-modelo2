@@ -29,6 +29,9 @@ export default function ExperimentarPage() {
   // Verificar se está em modo display
   const isDisplayMode = searchParams?.get("display") === "1"
   
+  // Ler orientação da URL (para preview no simulador) ou usar padrão
+  const orientationFromUrl = searchParams?.get("displayOrientation") as "horizontal" | "vertical" | null
+  
   // Hook para gerenciar conexão com a loja (Fase 9)
   const { isConnected, connectedStoreId, disconnect } = useStoreSession(lojistaId)
 
@@ -88,6 +91,7 @@ export default function ExperimentarPage() {
                 },
                 descontoRedesSociais: perfilData.descontoRedesSociais || null,
                 descontoRedesSociaisExpiraEm: perfilData.descontoRedesSociaisExpiraEm || null,
+                displayOrientation: orientationFromUrl || perfilData.displayOrientation || "horizontal",
               }
             }
           }
@@ -132,8 +136,13 @@ export default function ExperimentarPage() {
         console.error("[ExperimentarPage] Erro ao carregar dados:", error)
       } finally {
         setIsLoadingCatalog(false)
-        // Finaliza a inicialização APENAS APÓS carregar os dados da loja
-        // A verificação de cliente logado vai acontecer em paralelo
+        // Se estiver em modo display, finalizar inicialização após carregar dados
+        // Isso garante que lojistaData esteja disponível antes de renderizar DisplayView
+        const currentIsDisplayMode = searchParams?.get("display") === "1"
+        if (currentIsDisplayMode) {
+          setIsInitializing(false)
+        }
+        // Para modo normal, a verificação de cliente logado vai finalizar a inicialização
       }
     }
 
@@ -144,7 +153,7 @@ export default function ExperimentarPage() {
     if (descontoSalvo === 'true') {
       setDescontoAplicado(true)
     }
-  }, [lojistaId])
+  }, [lojistaId, searchParams])
 
   // Flag para evitar execução múltipla do useEffect
   const photoLoadedRef = useRef(false)
@@ -155,8 +164,8 @@ export default function ExperimentarPage() {
     if (!lojistaId) return
     
     // Se estiver em modo display, não precisa de login - pular verificação
+    // O isInitializing já será setado como false após carregar os dados no loadData
     if (isDisplayMode) {
-      setIsInitializing(false)
       return
     }
     
