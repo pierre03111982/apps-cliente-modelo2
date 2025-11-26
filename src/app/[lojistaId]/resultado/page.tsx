@@ -873,6 +873,9 @@ export default function ResultadoPage() {
         return
       }
 
+      // Detectar se é composição refinada (adicionar acessório)
+      const isRefined = currentLook.titulo === "Look Refinado" || currentLook.id?.startsWith("refined-") || compositionId?.startsWith("refined-")
+
       console.log("[ResultadoPage] Salvando like:", {
         lojistaId,
         clienteId,
@@ -880,7 +883,7 @@ export default function ResultadoPage() {
         compositionId,
         jobId,
         produtoNome: currentLook.produtoNome,
-        isRefined: currentLook.titulo === "Look Refinado" || currentLook.id?.startsWith("refined-"),
+        isRefined,
       })
 
       const response = await fetch("/api/actions", {
@@ -896,6 +899,7 @@ export default function ResultadoPage() {
           productName: currentLook.produtoNome,
           productPrice: currentLook.produtoPreco || null,
           imagemUrl: imagemUrlToSave, // Garantir que seja uma URL válida (HTTP/HTTPS)
+          isRefined: isRefined, // Enviar flag de refinamento
         }),
       })
 
