@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useMemo } from "react"
+import { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import Image from "next/image"
 import {
   Upload,
@@ -17,7 +17,9 @@ import {
   Share2,
   ArrowLeftCircle,
   ShoppingCart,
+  Cast,
 } from "lucide-react"
+import toast from "react-hot-toast"
 import { ClockAnimation } from "../ClockAnimation"
 import { LoadingSpinner } from "../LoadingSpinner"
 import { SafeImage } from "../ui/SafeImage"
@@ -57,6 +59,8 @@ export interface ExperimentarViewProps {
   router: any
   lojistaId: string
   photoInputRef?: React.RefObject<HTMLInputElement>
+  isDisplayConnected: boolean
+  onDisplayConnect: (storeId: string, targetDisplay?: string | null) => void
 }
 
 export function ExperimentarView({
@@ -89,7 +93,9 @@ export function ExperimentarView({
   favorites,
   router,
   lojistaId,
-  photoInputRef
+  photoInputRef,
+  isDisplayConnected,
+  onDisplayConnect,
 }: ExperimentarViewProps) {
   const [selectedProductDetail, setSelectedProductDetail] = useState<Produto | null>(null)
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
@@ -97,6 +103,12 @@ export function ExperimentarView({
   const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0)
   const phraseIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const [selectedFavoriteDetail, setSelectedFavoriteDetail] = useState<any | null>(null)
+  const [isScannerOpen, setIsScannerOpen] = useState(false)
+  const [scannerError, setScannerError] = useState<string | null>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const scanFrameRef = useRef<number | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const barcodeDetectorRef = useRef<any>(null)
 
   const redesDiscount = useMemo(() => {
     const base = lojistaData?.descontoRedesSociais ?? 0
@@ -202,6 +214,110 @@ export function ExperimentarView({
     handleVisualize()
   }
 
+  const stopScanner = useCallback(() => {
+    if (scanFrameRef.current) {
+      cancelAnimationFrame(scanFrameRef.current)
+      scanFrameRef.current = null
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop())
+      streamRef.current = null
+    }
+    barcodeDetectorRef.current = null
+    setScannerError(null)
+    setIsScannerOpen(false)
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      stopScanner()
+    }
+  }, [stopScanner])
+
+  const handleQrResult = (value: string) => {
+    try {
+      const url = new URL(value)
+      const connectParam = url.searchParams.get("connect")
+      const lojistaParam =
+        url.searchParams.get("lojista") ||
+        url.pathname.split("/").filter(Boolean)[0]
+      const targetDisplayParam = url.searchParams.get("target_display")
+
+      if (connectParam !== "true" || !lojistaParam || !targetDisplayParam) {
+        setScannerError("QR Code inválido para conexão com o display.")
+        return false
+      }
+
+      if (lojistaParam !== lojistaId) {
+        setScannerError("Este QR Code pertence a outra loja.")
+        return false
+      }
+
+      onDisplayConnect(lojistaParam, targetDisplayParam)
+      toast.success("Display conectado com sucesso!")
+      stopScanner()
+      return true
+    } catch (error) {
+      console.error("[ExperimentarView] Erro ao ler QR Code:", error)
+      setScannerError("Não foi possível interpretar o QR Code.")
+      return false
+    }
+  }
+
+  const startScanner = async () => {
+    if (typeof window === "undefined") return
+    setScannerError(null)
+    setIsScannerOpen(true)
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" } },
+        audio: false,
+      })
+      streamRef.current = stream
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        await videoRef.current.play()
+      }
+
+      const BarcodeDetectorClass = (window as any).BarcodeDetector
+      if (!BarcodeDetectorClass) {
+        setScannerError("Seu navegador não suporta leitura de QR Code. Use a câmera normal.")
+        return
+      }
+
+      barcodeDetectorRef.current = new BarcodeDetectorClass({ formats: ["qr_code"] })
+
+      const detect = async () => {
+        if (!videoRef.current || videoRef.current.readyState < 2) {
+          scanFrameRef.current = requestAnimationFrame(detect)
+          return
+        }
+
+        try {
+          const barcodes = await barcodeDetectorRef.current.detect(videoRef.current)
+          if (barcodes.length > 0) {
+            const rawValue = barcodes[0]?.rawValue
+            if (rawValue) {
+              const success = handleQrResult(rawValue)
+              if (success) return
+            }
+          }
+        } catch (error) {
+          console.error("[ExperimentarView] Erro no detector de QR:", error)
+          setScannerError("Erro ao processar o QR Code. Tente novamente.")
+        }
+
+        scanFrameRef.current = requestAnimationFrame(detect)
+      }
+
+      detect()
+    } catch (error) {
+      console.error("[ExperimentarView] Não foi possível acessar a câmera:", error)
+      setScannerError("Não foi possível acessar a câmera. Verifique as permissões.")
+    }
+  }
+
   const handleProductCardClick = (produto: Produto, e: React.MouseEvent) => {
     // Se clicou no checkbox, não abre o modal
     if ((e.target as HTMLElement).closest('.product-checkbox')) {
@@ -216,6 +332,59 @@ export function ExperimentarView({
     setSelectedProductDetail(null)
     setSelectedSize(null)
   }
+
+  const actionButtonBase =
+    "w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-white/70 shadow-lg flex items-center justify-center text-white transition hover:scale-105 focus:outline-none"
+
+  const renderActionButtons = (config: { allowCamera?: boolean; allowFavorites?: boolean }) => (
+    <div className="absolute right-3 bottom-3 flex flex-col items-center gap-3 z-20">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          if (!isScannerOpen) {
+            startScanner()
+          }
+        }}
+        className={`${actionButtonBase} ${isDisplayConnected ? "bg-green-600 hover:bg-green-500" : "bg-indigo-600 hover:bg-indigo-500"}`}
+        title={isDisplayConnected ? "Display conectado" : "Conectar ao display"}
+        disabled={isScannerOpen}
+      >
+        <Cast className="h-6 w-6" />
+      </button>
+
+      {config.allowCamera && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            handleChangePhoto()
+          }}
+          className={`${actionButtonBase} bg-blue-600 hover:bg-blue-500`}
+          title="Trocar foto"
+        >
+          <Camera className="h-6 w-6" />
+        </button>
+      )}
+
+      {config.allowFavorites && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            setShowFavoritesModal(true)
+          }}
+          className={`${actionButtonBase} bg-pink-600 hover:bg-pink-500`}
+          title="Abrir favoritos"
+        >
+          <Heart className="h-6 w-6" />
+        </button>
+      )}
+    </div>
+  )
 
   return (
     // Estilo geral do Modelo 2: fundo claro e texto escuro
@@ -331,25 +500,13 @@ export function ExperimentarView({
                   </div>
                   <button
                     onClick={handleRemovePhoto}
-                    className="absolute right-3 top-3 rounded-full bg-red-500/80 p-2 text-white transition hover:bg-red-600 z-10"
+                    className="absolute right-3 top-3 rounded-full bg-red-500/80 p-2 text-white transition hover:bg-red-600 z-20"
                     title="Remover foto"
+                    type="button"
                   >
                     <X className="h-5 w-5" />
                   </button>
-                  <button
-                    onClick={() => setShowFavoritesModal(true)}
-                    className="absolute left-3 bottom-3 rounded-full bg-pink-500/80 p-2 text-white transition hover:bg-pink-600 z-10"
-                    title="Ver favoritos"
-                  >
-                    <Heart className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={handleChangePhoto}
-                    className="absolute right-3 bottom-3 rounded-full bg-blue-500/80 p-2 text-white transition hover:bg-blue-600 z-10"
-                    title="Trocar foto"
-                  >
-                    <Camera className="h-5 w-5" />
-                  </button>
+                  {renderActionButtons({ allowCamera: true, allowFavorites: true })}
                   <input
                     ref={photoInputRef}
                     id="photo-upload"
@@ -388,13 +545,7 @@ export function ExperimentarView({
                   <div className="absolute top-2 left-2 bg-purple-600/90 text-white px-3 py-1 rounded-lg text-xs font-semibold">
                     Adicionar Acessório
                   </div>
-                  <button
-                    onClick={() => setShowFavoritesModal(true)}
-                    className="absolute left-3 bottom-3 rounded-full bg-pink-500/80 p-2 text-white transition hover:bg-pink-600 z-10"
-                    title="Ver favoritos"
-                  >
-                    <Heart className="h-5 w-5" />
-                  </button>
+                  {renderActionButtons({ allowFavorites: true })}
                 </div>
               ) : (
                 <div className="relative inline-block w-full" style={{ position: 'relative' }}>
@@ -423,18 +574,7 @@ export function ExperimentarView({
                       className="hidden"
                     />
                   </label>
-                  {/* Botão de Favoritos no canto inferior esquerdo */}
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      setShowFavoritesModal(true)
-                    }}
-                    className="absolute left-3 bottom-3 rounded-full bg-pink-500/80 p-2 text-white transition hover:bg-pink-600 z-10 shadow-lg"
-                    title="Ver favoritos"
-                  >
-                    <Heart className="h-5 w-5" />
-                  </button>
+                  {renderActionButtons({ allowCamera: true, allowFavorites: true })}
                 </div>
               )}
             </div>
@@ -1135,6 +1275,36 @@ export function ExperimentarView({
                   <ArrowLeftCircle className="h-5 w-5" /> Voltar
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isScannerOpen && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl border border-white/20 bg-gradient-to-br from-indigo-900/80 to-purple-900/70 p-4 shadow-2xl relative">
+            <h3 className="text-lg font-semibold text-white mb-3 text-center">Conectar ao Display</h3>
+            <video
+              ref={videoRef}
+              className="w-full rounded-xl border border-white/30 bg-black"
+              autoPlay
+              playsInline
+              muted
+            />
+            <p className="mt-3 text-sm text-white/80 text-center">
+              Aponte a câmera para o QR Code exibido no monitor da loja.
+            </p>
+            {scannerError && (
+              <p className="mt-2 text-xs text-red-200 text-center">{scannerError}</p>
+            )}
+            <div className="mt-4 flex gap-3">
+              <button
+                type="button"
+                onClick={stopScanner}
+                className="flex-1 rounded-xl bg-gray-200 text-gray-900 py-2 font-semibold hover:bg-gray-300 transition"
+              >
+                Cancelar
+              </button>
             </div>
           </div>
         </div>

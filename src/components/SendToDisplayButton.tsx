@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Cast, Check } from "lucide-react"
 import toast from "react-hot-toast"
+import { markDisplayInteraction } from "@/hooks/useStoreSession"
 
 interface SendToDisplayButtonProps {
   imageUrl: string
@@ -67,6 +68,7 @@ export function SendToDisplayButton({
     if (!imageUrl || !targetDisplay || isSending || sent) return
 
     setIsSending(true)
+    markDisplayInteraction()
 
     try {
       // Otimização: Pré-carregar a imagem para garantir que está pronta

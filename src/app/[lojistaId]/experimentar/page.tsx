@@ -33,7 +33,7 @@ export default function ExperimentarPage() {
   const orientationFromUrl = searchParams?.get("displayOrientation") as "horizontal" | "vertical" | null
   
   // Hook para gerenciar conexão com a loja (Fase 9)
-  const { isConnected, connectedStoreId, disconnect } = useStoreSession(lojistaId)
+  const { isConnected, connectedStoreId, disconnect, connect } = useStoreSession(lojistaId)
 
   const [isInitializing, setIsInitializing] = useState(true); // Novo estado
   const [lojistaData, setLojistaData] = useState<LojistaData | null>(null)
@@ -1086,6 +1086,8 @@ export default function ExperimentarPage() {
       router={router}
       lojistaId={lojistaId}
       photoInputRef={photoInputRef}
+      isDisplayConnected={isConnected && connectedStoreId === lojistaId}
+      onDisplayConnect={(storeId, targetDisplay) => connect(storeId, targetDisplay)}
     />
     </>
   )
