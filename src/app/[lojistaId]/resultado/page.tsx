@@ -863,13 +863,24 @@ export default function ResultadoPage() {
       }
 
       // Enviar like imediatamente com a imagem original (não bloquear)
+      // IMPORTANTE: Garantir que imagemUrl esteja presente e seja uma URL válida (não blob)
+      const imagemUrlToSave = currentLook.imagemUrl?.trim() || "";
+      
+      if (!imagemUrlToSave || imagemUrlToSave.startsWith('blob:')) {
+        console.error("[ResultadoPage] Erro: imagemUrl inválida ou blob URL:", imagemUrlToSave.substring(0, 50));
+        alert("Erro: URL da imagem inválida. A imagem precisa ser salva no servidor antes de adicionar aos favoritos.")
+        setLoadingAction(null)
+        return
+      }
+
       console.log("[ResultadoPage] Salvando like:", {
         lojistaId,
         clienteId,
-        imagemUrl: currentLook.imagemUrl?.substring(0, 100),
+        imagemUrl: imagemUrlToSave.substring(0, 100),
         compositionId,
         jobId,
         produtoNome: currentLook.produtoNome,
+        isRefined: currentLook.titulo === "Look Refinado" || currentLook.id?.startsWith("refined-"),
       })
 
       const response = await fetch("/api/actions", {
@@ -884,7 +895,7 @@ export default function ResultadoPage() {
           customerName: clienteNome,
           productName: currentLook.produtoNome,
           productPrice: currentLook.produtoPreco || null,
-          imagemUrl: currentLook.imagemUrl, // Usar imagem original imediatamente
+          imagemUrl: imagemUrlToSave, // Garantir que seja uma URL válida (HTTP/HTTPS)
         }),
       })
 
