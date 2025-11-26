@@ -6,7 +6,7 @@ import { fetchLojistaData, fetchProdutos } from "@/lib/firebaseQueries"
 import type { Produto, LojistaData, GeneratedLook } from "@/lib/types"
 import { ExperimentarView } from "@/components/views/ExperimentarView"
 import { DisplayView } from "@/components/views/DisplayView"
-import { StaticVideoBackground } from "@/components/StaticVideoBackground"
+import { VideoBackground } from "@/components/VideoBackground"
 import { useStoreSession } from "@/hooks/useStoreSession"
 import { StoreConnectionIndicator } from "@/components/StoreConnectionIndicator"
 import toast from "react-hot-toast"
@@ -830,17 +830,15 @@ export default function ExperimentarPage() {
       // Obter URL do backend (paineladm)
       const backendUrl = getBackendUrl()
 
-      // 3. Gerar imagem usando a nova API do paineladm (Gemini + Imagen)
-      // Se estiver conectado à loja, enviar flag broadcast para aparecer no display
-      const targetDisplay = sessionStorage.getItem("target_display")
-      const payload = {
-        lojistaId,
-        customerId: clienteId,
-        userImageUrl: personImageUrl,
-        productImageUrl: productImageUrls.length === 1 ? productImageUrls[0] : productImageUrls,
-        broadcast: isConnected && connectedStoreId === lojistaId, // Fase 9: Broadcast para display
-        targetDisplay: targetDisplay || undefined, // Fase 10: Display específico
-      }
+        // 3. Gerar imagem usando a nova API do paineladm (Gemini + Imagen)
+        // NOTA: Transmissão para display agora é manual via botão, não automática
+        const payload = {
+          lojistaId,
+          customerId: clienteId,
+          userImageUrl: personImageUrl,
+          productImageUrl: productImageUrls.length === 1 ? productImageUrls[0] : productImageUrls,
+          broadcast: false, // Transmissão manual via botão
+        }
 
       console.log("[handleVisualize] Chamando API do paineladm:", `${backendUrl}/api/ai/generate`)
 
@@ -860,28 +858,8 @@ export default function ExperimentarPage() {
       const responseData = await response.json()
 
       // 4. Salvar resultados e navegar
+      // NOTA: Transmissão para display agora é manual via botão, não automática
       if (responseData.imageUrl) {
-        // Fase 10: Se estiver conectado à loja e tiver target_display, enviar para o display
-        if (isConnected && connectedStoreId === lojistaId) {
-          const targetDisplay = sessionStorage.getItem("target_display")
-          if (targetDisplay) {
-            try {
-              await fetch("/api/display/update", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  displayUuid: targetDisplay,
-                  imageUrl: responseData.imageUrl,
-                  lojistaId,
-                }),
-              })
-              console.log("[handleVisualize] ✅ Imagem enviada para display:", targetDisplay)
-            } catch (displayError) {
-              console.warn("[handleVisualize] Erro ao enviar para display:", displayError)
-              // Não quebrar o fluxo se houver erro no display
-            }
-          }
-        }
 
         // Formatar como look para compatibilidade com a tela de resultado
         const generatedLook = {
@@ -990,8 +968,8 @@ export default function ExperimentarPage() {
   if (isInitializing) {
   return (
       <div className="relative min-h-screen w-full overflow-hidden">
-      {/* Imagem de fundo estática (frame do vídeo parado) */}
-      <StaticVideoBackground videoSrc="/video2tela2.mp4" />
+      {/* Vídeo de fundo (estático se conectado ao display, animado se não conectado) */}
+      <VideoBackground videoSrc="/video2tela2.mp4" />
         <div className="relative z-10 flex h-screen flex-col items-center justify-center text-white">
               {lojistaData?.logoUrl && (
             <div className="mb-4 h-24 w-24 overflow-hidden rounded-full border-2 border-white/30">

@@ -6,7 +6,7 @@ import Image from "next/image"
 import { ArrowLeft, ThumbsUp, ThumbsDown, Share2, ShoppingCart, Heart, RefreshCw, Home, Instagram, Facebook, Music2, MessageCircle, X, Sparkles, ArrowLeftCircle, Check, Download } from "lucide-react"
 import { ClockAnimation } from "@/components/ClockAnimation"
 import { LoadingSpinner } from "@/components/LoadingSpinner"
-import { StaticVideoBackground } from "@/components/StaticVideoBackground"
+import { VideoBackground } from "@/components/VideoBackground"
 import { SendToDisplayButton } from "@/components/SendToDisplayButton"
 import { StoreConnectionIndicator } from "@/components/StoreConnectionIndicator"
 import { useStoreSession } from "@/hooks/useStoreSession"
@@ -1427,8 +1427,8 @@ export default function ResultadoPage() {
       )}
       
       
-      {/* Imagem de fundo estática (frame do vídeo parado) */}
-      <StaticVideoBackground videoSrc="/video2tela2.mp4" />
+      {/* Vídeo de fundo (estático se conectado ao display, animado se não conectado) */}
+      <VideoBackground videoSrc="/video2tela2.mp4" />
 
       {/* Indicador de conexão com a loja */}
       <StoreConnectionIndicator
@@ -1535,8 +1535,8 @@ export default function ResultadoPage() {
                       </div>
                     )}
                     
-                    {/* Botão de transmitir para o display (canto inferior esquerdo) - aparece após votar */}
-                    {hasVoted && currentLook.imagemUrl && (
+                    {/* Botão de transmitir para o display (canto inferior esquerdo) - aparece sempre que houver imagem */}
+                    {currentLook.imagemUrl && (
                       <SendToDisplayButton
                         imageUrl={currentLook.imagemUrl}
                         lojistaId={lojistaId}
@@ -1803,6 +1803,19 @@ export default function ResultadoPage() {
                             </div>
                           </div>
                         )}
+                        {/* Botão de transmitir para o display (canto inferior esquerdo) - relativo ao card */}
+                        <div 
+                          className="absolute bottom-2 left-2 z-20"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <SendToDisplayButton
+                            imageUrl={favorito.imagemUrl}
+                            lojistaId={lojistaId}
+                            position="bottom-left"
+                            size="sm"
+                            className="relative"
+                          />
+                        </div>
                       </div>
                     )}
                     {favorito.productName && (

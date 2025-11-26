@@ -168,13 +168,13 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
             setActiveImage(data.activeImage)
             setViewMode("active")
 
-            // Iniciar timeout de 45 segundos (Fase 9)
+            // Iniciar timeout de 3 minutos
             const newTimeoutId = setTimeout(() => {
               console.log("[DisplayView] Timeout: voltando para modo idle")
               setViewMode("idle")
               setActiveImage(null)
               setTimeoutId(null)
-            }, 45000) // 45 segundos
+            }, 180000) // 3 minutos (180 segundos)
 
             setTimeoutId(newTimeoutId)
           } else {
@@ -397,11 +397,11 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
         </p>
       </div>
 
-      {/* Imagem Principal */}
+      {/* Imagem Principal - Ajustada para tamanho máximo quando transmitindo */}
       <div className="flex-1 flex items-center justify-center ml-72 mr-8">
-        <div className="relative max-w-6xl w-full h-full flex items-center justify-center">
+        <div className="relative w-full h-full max-w-full max-h-[95vh] flex items-center justify-center">
           <div 
-            className="relative w-full max-h-[90vh] rounded-3xl overflow-hidden shadow-2xl border-4 border-white/30 animate-scale-in bg-white/5 backdrop-blur-sm"
+            className="relative w-full h-full max-w-full max-h-[95vh] rounded-3xl overflow-hidden shadow-2xl border-4 border-white/30 animate-scale-in bg-white/5 backdrop-blur-sm"
             style={{
               boxShadow: "0 25px 80px rgba(0,0,0,0.5), 0 0 60px rgba(255,255,255,0.1) inset"
             }}
@@ -409,8 +409,8 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
             <SafeImage
               src={activeImage}
               alt="Look gerado"
-              className="w-full h-auto object-contain"
-              containerClassName="w-full flex items-center justify-center"
+              className="w-full h-full object-cover"
+              containerClassName="w-full h-full flex items-center justify-center"
             />
             
             {/* Overlay decorativo no topo da imagem */}

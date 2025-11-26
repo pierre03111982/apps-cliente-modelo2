@@ -25,10 +25,10 @@ export function StoreConnectionIndicator({
       <button
         onClick={() => setShowDialog(true)}
         className="fixed top-4 right-4 z-50 flex items-center gap-2 bg-green-500/20 backdrop-blur-md rounded-full px-4 py-2 border border-green-500/30 hover:bg-green-500/30 transition-colors"
-        title="Você está conectado ao telão da loja"
+        title="Você está conectado ao Display da Loja (Espelho Digital)"
       >
         <Cast className="h-4 w-4 text-green-400" />
-        <span className="text-sm font-medium text-green-300">Na Loja</span>
+        <span className="text-sm font-medium text-green-300">Display ON</span>
       </button>
 
       {/* Dialog de Desconexão */}
@@ -39,14 +39,14 @@ export function StoreConnectionIndicator({
               Conectado à Loja
             </h3>
             <p className="text-sm text-gray-600 mb-4">
-              Você está conectado ao telão da loja
+              Você está conectado ao <strong>Display da Loja (Espelho Digital)</strong>
               {storeName && (
                 <>
                   <br />
                   <span className="font-semibold">{storeName}</span>
                 </>
               )}
-              . Seus looks serão exibidos automaticamente no display.
+              . Seus looks poderão ser transmitidos para o display quando você clicar no botão de transmissão.
             </p>
             <div className="flex gap-3">
               <Button

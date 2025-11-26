@@ -22,7 +22,7 @@ import { ClockAnimation } from "../ClockAnimation"
 import { LoadingSpinner } from "../LoadingSpinner"
 import { SafeImage } from "../ui/SafeImage"
 import { Button } from "../ui/Button"
-import { StaticVideoBackground } from "../StaticVideoBackground"
+import { VideoBackground } from "../VideoBackground"
 import type { LojistaData, Produto, GeneratedLook } from "@/lib/types"
 
 export interface ExperimentarViewProps {
@@ -239,8 +239,8 @@ export function ExperimentarView({
         </div>
       )}
 
-      {/* 1. Imagem de Fundo Estática (frame do vídeo parado) */}
-      <StaticVideoBackground videoSrc="/video2tela2.mp4" />
+      {/* 1. Vídeo de Fundo (estático se conectado ao display, animado se não conectado) */}
+      <VideoBackground videoSrc="/video2tela2.mp4" />
 
       {/* 2. Conteúdo Principal */}
       <div className="relative z-10 min-h-screen p-4 pb-24">

@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import { FaApple, FaFacebook, FaGoogle } from "react-icons/fa"
-import { LogIn, UserPlus } from "lucide-react"
+import { LogIn, UserPlus, Cast } from "lucide-react"
 import { fetchLojistaData } from "@/lib/firebaseQueries"
 import type { LojistaData } from "@/lib/types"
 import { CLOSET_BACKGROUND_IMAGE } from "@/lib/constants"
@@ -17,6 +17,9 @@ function LoginPageContent() {
 
   const [lojistaData, setLojistaData] = useState<LojistaData | null>(null)
   const [isLoadingLojistaData, setIsLoadingLojistaData] = useState(true)
+
+  // Verificar se veio de conexão com display
+  const isConnectingToDisplay = searchParams?.get("connect") === "true" && searchParams?.get("target_display")
 
   const [isLoading, setIsLoading] = useState(false)
   const [mode, setMode] = useState<"login" | "register">("login")
@@ -527,6 +530,23 @@ function LoginPageContent() {
               (Provador Virtual IA)
             </p>
           </div>
+
+          {/* Aviso de Conexão com Display */}
+          {isConnectingToDisplay && (
+            <div className="rounded-lg bg-green-500/20 border-2 border-green-400/50 p-3 backdrop-blur-sm">
+              <div className="flex items-start gap-2">
+                <Cast className="h-5 w-5 text-green-400 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-xs sm:text-sm font-semibold text-green-300 mb-1">
+                    Conexão com Display da Loja
+                  </p>
+                  <p className="text-xs text-green-200/90">
+                    Ao fazer login, você será conectado ao <strong>Espelho Digital</strong> da loja. Seus looks poderão ser exibidos no display.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Botão de Ação Único */}
           {mode === 'login' ? (

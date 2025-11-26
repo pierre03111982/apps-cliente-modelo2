@@ -60,12 +60,19 @@ export function SendToDisplayButton({
     "top-right": "top-2 right-2",
   }
 
+  // Se className contém "relative", não usar fixed positioning
+  const isRelative = className.includes("relative")
+
   const handleSendToDisplay = async () => {
     if (!imageUrl || !targetDisplay || isSending || sent) return
 
     setIsSending(true)
 
     try {
+      // Otimizar: usar AbortController para timeout mais rápido e melhor resposta
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // Timeout de 10 segundos
+
       const response = await fetch("/api/display/update", {
         method: "POST",
         headers: {
@@ -76,7 +83,10 @@ export function SendToDisplayButton({
           imageUrl: imageUrl,
           lojistaId: lojistaId,
         }),
+        signal: controller.signal,
       })
+
+      clearTimeout(timeoutId)
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
@@ -84,15 +94,22 @@ export function SendToDisplayButton({
       }
 
       setSent(true)
-      toast.success("Foto enviada para o display!")
+      toast.success("Foto enviada para o display!", {
+        duration: 2000,
+        icon: "✅",
+      })
       
-      // Resetar estado após 3 segundos
+      // Resetar estado após 2 segundos (mais rápido)
       setTimeout(() => {
         setSent(false)
-      }, 3000)
+      }, 2000)
     } catch (error: any) {
       console.error("[SendToDisplayButton] Erro ao enviar para display:", error)
-      toast.error(error.message || "Erro ao enviar foto para o display")
+      if (error.name === "AbortError") {
+        toast.error("Tempo de resposta excedido. Tente novamente.")
+      } else {
+        toast.error(error.message || "Erro ao enviar foto para o display")
+      }
     } finally {
       setIsSending(false)
     }
@@ -108,9 +125,10 @@ export function SendToDisplayButton({
       disabled={isSending || sent}
       className={`
         ${sizeClasses[size]}
-        ${positionClasses[position]}
+        ${isRelative ? "" : `${positionClasses[position]} fixed`}
         ${className}
-        fixed z-40 flex items-center justify-center
+        ${isRelative ? "" : "z-40"}
+        flex items-center justify-center
         rounded-full bg-indigo-600 shadow-lg
         border-2 border-white/50
         transition-all duration-200
@@ -133,4 +151,7 @@ export function SendToDisplayButton({
     </button>
   )
 }
+
+
+
 
