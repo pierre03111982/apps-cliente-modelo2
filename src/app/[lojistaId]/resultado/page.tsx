@@ -1535,15 +1535,17 @@ export default function ResultadoPage() {
                       </div>
                     )}
                     
-                    {/* Botão de transmitir para o display (canto inferior esquerdo) - aparece sempre que houver imagem */}
-                    {currentLook.imagemUrl && (
-                      <SendToDisplayButton
-                        imageUrl={currentLook.imagemUrl}
-                        lojistaId={lojistaId}
-                        position="bottom-left"
-                        size="lg"
-                        className="z-20"
-                      />
+                    {/* Botão de transmitir para o display (canto inferior esquerdo) - aparece apenas após votar (like ou dislike) */}
+                    {currentLook.imagemUrl && hasVoted && (
+                      <div className="absolute bottom-2 left-2 z-20" onClick={(e) => e.stopPropagation()}>
+                        <SendToDisplayButton
+                          imageUrl={currentLook.imagemUrl}
+                          lojistaId={lojistaId}
+                          position="bottom-left"
+                          size="md"
+                          className="relative"
+                        />
+                      </div>
                     )}
                 </div>
               </div>
@@ -1879,14 +1881,16 @@ export default function ResultadoPage() {
                         </div>
                       )}
                       
-                      {/* Botão de transmitir para o display (canto inferior esquerdo) */}
-                      <SendToDisplayButton
-                        imageUrl={selectedFavoriteDetail.imagemUrl}
-                        lojistaId={lojistaId}
-                        position="bottom-left"
-                        size="lg"
-                        className="z-20"
-                      />
+                      {/* Botão de transmitir para o display (canto inferior esquerdo) - dentro da imagem */}
+                      <div className="absolute bottom-2 left-2 z-20" onClick={(e) => e.stopPropagation()}>
+                        <SendToDisplayButton
+                          imageUrl={selectedFavoriteDetail.imagemUrl}
+                          lojistaId={lojistaId}
+                          position="bottom-left"
+                          size="md"
+                          className="relative"
+                        />
+                      </div>
                     </div>
                   </div>
                 )}

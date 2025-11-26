@@ -69,9 +69,22 @@ export function SendToDisplayButton({
     setIsSending(true)
 
     try {
+      // Otimização: Pré-carregar a imagem para garantir que está pronta
+      await new Promise((resolve, reject) => {
+        const img = new Image()
+        img.onload = () => resolve(img)
+        img.onerror = reject
+        img.src = imageUrl
+        // Timeout de 3 segundos para pré-carregamento
+        setTimeout(() => reject(new Error("Timeout ao pré-carregar imagem")), 3000)
+      }).catch(() => {
+        // Continuar mesmo se pré-carregamento falhar
+        console.warn("[SendToDisplayButton] Aviso: não foi possível pré-carregar imagem")
+      })
+
       // Otimizar: usar AbortController para timeout mais rápido e melhor resposta
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 10000) // Timeout de 10 segundos
+      const timeoutId = setTimeout(() => controller.abort(), 5000) // Timeout reduzido para 5 segundos
 
       const response = await fetch("/api/display/update", {
         method: "POST",

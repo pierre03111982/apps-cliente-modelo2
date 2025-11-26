@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useParams } from "next/navigation"
 import { QRCodeSVG } from "qrcode.react"
 import { getFirestoreClient, isFirebaseConfigured } from "@/lib/firebase"
@@ -44,6 +44,9 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
   
   // Fase 10: UUID único para este display
   const [displayUuid, setDisplayUuid] = useState<string | null>(null)
+  
+  // Cache de imagens pré-carregadas para troca mais rápida
+  const imageCache = useRef<Map<string, HTMLImageElement>>(new Map())
 
   // Rotação de frases criativas
   useEffect(() => {
@@ -164,17 +167,33 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
               clearTimeout(timeoutId)
             }
 
-            // Atualizar estado
-            setActiveImage(data.activeImage)
-            setViewMode("active")
+            // Otimização: Pré-carregar imagem antes de atualizar estado para troca mais rápida
+            const newImageUrl = data.activeImage
+            if (newImageUrl !== activeImage) {
+              // Verificar se já está no cache
+              if (!imageCache.current.has(newImageUrl)) {
+                // Pré-carregar a nova imagem e adicionar ao cache
+                const img = new Image()
+                img.src = newImageUrl
+                imageCache.current.set(newImageUrl, img)
+              }
+              
+              // Atualizar estado imediatamente (não esperar carregamento completo)
+              // O navegador vai usar o cache e mostrar rapidamente
+              setActiveImage(newImageUrl)
+              setViewMode("active")
+            } else {
+              // Mesma imagem, apenas garantir que está ativa
+              setViewMode("active")
+            }
 
-            // Iniciar timeout de 3 minutos
+            // Iniciar timeout de 120 segundos (2 minutos)
             const newTimeoutId = setTimeout(() => {
               console.log("[DisplayView] Timeout: voltando para modo idle")
               setViewMode("idle")
               setActiveImage(null)
               setTimeoutId(null)
-            }, 180000) // 3 minutos (180 segundos)
+            }, 120000) // 120 segundos (2 minutos)
 
             setTimeoutId(newTimeoutId)
           } else {
@@ -411,6 +430,7 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
               alt="Look gerado"
               className="w-full h-full object-cover"
               containerClassName="w-full h-full flex items-center justify-center"
+              loading="eager"
             />
             
             {/* Overlay decorativo no topo da imagem */}
