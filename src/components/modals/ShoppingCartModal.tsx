@@ -251,7 +251,7 @@ export function ShoppingCartModal({
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             className="w-full border-slate-300 text-slate-700"
             onClick={onClose}
           >

@@ -159,7 +159,7 @@ export function SmartUploadZone({ onFileSelect, isLoading }: SmartUploadZoneProp
             <p className="text-sm font-semibold text-gray-700">Toque para enviar sua foto</p>
             <p className="text-xs text-gray-400">ou arraste aqui</p>
           </div>
-          <Button variant="outline" size="sm" className="pointer-events-none mt-1 h-8 text-xs">
+          <Button variant="ghost" size="sm" className="pointer-events-none mt-1 h-8 text-xs">
             <Camera className="mr-2 h-3 w-3" />
             Câmera
           </Button>
@@ -174,4 +174,5 @@ export function SmartUploadZone({ onFileSelect, isLoading }: SmartUploadZoneProp
     </div>
   )
 }
+
 
