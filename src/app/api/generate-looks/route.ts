@@ -20,13 +20,16 @@ export async function POST(request: NextRequest) {
 
     const creditValidation = await consumeGenerationCredit(body.lojistaId);
     if (!creditValidation.allowed) {
+      // Type narrowing: quando allowed é false, message e status existem
+      const errorMessage = "message" in creditValidation ? creditValidation.message : "Créditos insuficientes";
+      const statusCode = "status" in creditValidation ? creditValidation.status : 402;
       console.warn("[modelo-2/api/generate-looks] Créditos bloqueados:", {
         lojistaId: body.lojistaId,
-        message: creditValidation.message,
+        message: errorMessage,
       });
       return NextResponse.json(
-        { error: creditValidation.message },
-        { status: creditValidation.status }
+        { error: errorMessage },
+        { status: statusCode }
       );
     }
 
