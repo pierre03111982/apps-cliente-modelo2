@@ -758,22 +758,22 @@ export default function ExperimentarPage() {
         fileToUpload = await compressImage(file, 1920, 1920, 0.85)
       }
       
-      const formData = new FormData()
+    const formData = new FormData()
       formData.append("photo", fileToUpload)
-      formData.append("lojistaId", lojistaId)
+    formData.append("lojistaId", lojistaId)
 
-      const response = await fetch("/api/upload-photo", {
-        method: "POST",
-        body: formData,
-      })
+    const response = await fetch("/api/upload-photo", {
+      method: "POST",
+      body: formData,
+    })
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || `Erro ao fazer upload: ${response.status}`)
-      }
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.error || `Erro ao fazer upload: ${response.status}`)
+    }
 
-      const data = await response.json()
-      return data.imageUrl
+    const data = await response.json()
+    return data.imageUrl
     } catch (error: any) {
       console.error("[uploadPersonPhoto] Erro:", error)
       throw error
@@ -936,15 +936,15 @@ export default function ExperimentarPage() {
       // Obter URL do backend (paineladm)
       const backendUrl = getBackendUrl()
 
-        // 3. Gerar imagem usando a nova API do paineladm (Gemini + Imagen)
+      // 3. Gerar imagem usando a nova API do paineladm (Gemini + Imagen)
         // NOTA: Transmissão para display agora é manual via botão, não automática
-        const payload = {
-          lojistaId,
-          customerId: clienteId,
-          userImageUrl: personImageUrl,
-          productImageUrl: productImageUrls.length === 1 ? productImageUrls[0] : productImageUrls,
+      const payload = {
+        lojistaId,
+        customerId: clienteId,
+        userImageUrl: personImageUrl,
+        productImageUrl: productImageUrls.length === 1 ? productImageUrls[0] : productImageUrls,
           broadcast: false, // Transmissão manual via botão
-        }
+      }
 
       console.log("[handleVisualize] Chamando API do paineladm:", `${backendUrl}/api/ai/generate`)
 
@@ -955,11 +955,11 @@ export default function ExperimentarPage() {
       let response: Response
       try {
         response = await fetch(`${backendUrl}/api/ai/generate`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
           signal: controller.signal,
-        })
+      })
       } catch (fetchError: any) {
         clearTimeout(timeoutId)
         
