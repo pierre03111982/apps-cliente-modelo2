@@ -93,7 +93,7 @@ export function DislikeFeedbackModal({ open, onSelect, onSkip, isSubmitting = fa
         </div>
 
         <Button
-          variant="outline"
+          variant="ghost"
           className="mt-4 w-full justify-center border-zinc-200 text-sm font-semibold text-zinc-600 hover:border-zinc-300"
           onClick={handleClose}
           disabled={isSubmitting}
@@ -104,4 +104,5 @@ export function DislikeFeedbackModal({ open, onSelect, onSkip, isSubmitting = fa
     </div>
   )
 }
+
 
