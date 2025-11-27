@@ -22,8 +22,6 @@ export function normalizeSalesConfig(raw?: Partial<SalesConfig> | null): SalesCo
     fixed_shipping_price:
       typeof raw?.fixed_shipping_price === "number"
         ? raw.fixed_shipping_price
-        : raw?.fixedShippingPrice
-        ? Number(raw.fixedShippingPrice)
         : null,
     checkout_url: raw?.checkout_url ?? raw?.checkoutLink ?? raw?.ecommerceUrl ?? null,
     integrations: {
