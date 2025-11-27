@@ -42,7 +42,7 @@ export function PrivacyOnboardingModal({ open, onSelect, onClose }: PrivacyOnboa
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 px-4 py-8">
-      <div className="relative w-full max-w-4xl rounded-3xl bg-white/95 p-6 text-zinc-900 shadow-2xl">
+      <div className="relative w-full max-w-4xl rounded-3xl bg-white p-6 text-slate-900 shadow-xl border border-slate-200">
         {onClose && (
           <button
             aria-label="Fechar"
