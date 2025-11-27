@@ -416,8 +416,8 @@ export function ExperimentarView({
       <VideoBackground videoSrc="/video2tela2.mp4" />
 
       {/* 2. Conteúdo Principal */}
-      <div className="relative z-10 min-h-screen p-3 sm:p-4 pb-24">
-        <div className="mx-auto max-w-6xl space-y-3 sm:space-y-4">
+      <div className="relative z-10 min-h-screen p-3 sm:p-4 md:p-6 pb-24">
+        <div className="mx-auto max-w-6xl space-y-3 sm:space-y-4 md:space-y-6">
           {/* Caixa com Logo e Nome da Loja - Mobile Otimizado */}
           <div>
             <div
@@ -463,12 +463,12 @@ export function ExperimentarView({
 
           {/* Upload de Foto e Área Personalize o seu Look */}
           <div
-            className={`flex flex-col sm:flex-row items-stretch gap-3 ${
+            className={`flex flex-col sm:flex-row items-stretch gap-3 sm:gap-4 md:gap-6 ${
               userPhotoUrl ? "justify-center" : "justify-center"
             }`}
           >
             {/* Upload de Foto */}
-            <div className={`relative ${userPhotoUrl ? 'w-full sm:max-w-[48%] md:max-w-[42%]' : 'w-full'}`}>
+            <div className={`relative ${userPhotoUrl ? 'w-full sm:max-w-[48%] md:max-w-[42%]' : 'w-full max-w-full'}`}>
               {renderActionButtons({ allowFavorites: true, allowCamera: hasUserPhoto, allowDisplay: hasUserPhoto })}
               {userPhotoUrl && !isRefineMode ? (
                 // Exibir foto quando disponível
@@ -552,7 +552,7 @@ export function ExperimentarView({
                 <div className="relative inline-block w-full" style={{ position: 'relative' }}>
                   <label
                     htmlFor="photo-upload"
-                    className="flex cursor-pointer flex-col items-center justify-center gap-3 sm:gap-4 rounded-xl sm:rounded-2xl p-6 sm:p-8 md:p-12 transition hover:opacity-90 backdrop-blur relative"
+                    className="flex cursor-pointer flex-col items-center justify-center gap-3 sm:gap-4 md:gap-5 rounded-xl sm:rounded-2xl p-6 sm:p-8 md:p-10 lg:p-12 transition hover:opacity-90 backdrop-blur relative w-full"
                     style={{
                       background: "rgba(30, 58, 138, 0.25)", // Azul escuro com mais transparência para mobile
                       border: '3px double #3b82f6',
@@ -561,11 +561,11 @@ export function ExperimentarView({
                       borderColor: '#3b82f6',
                     }}
                   >
-                    <Camera className="h-14 w-14 sm:h-16 sm:w-16 md:h-20 md:w-20 text-red-500" />
-                    <span className="text-sm sm:text-base md:text-lg font-bold text-white text-center px-2">
+                    <Camera className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 lg:h-20 lg:w-20 text-red-500" />
+                    <span className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white text-center px-2 sm:px-4">
                       Faça upload da sua foto
                     </span>
-                    <span className="text-[10px] sm:text-xs md:text-sm font-semibold text-yellow-200 text-center px-2">PNG ou JPG até 10MB</span>
+                    <span className="text-[10px] sm:text-xs md:text-sm font-semibold text-yellow-200 text-center px-2 sm:px-4">PNG ou JPG até 10MB</span>
                     <input
                       ref={photoInputRef}
                       id="photo-upload"
@@ -729,17 +729,17 @@ export function ExperimentarView({
 
           {/* Caixa de Redes Sociais e Desconto - Mobile Otimizado */}
           <div
-            className="rounded-lg sm:rounded-xl border-2 border-white/30 backdrop-blur px-3 sm:px-4 py-3 sm:py-4 shadow-lg"
+            className="rounded-lg sm:rounded-xl border-2 border-white/30 backdrop-blur px-4 sm:px-5 md:px-6 py-3 sm:py-4 md:py-5 shadow-lg"
             style={{
               background:
                 "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
             }}
           >
-            <div className="flex flex-col items-center gap-3 sm:gap-4">
-              <div className="rounded-lg sm:rounded-md border-2 border-white/40 bg-red-700 px-3 py-2 sm:py-1.5 w-full">
-                <p className="text-[11px] sm:text-xs font-medium text-white text-center leading-tight">Siga, Curta ou Compartilhe !!!<br/>Aplique o seu Desconto agora!</p>
+            <div className="flex flex-col items-center gap-3 sm:gap-4 md:gap-5">
+              <div className="rounded-lg sm:rounded-md border-2 border-white/40 bg-red-700 px-3 sm:px-4 py-2 sm:py-2 md:py-2.5 w-full">
+                <p className="text-xs sm:text-sm md:text-base font-medium text-white text-center leading-tight">Siga, Curta ou Compartilhe !!!<br/>Aplique o seu Desconto agora!</p>
               </div>
-              <div className="flex items-center justify-center gap-2.5 sm:gap-3 flex-wrap">
+              <div className="flex items-center justify-center gap-3 sm:gap-4 flex-wrap">
                 {lojistaData?.redesSociais?.instagram ? (<button onClick={() => handleSocialClick(lojistaData.redesSociais.instagram!.startsWith('http') ? lojistaData.redesSociais.instagram! : `https://instagram.com/${lojistaData.redesSociais.instagram!.replace('@', '')}`)} disabled={isGenerating || isButtonExpanded} className={`flex items-center justify-center w-11 h-11 sm:w-10 sm:h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white transition hover:scale-110 ${isGenerating || isButtonExpanded ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}><Instagram className="h-5 w-5" /></button>) : (<div className="flex items-center justify-center w-11 h-11 sm:w-10 sm:h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white opacity-50"><Instagram className="h-5 w-5" /></div>)}
                 {lojistaData?.redesSociais?.facebook ? (<button onClick={() => handleSocialClick(lojistaData.redesSociais.facebook!.startsWith('http') ? lojistaData.redesSociais.facebook! : `https://facebook.com/${lojistaData.redesSociais.facebook!}`)} disabled={isGenerating || isButtonExpanded} className={`flex items-center justify-center w-11 h-11 sm:w-10 sm:h-10 rounded-full bg-blue-600 text-white transition hover:scale-110 ${isGenerating || isButtonExpanded ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}><Facebook className="h-5 w-5" /></button>) : (<div className="flex items-center justify-center w-11 h-11 sm:w-10 sm:h-10 rounded-full bg-blue-600 text-white opacity-50"><Facebook className="h-5 w-5" /></div>)}
                 {lojistaData?.redesSociais?.tiktok ? (<button onClick={() => handleSocialClick(lojistaData.redesSociais.tiktok!.startsWith('http') ? lojistaData.redesSociais.tiktok! : `https://tiktok.com/@${lojistaData.redesSociais.tiktok!.replace('@', '')}`)} disabled={isGenerating || isButtonExpanded} className={`flex items-center justify-center w-11 h-11 sm:w-10 sm:h-10 rounded-full bg-black text-white transition hover:scale-110 ${isGenerating || isButtonExpanded ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}><Music2 className="h-5 w-5" /></button>) : (<div className="flex items-center justify-center w-11 h-11 sm:w-10 sm:h-10 rounded-full bg-black text-white opacity-50"><Music2 className="h-5 w-5" /></div>)}
@@ -768,15 +768,15 @@ export function ExperimentarView({
 
           {/* Card Principal */}
           <div
-            className="rounded-3xl border-2 border-white/30 backdrop-blur p-6 md:p-8 shadow-2xl"
+            className="rounded-2xl sm:rounded-3xl border-2 border-white/30 backdrop-blur p-4 sm:p-6 md:p-8 shadow-2xl"
             style={{
               background:
                 "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
             }}
           >
             {/* Abas de Categoria */}
-            <div className="mb-4 sm:mb-6 overflow-x-auto pb-2 -mx-2 sm:mx-0">
-              <div className="flex gap-2 justify-start sm:justify-center px-2 sm:px-0 min-w-max sm:min-w-0 flex-wrap sm:flex-nowrap">
+            <div className="mb-4 sm:mb-5 md:mb-6 overflow-x-auto pb-2 -mx-1 sm:-mx-2 md:mx-0">
+              <div className="flex gap-2 sm:gap-3 justify-start sm:justify-center px-2 sm:px-0 min-w-max sm:min-w-0 flex-wrap sm:flex-nowrap">
                 {categories.map((category) => (
                   <button
                     key={category}
@@ -797,9 +797,9 @@ export function ExperimentarView({
             {/* Aviso de categoria */}
             {categoryWarning && (<div className="mb-4 rounded-lg border-2 border-yellow-500/50 bg-yellow-500/10 px-4 py-3"><p className="text-sm font-medium text-yellow-700">{categoryWarning}</p></div>)}
 
-            {/* Grid de Produtos - 2 colunas no mobile Android */}
+            {/* Grid de Produtos - 2 colunas no mobile, 4 colunas no desktop */}
             {isLoadingCatalog ? (<div className="py-12 text-center text-zinc-600">Carregando produtos...</div>) : filteredCatalog.length === 0 ? (<div className="py-12 text-center text-zinc-500">Nenhum produto encontrado.</div>) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4 overflow-y-auto pb-4 pr-1 sm:pr-2 custom-scrollbar" style={{ maxHeight: '900px' }}>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-5 overflow-y-auto pb-4 pr-1 sm:pr-2 custom-scrollbar" style={{ maxHeight: '900px' }}>
                 {prioritizedCatalog.map((produto, index) => { const isSelected = selectedProducts.some((p) => p.id === produto.id); const imagemPrincipal = getProdutoImagem(produto); const specialDiscount = getSpecialDiscount(produto); const totalDiscount = getTotalDiscount(produto); const applyDiscount = hasDiscountApplied(produto); return (
                   <div
                     key={`${produto.id}-${index}`}
@@ -817,6 +817,7 @@ export function ExperimentarView({
                         ? "border-teal-400 bg-teal-50 shadow-lg shadow-teal-500/30"
                         : "border-purple-500 bg-white hover:border-purple-400"
                     }`}
+                    style={{ minHeight: 0 }}
                   >
                     {/* Caixinha Seletora no canto superior esquerdo */}
                     <div 
@@ -860,30 +861,30 @@ export function ExperimentarView({
                         +{specialDiscount}% especial
                       </div>
                     )}
-                    <div className="p-1.5 sm:p-2 bg-purple-900">
-                      <h3 className="text-left text-[10px] sm:text-xs font-semibold text-white line-clamp-2 h-7 sm:h-8 leading-tight">
+                    <div className="p-2 sm:p-2.5 md:p-3 bg-purple-900">
+                      <h3 className="text-left text-[11px] sm:text-xs md:text-sm font-semibold text-white line-clamp-2 h-8 sm:h-9 md:h-10 leading-tight mb-1 sm:mb-1.5">
                         {produto.nome}
                       </h3>
-                      <div className="mt-0.5 sm:mt-1 flex flex-col gap-0.5">
+                      <div className="mt-1 sm:mt-1.5 flex flex-col gap-1 sm:gap-1.5">
                         {applyDiscount && produto.preco ? (
                           <>
-                            <p className="text-left text-[10px] sm:text-xs text-purple-300 line-through">
+                            <p className="text-left text-[10px] sm:text-xs md:text-sm text-purple-300 line-through">
                               {formatPrice(produto.preco)}
                             </p>
-                            <p className="text-left text-xs sm:text-sm font-bold text-amber-300">
+                            <p className="text-left text-xs sm:text-sm md:text-base font-bold text-amber-300">
                               {formatPrice(produto.preco * (1 - totalDiscount / 100))}
                             </p>
-                            <p className="text-[9px] sm:text-[10px] font-semibold text-green-300">
+                            <p className="text-[9px] sm:text-[10px] md:text-xs font-semibold text-green-300">
                               {totalDiscount.toFixed(1).replace(".0", "")}% OFF {specialDiscount > 0 ? "(inclui especial)" : ""}
                             </p>
                           </>
                         ) : (
-                          <p className="text-left text-xs sm:text-sm font-bold text-amber-300">
+                          <p className="text-left text-xs sm:text-sm md:text-base font-bold text-amber-300">
                             {formatPrice(produto.preco)}
                           </p>
                         )}
                         {specialDiscount > 0 && (
-                          <p className="text-[9px] sm:text-[10px] font-semibold text-pink-200">
+                          <p className="text-[9px] sm:text-[10px] md:text-xs font-semibold text-pink-200">
                             {applyDiscount
                               ? `Redes ${redesDiscount}% + Especial ${specialDiscount}%`
                               : `Desconto especial disponível (+${specialDiscount}%)`}
