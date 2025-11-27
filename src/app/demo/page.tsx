@@ -99,7 +99,11 @@ function DemoPageContent() {
             nome: "Sua Loja", 
             logoUrl: null,
             descricao: "Loja de demonstração",
-            salesConfig: {}, 
+            salesConfig: {
+              enabled: false,
+              payment_gateway: "manual_whatsapp",
+              shipping_provider: "none",
+            }, 
             redesSociais: { instagram: "@lojademo" },
             descontoRedesSociais: 10,
             descontoRedesSociaisExpiraEm: new Date(Date.now() + 86400000).toISOString()
