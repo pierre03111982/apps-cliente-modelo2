@@ -190,12 +190,12 @@ export function ShoppingCartModal({
               placeholder="00000-000"
               className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-800 focus:border-blue-500 focus:outline-none"
             />
-            <Button
-              type="button"
-              variant="outline"
-              className="border-blue-500 text-blue-600"
-              onClick={handleCalculateShipping}
-              disabled={isCalculating}
+        <Button
+          type="button"
+          variant="ghost"
+          className="border-blue-500 text-blue-600"
+          onClick={handleCalculateShipping}
+          disabled={isCalculating}
             >
               {isCalculating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Calcular"}
             </Button>
@@ -280,4 +280,5 @@ export function ShoppingCartModal({
     </div>
   )
 }
+
 
