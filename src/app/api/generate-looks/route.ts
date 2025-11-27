@@ -143,13 +143,39 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error("[modelo-2/api/generate-looks] Erro inesperado no proxy:", error);
     console.error("[modelo-2/api/generate-looks] Stack:", error?.stack);
+    console.error("[modelo-2/api/generate-looks] Tipo do erro:", typeof error);
+    console.error("[modelo-2/api/generate-looks] Nome do erro:", error?.name);
+    console.error("[modelo-2/api/generate-looks] Mensagem do erro:", error?.message);
     
-    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorName = error?.name || "UnknownError";
+    
+    // Mensagens mais específicas baseadas no tipo de erro
+    let userFriendlyMessage = "Erro interno no proxy de geração";
+    let details = process.env.NODE_ENV === 'development' ? errorMessage : "Erro ao processar requisição.";
+    
+    if (errorName === "AbortError" || errorMessage?.includes("timeout")) {
+      userFriendlyMessage = "Timeout ao gerar composição. O processo está demorando mais que o esperado.";
+      details = "Tente novamente em alguns instantes.";
+    } else if (errorMessage?.includes("ECONNREFUSED") || errorMessage?.includes("fetch failed")) {
+      userFriendlyMessage = "Servidor backend não está disponível.";
+      details = `Verifique se o backend está rodando.`;
+    } else if (errorMessage?.includes("JSON")) {
+      userFriendlyMessage = "Erro ao processar resposta do servidor.";
+      details = "A resposta do backend não está em formato válido.";
+    } else if (errorMessage?.includes("429") || errorMessage?.includes("RESOURCE_EXHAUSTED")) {
+      userFriendlyMessage = "Limite de requisições atingido.";
+      details = "Por favor, aguarde alguns instantes e tente novamente.";
+    }
     
     return NextResponse.json(
       {
-        error: "Erro interno no proxy de geração",
-        details: process.env.NODE_ENV === 'development' ? errorMessage : "Erro ao processar requisição.",
+        error: userFriendlyMessage,
+        details: details,
+        ...(process.env.NODE_ENV === 'development' && {
+          originalError: errorMessage,
+          errorName: errorName,
+        }),
       },
       { status: 500 }
     );
