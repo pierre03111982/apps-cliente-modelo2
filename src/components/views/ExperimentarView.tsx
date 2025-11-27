@@ -26,7 +26,63 @@ import { SafeImage } from "../ui/SafeImage"
 import { Button } from "../ui/Button"
 import { VideoBackground } from "../VideoBackground"
 import { SendToDisplayButton } from "../SendToDisplayButton"
+import { SmartUploadZone } from "@/components/ui/SmartUploadZone"
+import { PrivacyOnboardingModal } from "@/components/modals/PrivacyOnboardingModal"
 import type { LojistaData, Produto, GeneratedLook } from "@/lib/types"
+
+type AvatarOption = {
+  id: string
+  label: string
+  src: string
+}
+
+const AVATAR_OPTIONS: AvatarOption[] = [
+  {
+    id: "avatar-aurora",
+    label: "Avatar Aurora",
+    src: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#2563eb;stop-opacity:1"/><stop offset="100%" style="stop-color:#9333ea;stop-opacity:1"/></linearGradient></defs><rect width="512" height="512" rx="48" fill="url(#grad1)"/><circle cx="256" cy="188" r="96" fill="#f0f9ff" opacity="0.95"/><path d="M128 420c0-88 58-144 128-144s128 56 128 144" fill="#f0f9ff" opacity="0.9"/></svg>`
+    )}`,
+  },
+  {
+    id: "avatar-neon",
+    label: "Avatar Neon",
+    src: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="48" fill="#0f172a"/><circle cx="256" cy="180" r="90" fill="#a5b4fc"/><path d="M96 420c0-100 72-156 160-156s160 56 160 156" fill="#a5b4fc" opacity="0.85"/><path d="M256 88c40 0 64 12 64 36s-24 36-64 36-64-12-64-36 24-36 64-36z" fill="#312e81"/></svg>`
+    )}`,
+  },
+  {
+    id: "avatar-sunset",
+    label: "Avatar Sunset",
+    src: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="grad2" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#fb923c;stop-opacity:1"/><stop offset="100%" style="stop-color:#ef4444;stop-opacity:1"/></linearGradient></defs><rect width="512" height="512" rx="48" fill="url(#grad2)"/><circle cx="256" cy="180" r="92" fill="#fff7ed" opacity="0.9"/><path d="M120 420c0-96 72-152 136-152s136 56 136 152" fill="#fff7ed" opacity="0.85"/></svg>`
+    )}`,
+  },
+]
+
+function AvatarQuickSelect({ onSelect }: { onSelect?: (url: string) => void }) {
+  return (
+    <div className="mt-4 rounded-2xl border border-white/20 bg-white/5 p-4 text-white">
+      <p className="text-sm font-semibold">Modo privado ativado</p>
+      <p className="mt-1 text-xs text-white/70">Escolha um avatar para continuar sem enviar sua foto real.</p>
+      <div className="mt-3 grid grid-cols-3 gap-3">
+        {AVATAR_OPTIONS.map((avatar) => (
+          <button
+            key={avatar.id}
+            type="button"
+            onClick={() => onSelect?.(avatar.src)}
+            className="group rounded-2xl border border-white/10 bg-white/10 p-2 text-left transition hover:border-white/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/80"
+          >
+            <div className="overflow-hidden rounded-xl bg-white/5">
+              <img src={avatar.src} alt={avatar.label} className="h-28 w-full object-cover" />
+            </div>
+            <p className="mt-2 text-xs font-medium">{avatar.label}</p>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export interface ExperimentarViewProps {
   lojistaData: LojistaData | null
@@ -61,6 +117,7 @@ export interface ExperimentarViewProps {
   photoInputRef?: React.RefObject<HTMLInputElement>
   isDisplayConnected: boolean
   onDisplayConnect: (storeId: string, targetDisplay?: string | null) => void
+  onAvatarSelect?: (avatarUrl: string) => void
 }
 
 export function ExperimentarView({
@@ -96,6 +153,7 @@ export function ExperimentarView({
   photoInputRef,
   isDisplayConnected,
   onDisplayConnect,
+  onAvatarSelect,
 }: ExperimentarViewProps) {
   const [selectedProductDetail, setSelectedProductDetail] = useState<Produto | null>(null)
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
@@ -110,6 +168,8 @@ export function ExperimentarView({
   const streamRef = useRef<MediaStream | null>(null)
   const barcodeDetectorRef = useRef<any>(null)
   const hasUserPhoto = Boolean(userPhotoUrl)
+  const [privacyMode, setPrivacyMode] = useState<"public" | "private" | null>(null)
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false)
 
   const redesDiscount = useMemo(() => {
     const base = lojistaData?.descontoRedesSociais ?? 0
@@ -125,6 +185,82 @@ export function ExperimentarView({
     const total = redesDiscount + getSpecialDiscount(produto)
     return Math.max(0, Math.min(total, 80))
   }
+
+  const ensureLocalClientData = useCallback(() => {
+    if (typeof window === "undefined" || !lojistaId) return null
+    const stored = localStorage.getItem(`cliente_${lojistaId}`)
+    if (!stored) return null
+    try {
+      return JSON.parse(stored)
+    } catch (error) {
+      console.warn("[ExperimentarView] Não foi possível ler cliente do localStorage", error)
+      return null
+    }
+  }, [lojistaId])
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !lojistaId) return
+    const clienteData = ensureLocalClientData()
+    if (!clienteData) {
+      setShowPrivacyModal(true)
+      return
+    }
+    if (clienteData.privacy_mode) {
+      setPrivacyMode(clienteData.privacy_mode)
+    } else {
+      setShowPrivacyModal(true)
+    }
+  }, [ensureLocalClientData, lojistaId])
+
+  const handlePrivacySelection = (mode: "public" | "private") => {
+    setPrivacyMode(mode)
+    setShowPrivacyModal(false)
+    if (typeof window === "undefined" || !lojistaId) return
+    const clienteData = ensureLocalClientData() || {}
+    clienteData.privacy_mode = mode
+    try {
+      localStorage.setItem(`cliente_${lojistaId}`, JSON.stringify(clienteData))
+    } catch (error) {
+      console.warn("[ExperimentarView] Não foi possível salvar privacy_mode", error)
+    }
+  }
+
+  const handleSmartUploadSelect = useCallback(
+    (file: File) => {
+      if (!file) return
+      try {
+        const dataTransfer = typeof window !== "undefined" && "DataTransfer" in window ? new DataTransfer() : null
+        const targetInput =
+          (photoInputRef?.current as HTMLInputElement | null) ||
+          (typeof document !== "undefined" ? document.createElement("input") : null)
+
+        if (targetInput && dataTransfer) {
+          dataTransfer.items.add(file)
+          targetInput.type = "file"
+          targetInput.files = dataTransfer.files
+          const event = new Event("change", { bubbles: true })
+          if (!targetInput.isConnected && photoInputRef?.current !== targetInput) {
+            handlePhotoUpload({ target: targetInput } as React.ChangeEvent<HTMLInputElement>)
+          } else {
+            targetInput.dispatchEvent(event)
+          }
+          return
+        }
+      } catch (error) {
+        console.warn("[ExperimentarView] DataTransfer indisponível, usando fallback", error)
+      }
+
+      const fallbackInput = {
+        files: {
+          length: 1,
+          item: (index: number) => (index === 0 ? file : null),
+          0: file,
+        } as unknown as FileList,
+      } as HTMLInputElement
+      handlePhotoUpload({ target: fallbackInput } as React.ChangeEvent<HTMLInputElement>)
+    },
+    [handlePhotoUpload, photoInputRef]
+  )
 
   const hasDiscountApplied = (produto?: Produto | null) =>
     descontoAplicado && getTotalDiscount(produto) > 0
@@ -337,6 +473,15 @@ export function ExperimentarView({
   const actionButtonBase =
     "w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-white/70 shadow-lg flex items-center justify-center text-white transition hover:scale-105 focus:outline-none"
 
+  const fallbackCheckoutLink =
+    lojistaData?.salesConfig?.checkout_url ||
+    lojistaData?.salesConfig?.checkoutLink ||
+    lojistaData?.salesConfig?.ecommerceUrl ||
+    lojistaData?.salesConfig?.manual_contact ||
+    lojistaData?.salesConfig?.whatsappLink ||
+    lojistaData?.redesSociais?.whatsapp ||
+    null
+
   const renderActionButtons = (config: { allowCamera?: boolean; allowFavorites?: boolean; allowDisplay?: boolean }) => (
     <div className="absolute right-3 bottom-3 flex flex-col items-center gap-3 z-20">
       {config.allowDisplay && (
@@ -390,8 +535,9 @@ export function ExperimentarView({
   )
 
   return (
-    // Estilo geral do Modelo 2: fundo claro e texto escuro
-    <div className="relative min-h-screen w-full overflow-x-hidden overflow-y-auto text-zinc-800 antialiased">
+    <>
+      {/* Estilo geral do Modelo 2: fundo claro e texto escuro */}
+      <div className="relative min-h-screen w-full overflow-x-hidden overflow-y-auto text-zinc-800 antialiased">
       {/* Overlay de Loading Centralizado quando gerando */}
       {isGenerating && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
@@ -549,32 +695,21 @@ export function ExperimentarView({
                   </div>
                 </div>
               ) : (
-                <div className="relative inline-block w-full" style={{ position: 'relative' }}>
-                  <label
-                    htmlFor="photo-upload"
-                    className="flex cursor-pointer flex-col items-center justify-center gap-3 sm:gap-4 md:gap-5 rounded-xl sm:rounded-2xl p-6 sm:p-8 md:p-10 lg:p-12 transition hover:opacity-90 backdrop-blur relative w-full"
-                    style={{
-                      background: "rgba(30, 58, 138, 0.25)", // Azul escuro com mais transparência para mobile
-                      border: '3px double #3b82f6',
-                      borderWidth: '3px',
-                      borderStyle: 'double',
-                      borderColor: '#3b82f6',
-                    }}
-                  >
-                    <Camera className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 lg:h-20 lg:w-20 text-red-500" />
-                    <span className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white text-center px-2 sm:px-4">
-                      Faça upload da sua foto
-                    </span>
-                    <span className="text-[10px] sm:text-xs md:text-sm font-semibold text-yellow-200 text-center px-2 sm:px-4">PNG ou JPG até 10MB</span>
-                    <input
-                      ref={photoInputRef}
-                      id="photo-upload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoUpload}
-                      className="hidden"
-                    />
-                  </label>
+                <div className="relative inline-block w-full" style={{ position: "relative" }}>
+                  <div className="rounded-2xl border-4 border-double border-blue-500/70 bg-white/60 p-3 shadow-lg">
+                    <SmartUploadZone onFileSelect={handleSmartUploadSelect} isLoading={isGenerating} />
+                    {privacyMode === "private" && !isRefineMode && (
+                      <AvatarQuickSelect onSelect={onAvatarSelect} />
+                    )}
+                  </div>
+                  <input
+                    ref={photoInputRef}
+                    id="photo-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    className="hidden"
+                  />
                 </div>
               )}
             </div>
@@ -1233,9 +1368,8 @@ export function ExperimentarView({
               {/* Botão Comprar Agora */}
               <button
                 onClick={() => {
-                  const checkoutLink = lojistaData?.salesConfig?.checkoutLink || lojistaData?.salesConfig?.whatsappLink
-                  if (checkoutLink) {
-                    window.open(checkoutLink, "_blank", "noopener,noreferrer")
+                  if (fallbackCheckoutLink) {
+                    window.open(fallbackCheckoutLink, "_blank", "noopener,noreferrer")
                   }
                 }}
                 className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-bold text-white text-base hover:opacity-90 transition relative overflow-hidden"
@@ -1310,6 +1444,8 @@ export function ExperimentarView({
           </div>
         </div>
       )}
-    </div>
+      </div>
+      <PrivacyOnboardingModal open={showPrivacyModal} onSelect={handlePrivacySelection} />
+    </>
   )
 }

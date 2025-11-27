@@ -620,57 +620,61 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
     if (isVertical) {
       return (
         <div
-          className="relative flex h-screen w-full flex-col items-center justify-between gap-8 p-10 text-white overflow-hidden"
+          className="relative flex h-screen w-full flex-col items-center justify-between p-10 text-white overflow-hidden"
           style={{
             background: "linear-gradient(160deg, #312e81 0%, #5a23c8 45%, #9333ea 100%)",
           }}
         >
+          {/* Efeitos de fundo decorativos */}
           <div className="absolute inset-0 pointer-events-none opacity-30">
             <div className="absolute -top-16 left-16 h-[22rem] w-[22rem] rounded-full bg-white/10 blur-3xl" />
             <div className="absolute bottom-0 right-0 h-[26rem] w-[26rem] rounded-full bg-pink-500/30 blur-[160px]" />
           </div>
 
-          <div className="relative z-10 flex flex-col items-center gap-4 text-center">
+          {/* Header - Topo */}
+          <div className="relative z-10 flex flex-col items-center gap-4 text-center w-full">
             {lojistaData?.logoUrl && (
-              <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white/40 shadow-2xl bg-white/10 backdrop-blur-lg">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-4 border-white/40 shadow-2xl bg-white/10 backdrop-blur-lg">
                 <img src={lojistaData.logoUrl} alt={lojistaData.nome || "Logo"} className="w-full h-full object-cover" />
               </div>
             )}
-            <p className="text-sm font-semibold tracking-[0.35em] uppercase text-white/70">
-              {lojistaData?.nome || "Espelho Digital"}
-            </p>
-            <h1 className="text-5xl font-black leading-tight">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-black leading-tight">
               Ative seu <span className="text-yellow-300">Espelho Digital</span>
             </h1>
-            <p className="text-lg text-white/80 max-w-md">
+            <p className="text-base sm:text-lg md:text-xl text-white/80 max-w-md">
               A magia do <span className="text-white font-semibold">Provador Virtual</span> com IA.
             </p>
           </div>
 
-          <div className="relative z-10 flex flex-col items-center gap-6">
-            <div className="relative rounded-[40px] border border-white/20 bg-white/10 p-8 backdrop-blur-2xl shadow-[0_25px_60px_rgba(0,0,0,0.35)]">
-              <div className="absolute inset-0 rounded-[40px] border border-white/30 pointer-events-none" />
-              <div className="absolute -top-6 -right-6 bg-gradient-to-br from-purple-400 via-pink-400 to-amber-300 rounded-3xl px-5 py-2 text-sm font-semibold shadow-lg">
-                Provador Virtual IA
-              </div>
-              <div className="bg-white p-5 rounded-[32px] shadow-inner shadow-black/20">
-                <QRCodeSVG value={getQrCodeUrl()} size={380} level="L" includeMargin fgColor="#000000" bgColor="#ffffff" />
-              </div>
-              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-white/15 rounded-full px-4 py-1 text-xs font-semibold uppercase tracking-[0.4em]">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-                pronto
+          {/* Centro - QR Code (O Herói) */}
+          <div className="relative z-10 flex flex-col items-center gap-6 flex-grow justify-center">
+            <div 
+              className="relative rounded-3xl border border-white/20 bg-white/10 p-8 backdrop-blur-lg shadow-xl"
+              style={{
+                boxShadow: "0 25px 60px rgba(0,0,0,0.35), 0 0 40px rgba(255,255,255,0.1)",
+              }}
+            >
+              {/* Glow effect ao redor do QR Code */}
+              <div className="absolute -inset-4 bg-gradient-to-r from-yellow-400/20 via-pink-400/20 to-purple-400/20 rounded-3xl blur-2xl animate-pulse" />
+              
+              <div className="relative bg-white p-6 rounded-3xl shadow-inner shadow-black/20">
+                <QRCodeSVG 
+                  value={getQrCodeUrl()} 
+                  size={380} 
+                  level="L" 
+                  includeMargin 
+                  fgColor="#000000" 
+                  bgColor="#ffffff" 
+                />
               </div>
             </div>
           </div>
 
-          <div className="relative z-10 text-center max-w-2xl space-y-3">
-            <p className="text-2xl font-semibold">
-              Escaneie o QR code e conecte sua experiência ao espelho da loja.
+          {/* Footer - Base */}
+          <div className="relative z-10 text-center max-w-2xl space-y-2">
+            <p className="text-lg sm:text-xl md:text-2xl font-semibold text-white">
+              Aponte a câmera do seu celular e descubra sua próxima paixão fashion.
             </p>
-            <div className="flex items-center justify-center gap-3 text-white/70 text-lg">
-              <div className="w-2 h-2 rounded-full bg-yellow-300 animate-ping" />
-              <span>Disponível 24h • seguro • instantâneo</span>
-            </div>
           </div>
         </div>
       )
@@ -811,12 +815,13 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
 
       <div
 
-        className="relative min-h-screen w-full text-white flex flex-col gap-6 p-6 animate-fade-in overflow-hidden"
+        className="relative h-screen w-full text-white flex flex-col gap-6 p-6 animate-fade-in overflow-hidden"
 
         style={{ background: "linear-gradient(150deg, #161837 0%, #31186f 50%, #6a21bf 100%)" }}
 
       >
 
+        {/* Efeitos de fundo decorativos */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
 
           <div className="absolute -top-10 left-10 w-72 h-72 bg-white/5 rounded-full blur-3xl animate-pulse" />
@@ -827,169 +832,102 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
 
 
 
-        <div className="relative z-10 flex items-center justify-between">
+        {/* Seção Superior - O Look (Ocupa ~65% da altura) */}
+        <div className="relative z-10 flex-1 rounded-3xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur-sm shadow-2xl" style={{ flex: "0 0 65%" }}>
 
-          {lojistaData?.logoUrl && (
+          <SafeImage
 
-            <div className="flex items-center gap-3">
+            src={activeImage}
 
-              <div className="w-16 h-16 rounded-full overflow-hidden border-4 border-white/30 shadow-2xl bg-white/10 backdrop-blur-lg">
+            alt="Look gerado"
 
-                <img src={lojistaData.logoUrl} alt={lojistaData.nome || "Logo"} className="w-full h-full object-cover" />
+            className="w-full h-full object-cover"
 
-              </div>
+            containerClassName="w-full h-full"
 
-              <div>
+            loading="eager"
 
-                <p className="text-xs uppercase tracking-[0.35em] text-white/60">Display ON</p>
+          />
 
-                <p className="text-lg font-semibold">{lojistaData?.nome}</p>
+          {/* Badge no Canto Superior Direito */}
+          <div className="absolute top-6 right-6 rounded-full bg-white/15 backdrop-blur-xl border border-white/30 px-5 py-2 shadow-lg flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em]">
 
-              </div>
+            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+
+            Espelho Digital Ativo ●
+
+          </div>
+
+          {isLoadingNewImage && (
+
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-black/45 backdrop-blur-sm">
+
+              <div className="h-12 w-12 border-4 border-white/40 border-t-white rounded-full animate-spin" />
+
+              <p className="text-sm font-semibold text-white drop-shadow-lg text-center px-6">
+
+                Preparando novo look...
+
+              </p>
 
             </div>
 
           )}
 
-          <div className="flex items-center gap-2 bg-white/10 border border-white/30 rounded-full px-4 py-2 shadow-lg backdrop-blur-md">
-
-            <span className="relative flex h-3 w-3">
-
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-
-            </span>
-
-            <span className="text-xs font-semibold">Espelho Digital ativo</span>
-
-          </div>
-
         </div>
 
 
 
-        <div className="relative z-10 flex flex-col gap-6 flex-1 w-full">
+        {/* Seção Inferior - Informações (Ocupa ~35% da altura) */}
+        <div className="relative z-10 grid grid-cols-3 gap-6 w-full" style={{ flex: "0 0 35%", minHeight: "35vh" }}>
 
-          <div className="relative flex-1 rounded-[32px] overflow-hidden border border-white/20 bg-white/5 backdrop-blur-sm shadow-[0_35px_80px_rgba(0,0,0,0.45)]">
+          {/* Coluna Esquerda (Info do Produto - Ocupa 2/3) */}
+          <div className="col-span-2 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-lg shadow-2xl p-6 flex flex-col justify-center text-left">
 
-            <SafeImage
+            <p className="text-xs uppercase tracking-[0.6em] text-yellow-200/90 mb-2">Produtos Selecionados</p>
 
-              src={activeImage}
+            <h3 className="text-3xl sm:text-4xl md:text-5xl font-black leading-tight text-white">
 
-              alt="Look gerado"
+              {activeMetadata.title}
 
-              className="w-full h-full object-cover"
+            </h3>
 
-              containerClassName="w-full h-full"
+            {priceLabel && (
 
-              loading="eager"
-
-            />
-
-            <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/40 to-transparent.pointer-events-none" />
-
-            <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/40 to-transparent.pointer-events-none" />
-
-            <div className="absolute top-6 right-6 rounded-full bg-white/15 backdrop-blur-xl border border-white/30 px-5 py-2 shadow-lg flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em]">
-
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-
-              Espelho Digital Ativo
-
-            </div>
-
-            {isLoadingNewImage && (
-
-              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-black/45 backdrop-blur-sm">
-
-                <div className="h-12 w-12 border-4 border-white/40 border-t-white rounded-full animate-spin" />
-
-                <p className="text-sm font-semibold text-white drop-shadow-lg text-center px-6">
-
-                  Preparando novo look...
-
-                </p>
-
-              </div>
+              <p className="text-4xl sm:text-5xl md:text-6xl font-black text-white mt-2">{priceLabel}</p>
 
             )}
 
+            <p className="text-sm text-white/70 mt-4 max-w-2xl">
+
+              {activeMetadata.disclaimer}
+
+            </p>
+
           </div>
 
 
 
-          <div className="grid grid-cols-3 gap-6 w-full min-h-[32vh]">
+          {/* Coluna Direita (Novo Cliente - Ocupa 1/3) */}
+          <div className="col-span-1 rounded-2xl border border-white/20 bg-indigo-900/30 backdrop-blur-lg shadow-2xl p-4 flex flex-col items-center justify-center text-center gap-3">
 
-            <div className="col-span-2 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-lg shadow-2xl p-6 flex flex-col justify-center">
+            <p className="text-base uppercase tracking-[0.3em] text-white/80 font-semibold">Sua vez!</p>
 
-              <p className="text-xs uppercase tracking-[0.6em] text-yellow-200/90">Produtos Selecionados</p>
+            <div className="bg-white rounded-2xl p-3 shadow-xl">
 
-              <h3 className="text-4xl font-black mt-2 leading-tight">
-
-                {activeMetadata.title}
-
-              </h3>
-
-              {priceLabel && (
-
-                <p className="text-5xl font-black text-white mt-2">{priceLabel}</p>
-
-              )}
-
-              <p className="text-sm text-white/70 mt-4 max-w-2xl">
-
-                {activeMetadata.disclaimer}
-
-              </p>
+              <QRCodeSVG value={getQrCodeUrl()} size={140} level="L" includeMargin fgColor="#000000" bgColor="#ffffff" />
 
             </div>
 
-            <div className="col-span-1 rounded-2xl border border-white/20 bg-indigo-900/40 backdrop-blur-lg shadow-2xl p-4 flex flex-col items-center justify-center text-center gap-3">
+            <p className="text-xs sm:text-sm text-white/80 max-w-[14rem] leading-tight">
 
-              <p className="text-base uppercase tracking-[0.3em] text-white/80">Sua vez!</p>
+              Escaneie e crie seu look.
 
-              <div className="bg-white rounded-2xl p-3 shadow-xl">
-
-                <QRCodeSVG value={getQrCodeUrl()} size={180} level="L" includeMargin fgColor="#000000" bgColor="#ffffff" />
-
-              </div>
-
-              <p className="text-sm text-white/80 max-w-[14rem]">
-
-                Escaneie e crie seu look com o Espelho Digital.
-
-              </p>
-
-            </div>
+            </p>
 
           </div>
 
         </div>
-
-        <div className="flex flex-col gap-4 w-full">
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { label: "Transmitir", Icon: Cast },
-              { label: "Trocar look", Icon: RefreshCcw },
-              { label: "Favoritos", Icon: Heart },
-            ].map(({ label, Icon }) => (
-              <div
-                key={label}
-                className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-lg py-4 text-center shadow-lg"
-              >
-                <Icon className="h-5 w-5 text-white" />
-                <span className="text-xs font-semibold uppercase tracking-wide text-white/80">
-                  {label}
-                </span>
-              </div>
-            ))}
-          </div>
-          <div className="rounded-full bg-white/15 border border-white/20 px-6 py-3 text-center text-sm font-semibold uppercase tracking-[0.3em] text-white/80 shadow-lg">
-            Pronto! Continue criando para a vitrine.
-          </div>
-        </div>
-
 
       </div>
 

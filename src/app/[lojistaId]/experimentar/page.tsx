@@ -10,6 +10,7 @@ import { VideoBackground } from "@/components/VideoBackground"
 import { useStoreSession } from "@/hooks/useStoreSession"
 import { StoreConnectionIndicator } from "@/components/StoreConnectionIndicator"
 import toast from "react-hot-toast"
+import { normalizeSalesConfig } from "@/lib/utils"
 
 // Resolver backend URL
 const getBackendUrl = () => {
@@ -85,10 +86,7 @@ export default function ExperimentarPage() {
                   tiktok: perfilData.tiktok || perfilData.redesSociais?.tiktok || null,
                   whatsapp: perfilData.whatsapp || perfilData.redesSociais?.whatsapp || null,
                 },
-                salesConfig: perfilData.salesConfig || {
-                  whatsappLink: perfilData.salesWhatsapp || null,
-                  ecommerceUrl: perfilData.checkoutLink || null,
-                },
+                salesConfig: normalizeSalesConfig(perfilData.salesConfig),
                 descontoRedesSociais: perfilData.descontoRedesSociais || null,
                 descontoRedesSociaisExpiraEm: perfilData.descontoRedesSociaisExpiraEm || null,
                 displayOrientation: orientationFromUrl || perfilData.displayOrientation || "horizontal",
@@ -123,7 +121,12 @@ export default function ExperimentarPage() {
           produtosDb = await fetchProdutos(lojistaId).catch(() => [])
         }
 
-        if (lojistaDb) setLojistaData(lojistaDb)
+        if (lojistaDb) {
+          setLojistaData({
+            ...lojistaDb,
+            salesConfig: normalizeSalesConfig(lojistaDb.salesConfig),
+          })
+        }
         if (produtosDb.length > 0) {
           setCatalog(produtosDb.sort((a, b) => {
             const catA = (a.categoria || "").toLowerCase()
@@ -426,6 +429,29 @@ export default function ExperimentarPage() {
   }, [catalog, activeCategory])
 
   // Upload de foto
+  const applyPhotoUrl = (photoUrl: string) => {
+    // limpar url anterior blob
+    if (userPhotoUrl && userPhotoUrl.startsWith("blob:")) {
+      try {
+        URL.revokeObjectURL(userPhotoUrl)
+      } catch (err) {
+        console.warn("[ExperimentarPage] Erro ao revogar URL anterior:", err)
+      }
+    }
+
+    setUserPhoto(null)
+    setUserPhotoUrl(photoUrl)
+    sessionStorage.setItem(`photo_${lojistaId}`, photoUrl)
+    sessionStorage.setItem(`original_photo_${lojistaId}`, photoUrl)
+    setSelectedProducts([])
+    sessionStorage.removeItem(`products_${lojistaId}`)
+  }
+
+  const handleAvatarSelect = (avatarUrl: string) => {
+    console.log("[ExperimentarPage] Avatar selecionado para modo privado:", avatarUrl.substring(0, 50))
+    applyPhotoUrl(avatarUrl)
+  }
+
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     
@@ -474,18 +500,7 @@ export default function ExperimentarPage() {
     
     // IMPORTANTE: Atualizar estados de forma síncrona para garantir que a foto seja exibida imediatamente
     setUserPhoto(file)
-    setUserPhotoUrl(newPhotoUrl)
-    
-    // Salvar no sessionStorage para persistir
-    sessionStorage.setItem(`photo_${lojistaId}`, newPhotoUrl)
-    // SEMPRE salvar como original também (mesma regra do favorito)
-    // Isso garante que ao voltar da tela 3, a foto selecionada pelo botão da câmera seja mantida
-    sessionStorage.setItem(`original_photo_${lojistaId}`, newPhotoUrl)
-    console.log("[ExperimentarPage] ✅ Foto salva no sessionStorage como photo e original_photo (mesma regra do favorito)")
-    
-    // Limpar produtos selecionados quando trocar foto (precisa selecionar novamente)
-    setSelectedProducts([])
-    sessionStorage.removeItem(`products_${lojistaId}`)
+    applyPhotoUrl(newPhotoUrl)
     
     console.log("[ExperimentarPage] ✅✅✅ Foto carregada e exibida com sucesso:", {
       fileName: file.name,
@@ -1185,6 +1200,7 @@ export default function ExperimentarPage() {
       photoInputRef={photoInputRef}
       isDisplayConnected={isConnected && connectedStoreId === lojistaId}
       onDisplayConnect={(storeId, targetDisplay) => connect(storeId, targetDisplay)}
+      onAvatarSelect={handleAvatarSelect}
     />
     </>
   )

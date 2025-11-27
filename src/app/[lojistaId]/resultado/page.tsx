@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import { ArrowLeft, ThumbsUp, ThumbsDown, Share2, ShoppingCart, Heart, RefreshCw, Home, Instagram, Facebook, Music2, MessageCircle, X, Sparkles, ArrowLeftCircle, Check, Download } from "lucide-react"
@@ -12,7 +12,9 @@ import { StoreConnectionIndicator } from "@/components/StoreConnectionIndicator"
 import { useStoreSession } from "@/hooks/useStoreSession"
 import { CLOSET_BACKGROUND_IMAGE } from "@/lib/constants"
 import { fetchLojistaData } from "@/lib/firebaseQueries"
-import type { LojistaData, GeneratedLook } from "@/lib/types"
+import type { LojistaData, GeneratedLook, DislikeReason } from "@/lib/types"
+import { normalizeSalesConfig } from "@/lib/utils"
+import { DislikeFeedbackModal } from "@/components/modals/DislikeFeedbackModal"
 
 // Resolver backend URL
 const getBackendUrl = () => {
@@ -48,6 +50,25 @@ export default function ResultadoPage() {
   const [remixPhraseIndex, setRemixPhraseIndex] = useState(0)
   const [selectedFavoriteDetail, setSelectedFavoriteDetail] = useState<any | null>(null)
   const [showImageDetailModal, setShowImageDetailModal] = useState(false)
+  const [isDislikeModalOpen, setIsDislikeModalOpen] = useState(false)
+  const preferredWhatsappLink = useMemo(() => {
+    return (
+      lojistaData?.redesSociais?.whatsapp ||
+      lojistaData?.salesConfig?.manual_contact ||
+      lojistaData?.salesConfig?.salesWhatsapp ||
+      lojistaData?.salesConfig?.whatsappLink ||
+      null
+    )
+  }, [lojistaData])
+
+  const derivedCheckoutLink = useMemo(() => {
+    return (
+      lojistaData?.salesConfig?.checkout_url ||
+      lojistaData?.salesConfig?.checkoutLink ||
+      lojistaData?.salesConfig?.ecommerceUrl ||
+      preferredWhatsappLink
+    )
+  }, [lojistaData, preferredWhatsappLink])
 
   // Frases para remixar (preparando surpresa)
   const remixPhrases = [
@@ -94,10 +115,7 @@ export default function ResultadoPage() {
                   tiktok: perfilData.tiktok || perfilData.redesSociais?.tiktok || null,
                   whatsapp: perfilData.whatsapp || perfilData.redesSociais?.whatsapp || null,
                 },
-                salesConfig: perfilData.salesConfig || {
-                  whatsappLink: perfilData.salesWhatsapp || null,
-                  ecommerceUrl: perfilData.checkoutLink || null,
-                },
+                salesConfig: normalizeSalesConfig(perfilData.salesConfig),
                 descontoRedesSociais: perfilData.descontoRedesSociais || null,
                 descontoRedesSociaisExpiraEm: perfilData.descontoRedesSociaisExpiraEm || null,
               }
@@ -120,7 +138,10 @@ export default function ResultadoPage() {
         }
 
         if (lojistaDb) {
-          setLojistaData(lojistaDb)
+          setLojistaData({
+            ...lojistaDb,
+            salesConfig: normalizeSalesConfig(lojistaDb.salesConfig),
+          })
         } else {
           console.error("[ResultadoPage] Não foi possível carregar dados da loja")
         }
@@ -922,74 +943,85 @@ export default function ResultadoPage() {
     }
   }, [hasVoted, currentLookIndex, looks, lojistaId, lojistaData, loadFavorites, favorites])
 
-  // Handle dislike
-  const handleDislike = useCallback(async () => {
+  const openDislikeModal = useCallback(() => {
     if (hasVoted) {
       console.log("[ResultadoPage] Já votado, ignorando dislike")
       return
     }
+    setIsDislikeModalOpen(true)
+  }, [hasVoted])
 
-    const currentLook = looks[currentLookIndex]
-    if (!currentLook || !lojistaId) {
-      console.error("[ResultadoPage] Look ou lojistaId não encontrado")
-      return
-    }
-
-    setLoadingAction("dislike")
-
-    try {
-      const stored = localStorage.getItem(`cliente_${lojistaId}`)
-      const clienteData = stored ? JSON.parse(stored) : null
-      const clienteId = clienteData?.clienteId || null
-
-      // Para looks refinados sem compositionId, usar um ID único baseado na imagemUrl
-      let compositionId = currentLook.compositionId
-      let jobId = currentLook.jobId
-      
-      if (!compositionId && currentLook.imagemUrl) {
-        const imageHash = currentLook.imagemUrl.split('/').pop()?.split('?')[0] || `refined-${Date.now()}`
-        compositionId = `refined-${imageHash}`
+  const submitDislike = useCallback(
+    async (reason?: DislikeReason) => {
+      if (hasVoted) {
+        setIsDislikeModalOpen(false)
+        return
       }
 
-      console.log("[ResultadoPage] Registrando dislike:", { compositionId, jobId, clienteId })
+      const currentLook = looks[currentLookIndex]
+      if (!currentLook || !lojistaId) {
+        console.error("[ResultadoPage] Look ou lojistaId não encontrado")
+        setIsDislikeModalOpen(false)
+        return
+      }
 
-      const response = await fetch("/api/actions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lojistaId,
-          action: "dislike",
-          compositionId: compositionId || null,
-          jobId: jobId || null,
-          customerId: clienteId,
-          customerName: clienteData?.nome || null,
-          productName: currentLook.produtoNome,
-          productPrice: currentLook.produtoPreco || null,
-          // Dislike não envia imagemUrl
-        }),
-      })
+      setIsDislikeModalOpen(false)
+      setLoadingAction("dislike")
 
-      const responseData = await response.json().catch(() => ({}))
+      try {
+        const stored = localStorage.getItem(`cliente_${lojistaId}`)
+        const clienteData = stored ? JSON.parse(stored) : null
+        const clienteId = clienteData?.clienteId || null
 
-      console.log("[ResultadoPage] Resposta do servidor (dislike):", response.status, responseData)
+        let compositionId = currentLook.compositionId
+        let jobId = currentLook.jobId
 
-      if (response.ok && responseData.success !== false) {
-        setHasVoted(true)
-        setVotedType("dislike")
-        setLoadingAction(null) // Liberar o botão imediatamente
-        console.log("[ResultadoPage] Dislike salvo com sucesso")
-      } else {
-        console.error("[ResultadoPage] Erro ao registrar dislike:", response.status, responseData)
-        const errorMessage = responseData.error || "Erro ao salvar dislike. Tente novamente."
-        alert(errorMessage)
+        if (!compositionId && currentLook.imagemUrl) {
+          const imageHash = currentLook.imagemUrl.split("/").pop()?.split("?")[0] || `refined-${Date.now()}`
+          compositionId = `refined-${imageHash}`
+        }
+
+        console.log("[ResultadoPage] Registrando dislike:", { compositionId, jobId, clienteId, reason })
+
+        const response = await fetch("/api/actions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lojistaId,
+            action: "dislike",
+            compositionId: compositionId || null,
+            jobId: jobId || null,
+            customerId: clienteId,
+            customerName: clienteData?.nome || null,
+            productName: currentLook.produtoNome,
+            productPrice: currentLook.produtoPreco || null,
+            reason,
+          }),
+        })
+
+        const responseData = await response.json().catch(() => ({}))
+
+        console.log("[ResultadoPage] Resposta do servidor (dislike):", response.status, responseData)
+
+        if (response.ok && responseData.success !== false) {
+          setHasVoted(true)
+          setVotedType("dislike")
+          setLoadingAction(null)
+          console.log("[ResultadoPage] Dislike salvo com sucesso")
+        } else {
+          console.error("[ResultadoPage] Erro ao registrar dislike:", response.status, responseData)
+          const errorMessage = responseData.error || "Erro ao salvar dislike. Tente novamente."
+          alert(errorMessage)
+          setLoadingAction(null)
+        }
+      } catch (error) {
+        console.error("[ResultadoPage] Erro ao registrar dislike:", error)
+        alert("Erro ao salvar dislike. Tente novamente.")
         setLoadingAction(null)
       }
-    } catch (error) {
-      console.error("[ResultadoPage] Erro ao registrar dislike:", error)
-      alert("Erro ao salvar dislike. Tente novamente.")
-      setLoadingAction(null)
-    }
-  }, [hasVoted, currentLookIndex, looks, lojistaId])
+    },
+    [hasVoted, looks, currentLookIndex, lojistaId]
+  )
 
   // Handle share
   const handleShare = useCallback(async () => {
@@ -1040,26 +1072,22 @@ export default function ResultadoPage() {
   // Handle checkout
   const handleCheckout = useCallback(async () => {
     await registerAction("checkout")
-    const checkoutLink = lojistaData?.salesConfig?.checkoutLink || lojistaData?.salesConfig?.whatsappLink
-    if (checkoutLink) {
-      window.open(checkoutLink, "_blank", "noopener,noreferrer")
+    if (derivedCheckoutLink) {
+      window.open(derivedCheckoutLink, "_blank", "noopener,noreferrer")
     }
-  }, [lojistaData, registerAction])
+  }, [registerAction, derivedCheckoutLink])
 
   // Handle WhatsApp
   const handleWhatsApp = useCallback(() => {
-    const whatsappLink = lojistaData?.redesSociais?.whatsapp || lojistaData?.salesConfig?.whatsappLink
-    if (whatsappLink) {
-      // Se não começar com http, adicionar https://wa.me/
-      const url = whatsappLink.startsWith('http') 
-        ? whatsappLink 
-        : `https://wa.me/${whatsappLink.replace(/\D/g, '')}`
-      window.open(url, "_blank", "noopener,noreferrer")
-    }
-  }, [lojistaData])
+    if (!preferredWhatsappLink) return
+    const url = preferredWhatsappLink.startsWith("http")
+      ? preferredWhatsappLink
+      : `https://wa.me/${preferredWhatsappLink.replace(/\D/g, "")}`
+    window.open(url, "_blank", "noopener,noreferrer")
+  }, [preferredWhatsappLink])
 
   // Verificar se WhatsApp está disponível
-  const hasWhatsApp = !!(lojistaData?.redesSociais?.whatsapp || lojistaData?.salesConfig?.whatsappLink)
+  const hasWhatsApp = !!preferredWhatsappLink
 
   // Handle download - Versão simplificada e otimizada
   const handleDownload = useCallback(async () => {
@@ -1311,10 +1339,7 @@ export default function ResultadoPage() {
                   tiktok: perfilData.tiktok || perfilData.redesSociais?.tiktok || null,
                   whatsapp: perfilData.whatsapp || perfilData.redesSociais?.whatsapp || null,
                 },
-                salesConfig: perfilData.salesConfig || {
-                  whatsappLink: perfilData.salesWhatsapp || null,
-                  ecommerceUrl: perfilData.checkoutLink || null,
-                },
+                salesConfig: normalizeSalesConfig(perfilData.salesConfig),
                 descontoRedesSociais: perfilData.descontoRedesSociais || null,
                 descontoRedesSociaisExpiraEm: perfilData.descontoRedesSociaisExpiraEm || null,
               })
@@ -1580,7 +1605,7 @@ export default function ResultadoPage() {
                           e.preventDefault()
                           e.stopPropagation()
                           console.log("[ResultadoPage] Botão dislike clicado")
-                          handleDislike()
+                          openDislikeModal()
                         }} 
                         disabled={isRemixing || hasVoted || loadingAction === "dislike"}
                         className={`flex flex-1 items-center justify-center gap-2 rounded-full bg-red-600 px-6 py-2 text-white font-semibold shadow-lg transition ${
@@ -2130,6 +2155,12 @@ export default function ResultadoPage() {
           </div>
         </div>
       )}
+      <DislikeFeedbackModal
+        open={isDislikeModalOpen}
+        isSubmitting={loadingAction === "dislike"}
+        onSelect={(reason) => submitDislike(reason)}
+        onSkip={() => submitDislike()}
+      />
     </div>
   )
 }

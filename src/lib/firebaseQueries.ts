@@ -10,6 +10,7 @@ import {
 import { getFirestoreClient, isFirebaseConfigured } from "./firebase"
 import type { LojistaData, Produto } from "./types"
 import { PRODUTOS_TESTE } from "./produtosTeste"
+import { normalizeSalesConfig } from "./utils"
 
 const produtosCollectionPath = (lojistaId: string) => {
   const db = getFirestoreClient()
@@ -68,7 +69,7 @@ export async function fetchLojistaData(
             facebook: data.facebook || null,
             tiktok: data.tiktok || null,
           },
-          salesConfig: data.salesConfig || {},
+          salesConfig: normalizeSalesConfig(data.salesConfig),
           descontoRedesSociais: data.descontoRedesSociais || null,
           descontoRedesSociaisExpiraEm: data.descontoRedesSociaisExpiraEm || null,
           // appModel não é usado diretamente no frontend do modelo 2, mas está disponível se precisar
@@ -118,10 +119,7 @@ export async function fetchLojistaData(
           tiktok: data.tiktok || data.redesSociais?.tiktok || null,
           whatsapp: data.whatsapp || data.redesSociais?.whatsapp || null,
         },
-        salesConfig: data.salesConfig || {
-          whatsappLink: data.salesWhatsapp || null,
-          ecommerceUrl: data.checkoutLink || null,
-        },
+        salesConfig: normalizeSalesConfig(data.salesConfig),
         descontoRedesSociais: data.descontoRedesSociais || null,
         descontoRedesSociaisExpiraEm: data.descontoRedesSociaisExpiraEm || null,
       }

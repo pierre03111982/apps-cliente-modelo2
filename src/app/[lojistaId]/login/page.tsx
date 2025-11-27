@@ -7,6 +7,7 @@ import { FaApple, FaFacebook, FaGoogle } from "react-icons/fa"
 import { LogIn, UserPlus, Cast } from "lucide-react"
 import { fetchLojistaData } from "@/lib/firebaseQueries"
 import type { LojistaData } from "@/lib/types"
+import { normalizeSalesConfig } from "@/lib/utils"
 import { CLOSET_BACKGROUND_IMAGE } from "@/lib/constants"
 
 function LoginPageContent() {
@@ -145,10 +146,7 @@ function LoginPageContent() {
                     tiktok: perfilData.tiktok || perfilData.redesSociais?.tiktok || null,
                     whatsapp: perfilData.whatsapp || perfilData.redesSociais?.whatsapp || null,
                   },
-                  salesConfig: perfilData.salesConfig || {
-                    whatsappLink: perfilData.salesWhatsapp || null,
-                    ecommerceUrl: perfilData.checkoutLink || null,
-                  },
+                  salesConfig: normalizeSalesConfig(perfilData.salesConfig),
                   descontoRedesSociais: perfilData.descontoRedesSociais || null,
                   descontoRedesSociaisExpiraEm: perfilData.descontoRedesSociaisExpiraEm || null,
                 })

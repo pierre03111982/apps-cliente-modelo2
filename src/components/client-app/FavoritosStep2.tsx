@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Heart, X, ShoppingCart, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/Button"
+import type { SalesConfig } from "@/lib/types"
 
 type Favorito = {
   id: string
@@ -16,12 +17,7 @@ type Favorito = {
 type FavoritosStep2Props = {
   lojistaId: string
   clienteId?: string | null
-  salesConfig?: {
-    channel?: string
-    salesWhatsapp?: string
-    checkoutLink?: string
-    whatsappLink?: string
-  }
+  salesConfig?: SalesConfig
   onClose?: () => void
 }
 
@@ -74,15 +70,35 @@ export function FavoritosStep2({
       : "Consultar valor"
   }
 
-  const handleComprar = (favorito: Favorito) => {
-    if (salesConfig?.channel === "checkout" && salesConfig?.checkoutLink) {
-      window.open(salesConfig.checkoutLink, "_blank", "noopener,noreferrer")
-    } else if (salesConfig?.whatsappLink) {
-      window.open(salesConfig.whatsappLink, "_blank", "noopener,noreferrer")
-    } else if (salesConfig?.salesWhatsapp) {
-      const whatsapp = salesConfig.salesWhatsapp.replace(/\D/g, "")
-      window.open(`https://wa.me/${whatsapp}`, "_blank", "noopener,noreferrer")
+  const handleComprar = () => {
+    if (!salesConfig) {
+      alert("Canal de venda não configurado para esta loja.")
+      return
     }
+
+    const checkoutUrl =
+      salesConfig.checkout_url ||
+      salesConfig.checkoutLink ||
+      salesConfig.ecommerceUrl
+    const manualWhatsapp =
+      salesConfig.manual_contact ||
+      salesConfig.salesWhatsapp ||
+      salesConfig.whatsappLink
+
+    if (checkoutUrl) {
+      window.open(checkoutUrl, "_blank", "noopener,noreferrer")
+      return
+    }
+
+    if (manualWhatsapp) {
+      const normalized = manualWhatsapp.startsWith("http")
+        ? manualWhatsapp
+        : `https://wa.me/${manualWhatsapp.replace(/\D/g, "")}`
+      window.open(normalized, "_blank", "noopener,noreferrer")
+      return
+    }
+
+    alert("Canal de venda não configurado para esta loja.")
   }
 
   if (loading) {
@@ -139,7 +155,7 @@ export function FavoritosStep2({
             <Button
               size="sm"
               className="w-full bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 shadow-lg"
-              onClick={() => handleComprar(ultimoFavorito)}
+              onClick={handleComprar}
             >
               <ShoppingCart className="mr-2 h-4 w-4" />
               Comprar
@@ -198,7 +214,7 @@ export function FavoritosStep2({
                     <Button
                       size="sm"
                       className="w-full bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600"
-                      onClick={() => handleComprar(favorito)}
+                      onClick={handleComprar}
                     >
                       <ShoppingCart className="mr-2 h-4 w-4" />
                       Comprar

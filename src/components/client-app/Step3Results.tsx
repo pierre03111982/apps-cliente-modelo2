@@ -17,6 +17,7 @@ import {
   Download,
 } from "lucide-react"
 import type { GeneratedLook, SalesConfig, SocialLinks } from "@/lib/types"
+import { ShoppingCartModal, CartItem } from "@/components/modals/ShoppingCartModal"
 
 type Step3Props = {
   lojistaId: string
@@ -120,6 +121,10 @@ export function Step3Results({
   const [selectedFavorite, setSelectedFavorite] = useState<GeneratedLook | null>(null)
   const [favoriteLooksFromBackend, setFavoriteLooksFromBackend] = useState<GeneratedLook[]>([])
   const [loadingFavorites, setLoadingFavorites] = useState(false)
+  const [cartModalOpen, setCartModalOpen] = useState(false)
+  const [cartSelection, setCartSelection] = useState<GeneratedLook | null>(null)
+  const supportsCart =
+    Boolean(salesConfig?.enabled) && salesConfig?.payment_gateway === "mercadopago"
   
   // Resetar estados de voto quando novos looks forem gerados
   useEffect(() => {
@@ -243,6 +248,13 @@ export function Step3Results({
     [likedMap, lojistaId, resolvedLooks, clienteId, clienteNome, loadFavoritesFromBackend, hasVoted]
   )
 
+  const preferredWhatsappLink =
+    salesConfig.manual_contact ||
+    salesConfig.salesWhatsapp ||
+    salesConfig.whatsappLink ||
+    redesSociais.whatsapp ||
+    "https://wa.me/"
+
   const handleShare = useCallback(
     async (look: GeneratedLook, mode: "whatsapp" | "share") => {
       setLoadingAction(`${mode}-${look.id}`)
@@ -261,8 +273,7 @@ export function Step3Results({
       })
 
       if (mode === "whatsapp") {
-        const whatsappLink = salesConfig.whatsappLink ?? "https://wa.me/"
-        window.open(whatsappLink, "_blank", "noopener,noreferrer")
+        window.open(preferredWhatsappLink, "_blank", "noopener,noreferrer")
       } else {
         // Criar link de compartilhamento com tracking (usar proxy interno)
         try {
@@ -383,7 +394,7 @@ export function Step3Results({
       setTimeout(() => setShareMessage(null), 3500)
       setLoadingAction(null)
     },
-    [lojistaId, lojistaNome, salesConfig.whatsappLink, clienteId, clienteNome, clienteWhatsapp]
+    [lojistaId, lojistaNome, preferredWhatsappLink, clienteId, clienteNome, clienteWhatsapp]
   )
 
   const handleDislike = useCallback(async (look: GeneratedLook) => {
@@ -429,6 +440,12 @@ export function Step3Results({
 
   const handleCheckout = useCallback(
     async (look: GeneratedLook) => {
+      if (supportsCart) {
+        setCartSelection(look)
+        setCartModalOpen(true)
+        return
+      }
+
       setLoadingAction(`checkout-${look.id}`)
       const success = await registerAction({
         lojistaId,
@@ -442,14 +459,43 @@ export function Step3Results({
         customerName: look.customerName ?? undefined,
       })
 
-      const checkoutLink = salesConfig.ecommerceUrl ?? salesConfig.whatsappLink
+      const checkoutLink =
+        salesConfig.checkout_url ||
+        salesConfig.checkoutLink ||
+        salesConfig.ecommerceUrl ||
+        salesConfig.manual_contact ||
+        salesConfig.whatsappLink ||
+        preferredWhatsappLink
+
       if (success && checkoutLink) {
         window.open(checkoutLink, "_blank", "noopener,noreferrer")
       }
       setLoadingAction(null)
     },
-    [lojistaId, salesConfig.ecommerceUrl, salesConfig.whatsappLink]
+    [
+      lojistaId,
+      salesConfig.checkout_url,
+      salesConfig.checkoutLink,
+      salesConfig.ecommerceUrl,
+      salesConfig.manual_contact,
+      salesConfig.whatsappLink,
+      preferredWhatsappLink,
+      supportsCart,
+    ]
   )
+
+  const cartItems = useMemo<CartItem[]>(() => {
+    if (!cartSelection) return []
+    return [
+      {
+        id: cartSelection.id,
+        name: cartSelection.produtoNome || cartSelection.titulo,
+        price: cartSelection.produtoPreco ?? 0,
+        quantity: 1,
+        imageUrl: cartSelection.imagemUrl,
+      },
+    ]
+  }, [cartSelection])
 
   return (
     <div className="space-y-10">
@@ -622,20 +668,25 @@ export function Step3Results({
                       onClick={() => handleCheckout(look)}
                     >
                       <ShoppingCart className="h-5 w-5" />
-                      Comprar agora
+                      {supportsCart ? "Finalizar compra" : "Comprar agora"}
                     </Button>
-                    <Button
-                      size="lg"
-                      className="w-full bg-gray-200 border-2 border-gray-300 shadow-lg shadow-black/40 hover:bg-gray-300 text-blue-600 font-semibold mt-3"
-                      disabled={loadingAction === `cart-${look.id}`}
-                      onClick={() => handleCheckout(look)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <ShoppingCart className="h-5 w-5" />
-                        <Plus className="h-4 w-4" />
-                      </div>
-                      Adicionar no carrinho
-                    </Button>
+                    {supportsCart && (
+                      <Button
+                        size="lg"
+                        type="button"
+                        className="w-full bg-gray-200 border-2 border-gray-300 shadow-lg shadow-black/40 hover:bg-gray-300 text-blue-600 font-semibold mt-3"
+                        onClick={() => {
+                          setCartSelection(look)
+                          setCartModalOpen(true)
+                        }}
+                      >
+                        <div className="flex items-center gap-2">
+                          <ShoppingCart className="h-5 w-5" />
+                          <Plus className="h-4 w-4" />
+                        </div>
+                        Adicionar no carrinho
+                      </Button>
+                    )}
                   </>
                 )}
               </article>
@@ -860,6 +911,13 @@ export function Step3Results({
           </div>
         </div>
       )}
+      <ShoppingCartModal
+        open={cartModalOpen}
+        onClose={() => setCartModalOpen(false)}
+        items={cartItems}
+        lojistaId={lojistaId}
+        salesConfig={salesConfig}
+      />
     </div>
   )
 }

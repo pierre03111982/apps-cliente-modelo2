@@ -1,4 +1,4 @@
-export type SocialLinks = {
+﻿export type SocialLinks = {
   instagram?: string
   tiktok?: string
   facebook?: string
@@ -6,10 +6,26 @@ export type SocialLinks = {
   [key: string]: string | undefined
 }
 
+export type SalesIntegrations = {
+  melhor_envio_token?: string
+  mercadopago_public_key?: string
+  mercadopago_access_token?: string
+}
+
 export type SalesConfig = {
+  enabled: boolean
+  payment_gateway: "mercadopago" | "manual_whatsapp"
+  shipping_provider: "melhor_envio" | "fixed_price" | "none"
+  origin_zip?: string | null
+  manual_contact?: string | null
+  fixed_shipping_price?: number | null
+  checkout_url?: string | null
+  integrations?: SalesIntegrations
+  // Campos legados / fallback
   whatsappLink?: string
   ecommerceUrl?: string
-  [key: string]: string | undefined
+  salesWhatsapp?: string
+  checkoutLink?: string
 }
 
 export type Produto = {
@@ -26,6 +42,14 @@ export type Produto = {
   estoque?: number | null
   obs?: string
   descontoProduto?: number | null
+  dimensions?: {
+    weight_kg: number
+    height_cm: number
+    width_cm: number
+    depth_cm: number
+  }
+  sku?: string
+  stock_quantity?: number
 }
 
 export type GeneratedLook = {
@@ -40,7 +64,37 @@ export type GeneratedLook = {
   jobId?: string | null
   downloadUrl?: string | null
   customerName?: string | null
-  desativado?: boolean // Flag para identificar looks desativados
+  desativado?: boolean
+}
+
+export interface LojistaFinancials {
+  credits_balance: number
+  overdraft_limit: number
+  plan_tier: "micro" | "growth" | "enterprise"
+  billing_status: "active" | "frozen"
+}
+
+export type DislikeReason =
+  | "garment_style"
+  | "fit_issue"
+  | "ai_distortion"
+  | "other"
+
+export interface UserAction {
+  id: string
+  user_id: string
+  lojista_id: string
+  product_id: string
+  composition_id: string
+  type: "like" | "dislike"
+  reason?: DislikeReason
+  timestamp: number
+}
+
+export interface StoreTheme {
+  layout_mode: "minimal" | "bold" | "classic"
+  primary_color: string
+  logo_url: string
 }
 
 export type LojistaData = {
@@ -54,5 +108,22 @@ export type LojistaData = {
   descontoRedesSociaisExpiraEm?: string | null
   displayOrientation?: "horizontal" | "vertical" | null
   produtos?: Produto[]
+  financials?: LojistaFinancials
+  theme?: StoreTheme
+  is_sandbox_mode?: boolean
 }
 
+export interface UserProfile {
+  uid: string
+  phone_number: string
+  privacy_mode: "public" | "private"
+  marketing_consent: boolean
+  preferred_avatar_id: string
+  stats: {
+    last_active: number
+    total_generations: number
+    liked_products: string[]
+    disliked_products_style: string[]
+    disliked_products_fit: string[]
+  }
+}

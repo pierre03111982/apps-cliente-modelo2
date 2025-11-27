@@ -1,0 +1,37 @@
+﻿rules_version = "2";
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidAction() {
+      return request.resource.data.type == "like" ||
+        (request.resource.data.type == "dislike" &&
+          request.resource.data.reason in ["garment_style", "fit_issue", "ai_distortion", "other"]);
+    }
+
+    match /lojistas/{lojistaId} {
+      allow read: if true;
+      allow create, update, delete: if false;
+    }
+
+    match /actions/{actionId} {
+      allow create: if isSignedIn()
+        && request.resource.data.user_id == request.auth.uid
+        && isValidAction();
+      allow read: if isSignedIn() && resource.data.user_id == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn()
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(["privacy_mode"])
+        && request.resource.data.privacy_mode in ["public", "private"];
+      allow delete: if false;
+    }
+  }
+}

@@ -1,13 +1,35 @@
+import { consumeGenerationCredit } from "@/lib/financials";
 import { NextRequest, NextResponse } from "next/server";
 
 const DEFAULT_LOCAL_BACKEND = "http://localhost:3000";
 
 // Forçar renderização dinâmica para evitar erro de build estático
 export const dynamic = 'force-dynamic';
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+
+    if (!body?.lojistaId) {
+      return NextResponse.json(
+        { error: "lojistaId é obrigatório para gerar looks" },
+        { status: 400 }
+      );
+    }
+
+    const creditValidation = await consumeGenerationCredit(body.lojistaId);
+    if (!creditValidation.allowed) {
+      console.warn("[modelo-2/api/generate-looks] Créditos bloqueados:", {
+        lojistaId: body.lojistaId,
+        message: creditValidation.message,
+      });
+      return NextResponse.json(
+        { error: creditValidation.message },
+        { status: creditValidation.status }
+      );
+    }
+
     const backendUrl =
       process.env.NEXT_PUBLIC_BACKEND_URL ||
       process.env.NEXT_PUBLIC_PAINELADM_URL ||
@@ -19,6 +41,8 @@ export async function POST(request: NextRequest) {
       productIdsCount: body.productIds?.length || 0,
       lojistaId: body.lojistaId,
       customerId: body.customerId,
+      sandbox: creditValidation.sandbox ?? false,
+      remainingCredits: creditValidation.remainingBalance,
     });
 
     const controller = new AbortController();
