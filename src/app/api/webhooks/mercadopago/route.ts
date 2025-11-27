@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getFirestoreAdmin } from "@/lib/firebaseAdmin"
-import mercadopago from "mercadopago"
+import { MercadoPagoConfig, Payment } from "mercadopago"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -47,14 +47,15 @@ export async function POST(request: NextRequest) {
 
         if (accessToken) {
           // Configurar SDK do Mercado Pago
-          mercadopago.configurations.setAccessToken(accessToken)
+          const client = new MercadoPagoConfig({ accessToken })
+          const paymentClient = new Payment(client)
 
           try {
             // Buscar informações do pagamento
-            const payment = await mercadopago.payment.findById(parseInt(paymentId))
+            const payment = await paymentClient.get({ id: parseInt(paymentId) })
 
-            if (payment.status === 200 && payment.body) {
-              const paymentData = payment.body
+            if (payment) {
+              const paymentData = payment
               const status = paymentData.status
 
               console.log("[webhooks/mercadopago] Status do pagamento:", {
@@ -140,4 +141,5 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({ status: "ok", service: "mercadopago-webhook" })
 }
+
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getFirestoreAdmin } from "@/lib/firebaseAdmin"
 import type { SalesConfig, CartItem } from "@/lib/types"
-import mercadopago from "mercadopago"
+import { MercadoPagoConfig, Preference } from "mercadopago"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -15,7 +15,8 @@ async function createMercadoPagoPreference(
   destinationZip?: string
 ) {
   // Configurar SDK do Mercado Pago
-  mercadopago.configurations.setAccessToken(accessToken)
+  const client = new MercadoPagoConfig({ accessToken })
+  const preference = new Preference(client)
 
   // Calcular total
   const subtotal = items.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0)
@@ -70,13 +71,13 @@ async function createMercadoPagoPreference(
   }
 
   try {
-    const response = await mercadopago.preferences.create(preferenceData)
+    const response = await preference.create({ body: preferenceData })
     
     return {
-      preference_id: response.body.id,
-      checkout_url: response.body.init_point || response.body.sandbox_init_point || "",
-      init_point: response.body.init_point || "",
-      sandbox_init_point: response.body.sandbox_init_point || "",
+      preference_id: response.id || "",
+      checkout_url: response.init_point || response.sandbox_init_point || "",
+      init_point: response.init_point || "",
+      sandbox_init_point: response.sandbox_init_point || "",
     }
   } catch (error: any) {
     console.error("[createMercadoPagoPreference] Erro ao criar preference:", error)

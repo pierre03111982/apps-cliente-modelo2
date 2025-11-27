@@ -28,6 +28,14 @@ export type SalesConfig = {
   checkoutLink?: string
 }
 
+export type CartItem = {
+  id: string
+  name: string
+  price: number
+  quantity: number
+  imageUrl?: string | null
+}
+
 export type Produto = {
   id: string
   nome: string
