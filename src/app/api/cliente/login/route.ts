@@ -73,16 +73,32 @@ export async function POST(request: NextRequest) {
     }
 
     let data: any;
+    let responseText: string = '';
     try {
-      const text = await res.text();
-      if (!text) {
-        throw new Error("Resposta vazia do servidor");
+      responseText = await res.text();
+      if (!responseText) {
+        console.error("[Cliente Login] Resposta vazia do servidor. Status:", res.status);
+        return NextResponse.json(
+          { error: "Resposta vazia do servidor. Verifique se o painel está rodando corretamente." },
+          { status: 500 }
+        );
       }
-      data = JSON.parse(text);
-    } catch (parseError) {
+      
+      // Verificar se a resposta é HTML (erro do Next.js)
+      if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
+        console.error("[Cliente Login] Servidor retornou HTML em vez de JSON. Status:", res.status);
+        return NextResponse.json(
+          { error: "Erro interno do servidor. Verifique os logs do painel." },
+          { status: 500 }
+        );
+      }
+      
+      data = JSON.parse(responseText);
+    } catch (parseError: any) {
       console.error("[Cliente Login] Erro ao parsear resposta:", parseError);
+      console.error("[Cliente Login] Resposta recebida:", responseText?.substring(0, 200));
       return NextResponse.json(
-        { error: "Resposta inválida do servidor" },
+        { error: `Resposta inválida do servidor: ${parseError.message}` },
         { status: 500 }
       );
     }
