@@ -873,7 +873,7 @@ export function Step3Results({
                     </Button>
                   </div>
                 </div>
-                <div className="grid gap-6 md:grid-cols-[1.3fr_0.7fr]">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-[1.3fr_0.7fr]">
                   <div className="overflow-hidden rounded-2xl border border-slate-700 bg-black shadow-xl shadow-black/60">
                     {selectedFavorite.imagemUrl && (
                       <Image

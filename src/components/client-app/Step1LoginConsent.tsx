@@ -273,7 +273,7 @@ export function Step1LoginConsent({
         </p>
       </div>
 
-      <div className="grid gap-8 md:grid-cols-[1.1fr_0.9fr]">
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-[1.1fr_0.9fr]">
         <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-blue-800/90 via-indigo-700/90 to-purple-500/90 p-8 shadow-xl shadow-black/30">
           {/* Tabs para alternar entre Login e Cadastro */}
           <div className="flex gap-2 mb-6">

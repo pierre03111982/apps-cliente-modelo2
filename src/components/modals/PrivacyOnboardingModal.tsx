@@ -47,16 +47,16 @@ export function PrivacyOnboardingModal({ open, onSelect, onClose }: PrivacyOnboa
           <button
             aria-label="Fechar"
             onClick={onClose}
-            className="absolute right-4 top-4 rounded-full border border-zinc-200 px-3 py-1 text-sm font-medium text-zinc-500 hover:text-zinc-800"
+            className="absolute right-4 top-4 rounded-full border border-slate-200 px-3 py-1 text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition"
           >
             Fechar
           </button>
         )}
 
         <div className="space-y-2 text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-zinc-500">Sua experiência</p>
-          <h2 className="text-2xl font-bold text-zinc-900">Como você quer experimentar a loja?</h2>
-          <p className="text-sm text-zinc-500">
+          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-slate-500">Sua experiência</p>
+          <h2 className="text-2xl font-bold text-slate-900">Como você quer experimentar a loja?</h2>
+          <p className="text-sm text-slate-600">
             Você pode trocar de modo depois, mas precisamos começar com uma preferência.
           </p>
         </div>
@@ -68,26 +68,28 @@ export function PrivacyOnboardingModal({ open, onSelect, onClose }: PrivacyOnboa
               <button
                 key={option.mode}
                 onClick={() => onSelect(option.mode)}
-                className="group flex h-full flex-col rounded-2xl border border-zinc-200 bg-white/90 p-5 text-left shadow-lg transition hover:-translate-y-0.5 hover:border-zinc-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500"
+                className="group flex h-full flex-row items-start gap-4 rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500"
               >
-                <div className={`rounded-2xl bg-gradient-to-r ${option.accent} p-4 text-white shadow-lg`}>
-                  <Icon className="h-8 w-8" />
+                {/* Icon with fixed width */}
+                <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-r ${option.accent} text-white shadow-md`}>
+                  <Icon className="h-6 w-6" />
                 </div>
-                <div className="mt-4 flex-1 space-y-2">
-                  <h3 className="text-lg font-semibold text-zinc-900">{option.title}</h3>
-                  <p className="text-sm text-zinc-500">{option.description}</p>
-                  <ul className="mt-3 space-y-1.5 text-sm text-zinc-600">
+                {/* Text content - flex-1 and text-left */}
+                <div className="flex-1 space-y-2 text-left">
+                  <h3 className="text-lg font-semibold text-slate-800">{option.title}</h3>
+                  <p className="text-sm text-slate-600">{option.description}</p>
+                  <ul className="mt-3 space-y-1.5 text-sm text-slate-600">
                     {option.highlights.map((highlight) => (
                       <li key={highlight} className="flex items-start gap-2">
-                        <span className="mt-1 h-1.5 w-1.5 rounded-full bg-zinc-400" />
-                        {highlight}
+                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
+                        <span>{highlight}</span>
                       </li>
                     ))}
                   </ul>
+                  <Button className="mt-4 w-full justify-center rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 text-sm font-semibold text-white shadow-md transition group-hover:from-indigo-500 group-hover:to-indigo-600">
+                    Escolher {option.title}
+                  </Button>
                 </div>
-                <Button className="mt-4 w-full justify-center rounded-xl bg-indigo-600 text-sm font-semibold text-white shadow-md transition group-hover:bg-indigo-500">
-                  Escolher {option.title}
-                </Button>
               </button>
             )
           })}
@@ -96,4 +98,5 @@ export function PrivacyOnboardingModal({ open, onSelect, onClose }: PrivacyOnboa
     </div>
   )
 }
+
 
