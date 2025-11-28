@@ -481,11 +481,11 @@ export function ExperimentarView({
 
   return (
     <>
-      {/* Estilo geral do Modelo 2: fundo claro e texto escuro */}
-      <div className="relative min-h-screen w-full overflow-x-hidden overflow-y-auto text-zinc-800 antialiased">
+      {/* PHASE 8: Solid & Clean - No Glass/Blur */}
+      <div className="relative min-h-screen w-full overflow-x-hidden overflow-y-auto text-gray-900 dark:text-white antialiased bg-[#F8F9FC] dark:bg-[#0F172A]">
       {/* Overlay de Loading Centralizado quando gerando */}
       {isGenerating && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 dark:bg-black/90 animate-fade-in">
           <div className="flex flex-col items-center justify-center gap-6 animate-scale-in">
             <div className="relative">
               <LoadingSpinner size={120} />
@@ -512,12 +512,7 @@ export function ExperimentarView({
           {/* Caixa com Logo e Nome da Loja - Mobile Otimizado */}
           <div>
             <div
-              className="rounded-lg sm:rounded-xl border-2 border-white/30 backdrop-blur-md px-3 py-2 sm:px-4 sm:py-2 shadow-xl flex items-center justify-center gap-2 sm:gap-3 relative"
-              style={{
-                background: "rgba(147, 51, 234, 0.8)",
-                backdropFilter: "blur(12px)",
-                WebkitBackdropFilter: "blur(12px)",
-              }}
+              className="rounded-lg sm:rounded-xl border-2 border-purple-500 dark:border-purple-400 bg-purple-600 dark:bg-purple-700 px-3 py-2 sm:px-4 sm:py-2 shadow-xl flex items-center justify-center gap-2 sm:gap-3 relative"
             >
               <button
                 onClick={() => {
@@ -564,19 +559,8 @@ export function ExperimentarView({
               {userPhotoUrl && !isRefineMode ? (
                 // Exibir foto quando disponível
                 <div className="relative inline-block w-full" style={{ position: 'relative' }}>
-                  <div className="relative rounded-2xl p-2 shadow-lg bg-white/50 inline-block w-full" style={{ 
-                    border: '4px double #3b82f6',
-                    borderWidth: '4px',
-                    borderStyle: 'double',
-                    borderColor: '#3b82f6',
-                    position: 'relative'
-                  }}>
-                    <div className="relative rounded-xl p-1 inline-block w-full" style={{ 
-                      border: '4px double #60a5fa',
-                      borderWidth: '4px',
-                      borderStyle: 'double',
-                      borderColor: '#60a5fa',
-                      position: 'relative',
+                  <div className="relative rounded-2xl p-2 shadow-md border-2 border-blue-500 dark:border-blue-400 bg-white dark:bg-[#1E293B] inline-block w-full">
+                    <div className="relative rounded-xl p-1 inline-block w-full border-2 border-blue-400 dark:border-blue-500 bg-gray-50 dark:bg-slate-800" style={{ 
                       minHeight: '200px',
                       display: 'flex',
                       alignItems: 'center',
@@ -610,20 +594,9 @@ export function ExperimentarView({
                   />
                 </div>
               ) : isRefineMode ? (
-                <div className="relative inline-block w-full" style={{ position: 'relative' }}>
-                  <div className="relative rounded-2xl p-2 shadow-lg bg-white/50 inline-block w-full" style={{ 
-                    border: '4px double #3b82f6',
-                    borderWidth: '4px',
-                    borderStyle: 'double',
-                    borderColor: '#3b82f6',
-                    position: 'relative'
-                  }}>
-                    <div className="relative rounded-xl p-1 inline-block w-full" style={{ 
-                      border: '4px double #60a5fa',
-                      borderWidth: '4px',
-                      borderStyle: 'double',
-                      borderColor: '#60a5fa',
-                      position: 'relative',
+                <div className="relative inline-block w-full">
+                  <div className="relative rounded-2xl p-2 shadow-md border-2 border-blue-500 dark:border-blue-400 bg-white dark:bg-[#1E293B] inline-block w-full">
+                    <div className="relative rounded-xl p-1 inline-block w-full border-2 border-blue-400 dark:border-blue-500 bg-gray-50 dark:bg-slate-800" style={{ 
                       aspectRatio: 'auto'
                     }}>
                       {refineBaseImageUrl && (
@@ -641,7 +614,7 @@ export function ExperimentarView({
                 </div>
               ) : (
                 <div className="relative inline-block w-full" style={{ position: "relative" }}>
-                  <div className="rounded-2xl border-4 border-double border-blue-500/70 bg-white/60 p-3 shadow-lg">
+                  <div className="rounded-2xl border-2 border-blue-500 dark:border-blue-400 bg-white dark:bg-[#1E293B] p-3 shadow-md">
                     <SmartUploadZone onFileSelect={handleSmartUploadSelect} isLoading={isGenerating} />
                     {privacyMode === "private" && !isRefineMode && (
                       <AvatarSelector onSelect={handleSmartUploadSelect} />
@@ -662,14 +635,10 @@ export function ExperimentarView({
             {/* Área: Personalize o seu Look */}
             {userPhotoUrl && (
               <div
-                className="w-full sm:flex-1 self-stretch rounded-xl border-2 border-white/30 backdrop-blur p-3 sm:p-4 md:p-5 shadow-xl flex flex-col min-h-0 sm:max-w-[48%] md:max-w-[42%]"
-                style={{
-                  background:
-                    "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
-                }}
+                className="w-full sm:flex-1 self-stretch rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-[#1E293B] p-3 sm:p-4 md:p-5 shadow-md flex flex-col min-h-0 sm:max-w-[48%] md:max-w-[42%]"
               >
                 <div className="mb-3 sm:mb-4 shrink-0">
-                  <div className="rounded-lg border-2 border-white/50 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 p-2 sm:p-3 shadow-lg">
+                  <div className="rounded-lg border-2 border-purple-500 dark:border-purple-400 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 p-2 sm:p-3 shadow-lg">
                     <h2 className="text-center text-[10px] sm:text-xs md:text-sm font-black text-white uppercase tracking-wide" style={{ fontFamily: 'Inter, sans-serif', textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}>
                       Provador virtual com IA
                     </h2>
@@ -680,23 +649,23 @@ export function ExperimentarView({
                   <div className="flex flex-col gap-3 shrink-0">
                     {/* Passos com texto branco */}
                     <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-500/80 text-sm font-bold text-white shadow-lg">1</div>
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-500 dark:bg-teal-600 text-sm font-bold text-white shadow-lg">1</div>
                       <div className="flex flex-1 flex-col">
                         <span className="text-xs md:text-sm font-semibold text-white">Carregue sua Foto</span>
                         {userPhotoUrl && (<div className="mt-1 h-1 w-full rounded-full bg-green-500"></div>)}
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-lg ${selectedProducts.length > 0 ? 'bg-teal-500/80' : 'bg-zinc-300'}`}>2</div>
+                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-lg ${selectedProducts.length > 0 ? 'bg-teal-500 dark:bg-teal-600' : 'bg-gray-300 dark:bg-gray-600'}`}>2</div>
                       <div className="flex flex-1 flex-col">
-                        <span className="text-xs md:text-sm font-semibold text-white">Escolha um Produto</span>
+                        <span className="text-xs md:text-sm font-semibold text-gray-900 dark:text-white">Escolha um Produto</span>
                         {selectedProducts.length > 0 && (<div className="mt-1 h-1 w-full rounded-full bg-green-500"></div>)}
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-lg ${userPhotoUrl && selectedProducts.length > 0 ? 'bg-teal-500/80' : 'bg-zinc-300'}`}>3</div>
+                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-lg ${userPhotoUrl && selectedProducts.length > 0 ? 'bg-teal-500 dark:bg-teal-600' : 'bg-gray-300 dark:bg-gray-600'}`}>3</div>
                       <div className="flex flex-1 flex-col">
-                        <span className="text-xs md:text-sm font-semibold text-white">Crie o seu Look</span>
+                        <span className="text-xs md:text-sm font-semibold text-gray-900 dark:text-white">Crie o seu Look</span>
                         {userPhotoUrl && selectedProducts.length > 0 && (<div className="mt-1 h-1 w-full rounded-full bg-green-500"></div>)}
                       </div>
                     </div>
@@ -709,11 +678,7 @@ export function ExperimentarView({
           {/* Caixa com Produtos Selecionados */}
           {userPhotoUrl && selectedProducts.length > 0 && (
             <div
-              className="rounded-xl border-2 border-white/30 backdrop-blur p-2 sm:p-2.5 shadow-xl w-full sm:w-[90%] md:w-[80%] lg:w-[70%] mx-auto"
-              style={{
-                background:
-                  "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
-              }}
+              className="rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-[#1E293B] p-2 sm:p-2.5 shadow-md w-full sm:w-[90%] md:w-[80%] lg:w-[70%] mx-auto"
             >
               <h3 className="mb-2 text-center text-xs sm:text-sm font-bold text-white">
                 Produtos Selecionados
@@ -789,11 +754,7 @@ export function ExperimentarView({
           {/* Aviso sobre seleção de produtos */}
           {userPhotoUrl && (
             <div
-              className="rounded-xl border-2 border-white/30 backdrop-blur p-4 shadow-xl"
-              style={{
-                background:
-                  "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
-              }}
+              className="rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-[#1E293B] p-4 shadow-md"
             >
               {isRefineMode ? (
                 <p className="text-xs font-medium text-white text-center">
@@ -809,11 +770,7 @@ export function ExperimentarView({
 
           {/* Caixa de Redes Sociais e Desconto - Mobile Otimizado */}
           <div
-            className="rounded-lg sm:rounded-xl border-2 border-white/30 backdrop-blur px-4 sm:px-5 md:px-6 py-3 sm:py-4 md:py-5 shadow-lg"
-            style={{
-              background:
-                "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
-            }}
+            className="rounded-lg sm:rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-[#1E293B] px-4 sm:px-5 md:px-6 py-3 sm:py-4 md:py-5 shadow-md"
           >
             <div className="flex flex-col items-center gap-3 sm:gap-4 md:gap-5">
               <div className="rounded-lg sm:rounded-md border-2 border-white/40 bg-red-700 px-3 sm:px-4 py-2 sm:py-2 md:py-2.5 w-full">
@@ -848,11 +805,7 @@ export function ExperimentarView({
 
           {/* Card Principal */}
           <div
-            className="rounded-2xl sm:rounded-3xl border-2 border-white/30 backdrop-blur p-4 sm:p-6 md:p-8 shadow-2xl"
-            style={{
-              background:
-                "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
-            }}
+            className="rounded-2xl sm:rounded-3xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-[#1E293B] p-4 sm:p-6 md:p-8 shadow-md"
           >
             {/* Abas de Categoria */}
             <div className="mb-4 sm:mb-5 md:mb-6 overflow-x-auto pb-2 -mx-1 sm:-mx-2 md:mx-0">
@@ -1008,13 +961,13 @@ export function ExperimentarView({
       )}
 
       {/* Mensagem de erro */}
-      {generationError && (<div className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-lg border-2 border-red-500/50 bg-red-500/10 px-4 py-3 backdrop-blur"><p className="text-sm font-medium text-red-200">{generationError}</p></div>)}
+      {generationError && (<div className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-lg border-2 border-red-500 dark:border-red-400 bg-red-50 dark:bg-red-900/30 px-4 py-3 shadow-md"><p className="text-sm font-medium text-red-700 dark:text-red-200">{generationError}</p></div>)}
 
       {/* Modal de Detalhes do Produto */}
       {selectedProductDetail && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-8 sm:pt-12 backdrop-blur-sm overflow-y-auto" onClick={() => setSelectedProductDetail(null)}>
-          <div 
-            className="w-full max-w-2xl rounded-xl border-2 border-white/30 bg-white/95 backdrop-blur-lg p-6 shadow-2xl mb-8"
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/80 dark:bg-black/90 p-4 pt-8 sm:pt-12 overflow-y-auto" onClick={() => setSelectedProductDetail(null)}>
+          <div
+            className="w-full max-w-2xl rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-[#1E293B] p-6 shadow-lg mb-8"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">
@@ -1177,8 +1130,8 @@ export function ExperimentarView({
 
       {/* Modal de Favoritos */}
       {showFavoritesModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-8 sm:pt-12 backdrop-blur-sm overflow-y-auto">
-          <div className="w-full max-w-4xl rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl mb-8">
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/80 dark:bg-black/90 p-4 pt-8 sm:pt-12 overflow-y-auto">
+          <div className="w-full max-w-4xl rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-[#1E293B] p-6 shadow-lg mb-8">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">Meus Favoritos</h2>
               <button onClick={() => setShowFavoritesModal(false)} className="text-white/70 hover:text-white transition"><X className="h-6 w-6" /></button>
@@ -1197,7 +1150,7 @@ export function ExperimentarView({
                         {/* Marca d'água com logo da loja no canto superior esquerdo */}
                         {lojistaData?.logoUrl && (
                           <div className="absolute top-2 left-2 z-10 opacity-60">
-                            <div className="h-6 w-6 sm:h-8 sm:w-8 overflow-hidden rounded-full border border-white/30 bg-white/40">
+                            <div className="h-6 w-6 sm:h-8 sm:w-8 overflow-hidden rounded-full border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700">
                               <Image
                                 src={lojistaData.logoUrl}
                                 alt={lojistaData.nome || "Logo"}
@@ -1245,8 +1198,8 @@ export function ExperimentarView({
 
       {/* Modal de Detalhes do Favorito */}
       {selectedFavoriteDetail && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-8 sm:pt-12 backdrop-blur-sm overflow-y-auto">
-          <div className="w-full max-w-4xl rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl mb-8">
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/80 dark:bg-black/90 p-4 pt-8 sm:pt-12 overflow-y-auto">
+          <div className="w-full max-w-4xl rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-[#1E293B] p-6 shadow-lg mb-8">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">Detalhes do Look</h2>
               <button 
@@ -1297,8 +1250,8 @@ export function ExperimentarView({
 
             {/* Informações do Produto */}
             {selectedFavoriteDetail.productName && (
-              <div className="mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4">
-                <h3 className="text-xl font-bold text-white mb-2">{selectedFavoriteDetail.productName}</h3>
+              <div className="mb-6 rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-[#1E293B] p-4">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{selectedFavoriteDetail.productName}</h3>
                 {selectedFavoriteDetail.productPrice && (
                   <p className="text-2xl font-bold text-yellow-300">{formatPrice(selectedFavoriteDetail.productPrice)}</p>
                 )}
@@ -1361,8 +1314,8 @@ export function ExperimentarView({
       )}
 
       {isScannerOpen && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl border border-white/20 bg-gradient-to-br from-indigo-900/80 to-purple-900/70 p-4 shadow-2xl relative">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 dark:bg-black/90 p-4">
+          <div className="w-full max-w-md rounded-2xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-[#1E293B] p-4 shadow-lg relative">
             <h3 className="text-lg font-semibold text-white mb-3 text-center">Conectar ao Display</h3>
             <video
               ref={videoRef}

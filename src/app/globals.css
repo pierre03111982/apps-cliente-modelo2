@@ -6,18 +6,25 @@
   color-scheme: light;
 }
 
+/* PHASE 8: Solid & Clean - No Glass/Blur Effects */
 html {
-  background-color: #f8fafc; /* Modern Elegance: Light gray background */
+  background-color: #F8F9FC; /* Light Mode: Clean Slate */
   /* Suporte para safe areas - iOS */
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html.dark {
+  background-color: #0F172A; /* Dark Mode: Deep Navy */
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
-  background-color: #f8fafc; /* Modern Elegance: Clean light gray */
+  @apply antialiased;
+  background-color: #F8F9FC; /* Light Mode: Clean Slate */
+  color: #111827; /* Dark text for light mode */
   font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -26,6 +33,24 @@ body {
   /* Garantir que o body cubra as safe areas */
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dark body {
+  background-color: #0F172A; /* Dark Mode: Deep Navy */
+  color: #F9FAFB; /* Light text for dark mode */
+}
+
+#__next,
+[data-nextjs-scroll-focus-boundary] {
+  background-color: #F8F9FC;
+  min-height: 100vh;
+  transition: background-color 0.3s ease;
+}
+
+.dark #__next,
+.dark [data-nextjs-scroll-focus-boundary] {
+  background-color: #0F172A;
 }
 
 /* Barra de navegação inferior preta - Android */
@@ -36,17 +61,26 @@ body {
 }
 
 @layer base {
+  /* PHASE 8: Typography - High Contrast */
   h1,
   h2,
   h3,
   h4,
   h5,
   h6 {
-    @apply text-slate-900;
+    @apply font-bold text-gray-900 dark:text-white;
+  }
+
+  p, span, div {
+    @apply text-gray-600 dark:text-gray-400;
+  }
+
+  label {
+    @apply text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400;
   }
 
   ::selection {
-    @apply bg-accent-1/20 text-slate-900;
+    @apply bg-indigo-100 dark:bg-indigo-900/50 text-gray-900 dark:text-white;
   }
 }
 
@@ -55,22 +89,39 @@ body {
     box-shadow: 0 24px 60px -30px rgba(110, 121, 198, 0.45);
   }
 
+  /* PHASE 8: Solid Cards - No Transparency */
+  .card-solid {
+    @apply bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-slate-700 shadow-sm dark:shadow-md rounded-lg;
+  }
+
   .custom-scrollbar::-webkit-scrollbar {
     width: 8px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.05);
     border-radius: 4px;
+  }
+
+  .dark .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.2);
     border-radius: 4px;
   }
 
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(0, 0, 0, 0.3);
+  }
+
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
   }
 
   @keyframes pulse-glow-strong {
