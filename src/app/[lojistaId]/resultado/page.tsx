@@ -1395,11 +1395,15 @@ export default function ResultadoPage() {
 
   // Voltar para início
   const handleGoHome = () => {
-    // NOVA REGRA: Sempre manter a foto original que foi carregada ou selecionada por último
-    // Seja pelos favoritos ou pelo botão da câmera, a foto original deve ser preservada
+    // NOVA REGRA: Resetar produtos selecionados mas manter a imagem original do upload
+    // A foto original (matriz) deve ser preservada, mas os produtos selecionados devem ser limpos
     
     const originalPhoto = sessionStorage.getItem(`original_photo_${lojistaId}`)
     const currentPhoto = sessionStorage.getItem(`photo_${lojistaId}`)
+    
+    // Resetar produtos selecionados
+    sessionStorage.removeItem(`products_${lojistaId}`)
+    console.log("[ResultadoPage] Produtos selecionados resetados ao voltar para compras")
     
     // Prioridade: sempre usar a foto original (que foi salva quando selecionada pelos favoritos ou botão da câmera)
     if (originalPhoto) {
@@ -1423,7 +1427,7 @@ export default function ResultadoPage() {
     router.push(`/${lojistaId}/experimentar`)
   }
 
-  // Adicionar Acessório (Refinamento)
+  // Trocar Produto (Refinamento)
   const handleAddAccessory = () => {
     const currentLook = looks[currentLookIndex]
     if (!currentLook || !currentLook.imagemUrl) {
@@ -1438,12 +1442,25 @@ export default function ResultadoPage() {
       const uploadPhoto = sessionStorage.getItem(`photo_${lojistaId}`)
       if (uploadPhoto && (uploadPhoto.startsWith('blob:') || (!uploadPhoto.includes('storage.googleapis.com')))) {
         sessionStorage.setItem(`original_photo_${lojistaId}`, uploadPhoto)
-        console.log("[ResultadoPage] Foto original preservada antes de adicionar acessório")
+        console.log("[ResultadoPage] Foto original preservada antes de trocar produto")
+      }
+    }
+
+    // IMPORTANTE: Carregar os produtos que foram selecionados para gerar o último look
+    // Esses produtos serão exibidos como selecionados na tela de produtos
+    const storedProducts = sessionStorage.getItem(`products_${lojistaId}`)
+    if (storedProducts) {
+      try {
+        const parsedProducts = JSON.parse(storedProducts)
+        console.log("[ResultadoPage] Produtos selecionados carregados para troca:", parsedProducts.length)
+        // Os produtos já estão no sessionStorage, serão carregados automaticamente na tela de produtos
+      } catch (error) {
+        console.error("[ResultadoPage] Erro ao carregar produtos selecionados:", error)
       }
     }
 
     // Salvar a URL da imagem base para refinamento (última foto gerada)
-    // Na tela de adicionar acessório, manter a última foto gerada
+    // Na tela de trocar produto, manter a última foto gerada
     sessionStorage.setItem(`refine_baseImage_${lojistaId}`, currentLook.imagemUrl)
     
     // Salvar compositionId se disponível
@@ -1455,6 +1472,7 @@ export default function ResultadoPage() {
     sessionStorage.setItem(`refine_mode_${lojistaId}`, "true")
 
     // Redirecionar para a galeria de produtos (experimentar) em modo refinamento
+    // Os produtos selecionados já estarão no sessionStorage e serão carregados automaticamente
     router.push(`/${lojistaId}/experimentar?mode=refine`)
   }
 
@@ -1571,6 +1589,10 @@ export default function ResultadoPage() {
                       setShowImageDetailModal(true)
                     }
                   }}
+                  style={{
+                    // PHASE 14 FIX: Ocultar qualquer elemento filho que possa estar sendo renderizado incorretamente
+                    overflow: 'hidden'
+                  }}
                 >
                     {currentLook.imagemUrl ? (
                       <SafeImage
@@ -1615,6 +1637,9 @@ export default function ResultadoPage() {
                         />
                       </div>
                     )}
+                    
+                    {/* PHASE 14 FIX: Remover qualquer componente de informações do produto que possa estar sendo renderizado incorretamente sobre a imagem */}
+                    {/* Não renderizar informações de produto sobrepostas à imagem principal */}
                 </div>
               </div>
             </div>
@@ -1776,7 +1801,7 @@ export default function ResultadoPage() {
                             isRemixing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-purple-700'
                           }`}
                       >
-                          <Sparkles className="h-4 w-4" /> Adicionar Acessório
+                          <Sparkles className="h-4 w-4" /> Trocar Produto
                       </button>
                       {!isRemixing && (
                         <button 

@@ -196,6 +196,22 @@ export default function ExperimentarPage() {
         if (compositionId) {
           setRefineCompositionId(compositionId)
         }
+        
+        // IMPORTANTE: Carregar produtos selecionados quando estiver em modo refine (Trocar Produto)
+        // Esses produtos foram selecionados para gerar o último look e devem aparecer como selecionados
+        const storedProducts = sessionStorage.getItem(`products_${lojistaId}`)
+        if (storedProducts) {
+          try {
+            const parsedProducts = JSON.parse(storedProducts)
+            if (parsedProducts && Array.isArray(parsedProducts) && parsedProducts.length > 0) {
+              setSelectedProducts(parsedProducts)
+              console.log("[ExperimentarPage] Produtos selecionados carregados para troca:", parsedProducts.length)
+            }
+          } catch (error) {
+            console.error("[ExperimentarPage] Erro ao carregar produtos selecionados:", error)
+          }
+        }
+        
         // Em modo refinamento, mostrar a imagem base ao invés de permitir upload
         setUserPhotoUrl(baseImageUrl)
         photoLoadedRef.current = true
@@ -250,9 +266,13 @@ export default function ExperimentarPage() {
         }
 
         // Limpar produtos selecionados quando volta da Tela 3
-        // Os produtos precisam ser selecionados novamente
-        sessionStorage.removeItem(`products_${lojistaId}`)
-        setSelectedProducts([])
+        // EXCEÇÃO: Não limpar se estiver em modo refine (Trocar Produto)
+        const refineMode = sessionStorage.getItem(`refine_mode_${lojistaId}`)
+        if (refineMode !== "true") {
+          // Os produtos precisam ser selecionados novamente apenas se não estiver em modo refine
+          sessionStorage.removeItem(`products_${lojistaId}`)
+          setSelectedProducts([])
+        }
       }
     }
     
@@ -661,33 +681,57 @@ export default function ExperimentarPage() {
       return
     }
 
-    // Em modo refinamento, permitir apenas 1 produto (qualquer categoria)
+    // Em modo refinamento (Trocar Produto), permitir apenas 1 produto (qualquer categoria)
     if (isRefineMode) {
       if (selectedProducts.length >= 1) {
+        toast.error("Para trocar o produto, desmarque o produto atual primeiro", {
+          duration: 3000,
+          icon: "⚠️",
+        })
         setCategoryWarning(
-          "Em modo de refinamento, você pode selecionar apenas 1 produto. Remova o produto selecionado antes de escolher outro."
+          "Para trocar o produto, desmarque o produto atual primeiro."
         )
         setTimeout(() => setCategoryWarning(null), 5000)
         return
       }
     } else {
       // Modo normal: verificar se já existe produto da mesma categoria
-      const existingProductInCategory = selectedProducts.find(
-        (p) => p.categoria === produto.categoria && p.categoria
-      )
-
-      if (existingProductInCategory) {
-        setCategoryWarning(
-          `Você já selecionou um produto da categoria "${produto.categoria}". Selecione produtos de categorias diferentes.`
+      // EXCEÇÃO: Cosméticos e Joias podem ser selecionados juntos
+      const categoriaPermitidaMultipla = produto.categoria?.toLowerCase().includes("cosmético") || 
+                                         produto.categoria?.toLowerCase().includes("cosmetico") ||
+                                         produto.categoria?.toLowerCase().includes("joia") ||
+                                         produto.categoria?.toLowerCase().includes("joias")
+      
+      if (!categoriaPermitidaMultipla) {
+        const existingProductInCategory = selectedProducts.find(
+          (p) => {
+            const pCategoria = p.categoria?.toLowerCase() || ""
+            const produtoCategoria = produto.categoria?.toLowerCase() || ""
+            return pCategoria === produtoCategoria && pCategoria !== ""
+          }
         )
-        setTimeout(() => setCategoryWarning(null), 5000)
-        return
+
+        if (existingProductInCategory) {
+          toast.error(`Você já selecionou um produto da categoria "${produto.categoria}". Selecione produtos de categorias diferentes.`, {
+            duration: 4000,
+            icon: "⚠️",
+          })
+          setCategoryWarning(
+            `Você já selecionou um produto da categoria "${produto.categoria}". Selecione produtos de categorias diferentes.`
+          )
+          setTimeout(() => setCategoryWarning(null), 5000)
+          return
+        }
       }
 
-      // PHASE 14: Limitar a 2 produtos (Prompt Mestre v2.1 - Fresh Synthesis Logic)
+      // Limitar a 2 produtos - se já tem 2, pedir para desmarcar antes de selecionar outro
       if (selectedProducts.length >= 2) {
+        toast.error("Você já selecionou 2 produtos. Desmarque um produto antes de selecionar outro.", {
+          duration: 4000,
+          icon: "⚠️",
+        })
         setCategoryWarning(
-          "Você pode selecionar até 2 produtos de categorias diferentes. Remova um produto antes de selecionar outro."
+          "Você já selecionou 2 produtos. Desmarque um produto antes de selecionar outro."
         )
         setTimeout(() => setCategoryWarning(null), 5000)
         return

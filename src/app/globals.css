@@ -266,6 +266,14 @@ body {
   .neon-border-animated {
     animation: neon-pulse 3s ease-in-out infinite;
   }
+
+  /* PHASE 14 FIX: Ocultar qualquer elemento de informações do produto que possa estar sendo renderizado incorretamente sobre a imagem */
+  /* Ocultar elementos com texto "000000000" ou placeholders inválidos */
+  [class*="absolute"][class*="bottom"][class*="right"]:has-text("000000000"),
+  [class*="absolute"][class*="bottom"][class*="right"]:has-text("Consultar preço"),
+  div[class*="absolute"][class*="bottom"][class*="right"]:empty {
+    display: none !important;
+  }
 }
 
 
