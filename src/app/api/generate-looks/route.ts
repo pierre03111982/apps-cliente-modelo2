@@ -59,10 +59,14 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_PAINELADM_URL ||
       DEFAULT_LOCAL_BACKEND;
 
+    // PHASE 13: Source of Truth - Sempre usar original_photo_url se fornecido
+    // Se original_photo_url não for fornecido, usar personImageUrl como fallback
+    const originalPhotoUrl = body.original_photo_url || body.personImageUrl;
+    
     // Validar campos obrigatórios
-    if (!body.personImageUrl) {
+    if (!originalPhotoUrl) {
       return NextResponse.json(
-        { error: "personImageUrl é obrigatório", details: "Foto da pessoa não fornecida" },
+        { error: "original_photo_url ou personImageUrl é obrigatório", details: "Foto original da pessoa não fornecida" },
         { status: 400 }
       );
     }
@@ -73,11 +77,22 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    
+    // PHASE 13: Garantir que personImageUrl sempre seja a foto ORIGINAL
+    // Ignorar qualquer "previous_image" ou imagem gerada anteriormente
+    const finalPersonImageUrl = originalPhotoUrl;
+    
+    console.log("[modelo-2/api/generate-looks] PHASE 13: Source of Truth - Usando foto ORIGINAL:", {
+      original_photo_url: body.original_photo_url ? "FORNECIDO" : "NÃO FORNECIDO",
+      personImageUrl: body.personImageUrl ? "FORNECIDO" : "NÃO FORNECIDO",
+      finalPersonImageUrl: finalPersonImageUrl.substring(0, 80) + "...",
+      ignorandoPreviousImage: body.previous_image ? "SIM (ignorado)" : "N/A",
+    });
 
-    console.log("[modelo-2/api/generate-looks] Iniciando requisição:", {
+    console.log("[modelo-2/api/generate-looks] PHASE 13: Iniciando requisição com foto ORIGINAL:", {
       backendUrl,
-      hasPersonImageUrl: !!body.personImageUrl,
-      personImageUrlLength: body.personImageUrl?.length || 0,
+      hasOriginalPhoto: !!finalPersonImageUrl,
+      originalPhotoUrl: finalPersonImageUrl.substring(0, 80) + "...",
       productIdsCount: body.productIds?.length || 0,
       productIds: body.productIds,
       lojistaId: body.lojistaId,
@@ -93,11 +108,23 @@ export async function POST(request: NextRequest) {
 
     let paineladmResponse: Response;
     try {
-      console.log("[modelo-2/api/generate-looks] Enviando requisição para backend:", {
+      // PHASE 13: Construir payload garantindo que personImageUrl seja sempre a foto ORIGINAL
+      const backendPayload = {
+        ...body,
+        personImageUrl: finalPersonImageUrl, // PHASE 13: Sempre usar foto original
+        original_photo_url: finalPersonImageUrl, // PHASE 13: Também enviar como original_photo_url para garantir
+        // PHASE 13: Remover qualquer referência a imagens geradas anteriormente
+        previous_image: undefined,
+        generated_image: undefined,
+      };
+      
+      console.log("[modelo-2/api/generate-looks] PHASE 13: Enviando requisição para backend:", {
         url: `${backendUrl}/api/lojista/composicoes/generate`,
-        hasPersonImageUrl: !!body.personImageUrl,
+        hasOriginalPhoto: !!finalPersonImageUrl,
+        originalPhotoUrl: finalPersonImageUrl.substring(0, 80) + "...",
         productIdsCount: body.productIds?.length || 0,
         hasScenePrompts: !!body.scenePrompts,
+        payloadPersonImageUrl: backendPayload.personImageUrl.substring(0, 80) + "...",
       });
       
       paineladmResponse = await fetch(
@@ -107,7 +134,7 @@ export async function POST(request: NextRequest) {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(body),
+          body: JSON.stringify(backendPayload),
           signal: controller.signal,
         }
       );

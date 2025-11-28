@@ -189,26 +189,29 @@ export async function POST(request: NextRequest) {
              cat.includes("footwear");
     });
     
+    // PHASE 13: Preparar payload garantindo que sempre usa original_photo_url
     const payload = {
-      personImageUrl: body.original_photo_url, // PHASE 11-B: Foto original para manter identidade
+      original_photo_url: body.original_photo_url, // PHASE 13: Source of Truth - Foto original
+      personImageUrl: body.original_photo_url, // PHASE 13: Também enviar como personImageUrl para compatibilidade
       productIds: productIds, // Usar os IDs extraídos
       lojistaId: body.lojistaId,
       customerId: body.customerId || null,
-      scenePrompts: [remixPrompt], // PHASE 11-B: Prompt descritivo de remix
+      scenePrompts: [remixPrompt], // PHASE 13: Prompt descritivo de remix com cenário e pose variados
       options: {
         quality: body.options?.quality || "high",
         skipWatermark: body.options?.skipWatermark !== false, // Default: true
         lookType: "creative", // Sempre usar look criativo para remix
-        // PHASE 11-B: Smart Framing - Se houver calçados, forçar full body
+        // PHASE 13: Smart Framing - Se houver calçados, forçar full body
         productCategory: hasShoes ? "Calçados" : body.product_category || undefined,
-        // PHASE 11-B: Random seed para forçar variação (se a API suportar)
+        // PHASE 13: Random seed para forçar variação na IA
         seed: randomSeed,
       },
     };
 
-    console.log("[remix] PHASE 11-B Enviando requisição para backend:", {
+    console.log("[remix] PHASE 13: Enviando requisição para backend com foto ORIGINAL:", {
       url: `${backendUrl}/api/lojista/composicoes/generate`,
       hasOriginalPhoto: !!body.original_photo_url,
+      originalPhotoUrl: body.original_photo_url?.substring(0, 80) + "...",
       productIdsCount: productIds.length,
       productsCount: products.length,
       productPrompt: productPrompt.substring(0, 100) + "...",
@@ -216,6 +219,7 @@ export async function POST(request: NextRequest) {
       randomSeed,
       hasShoes,
       productCategory: payload.options.productCategory,
+      payloadOriginalPhotoUrl: payload.original_photo_url?.substring(0, 80) + "...",
     });
 
     const controller = new AbortController();

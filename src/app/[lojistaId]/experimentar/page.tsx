@@ -1061,9 +1061,10 @@ export default function ExperimentarPage() {
       const clienteData = stored ? JSON.parse(stored) : null
       const clienteId = clienteData?.clienteId || null
 
-      // PHASE 11-B FIX: Usar a API correta (/api/generate-looks) e enviar original_photo_url
+      // PHASE 13: Usar a API correta (/api/generate-looks) e enviar original_photo_url explicitamente
       const payload = {
-        personImageUrl: personImageUrl, // Foto original (sempre)
+        original_photo_url: personImageUrl, // PHASE 13: Sempre enviar como original_photo_url (Source of Truth)
+        personImageUrl: personImageUrl, // Também enviar como personImageUrl para compatibilidade
         productIds: productIds, // TODOS os produtos selecionados
         lojistaId,
         customerId: clienteId,
@@ -1074,11 +1075,12 @@ export default function ExperimentarPage() {
         },
       }
 
-      console.log("[handleVisualize] PHASE 11-B: Enviando para /api/generate-looks:", {
+      console.log("[handleVisualize] PHASE 13: Enviando para /api/generate-looks com foto ORIGINAL:", {
         hasOriginalPhoto: !!personImageUrl,
         originalPhotoUrl: personImageUrl?.substring(0, 50) + "...",
         totalProducts: productIds.length,
         productIds,
+        payloadOriginalPhotoUrl: payload.original_photo_url?.substring(0, 50) + "...",
       })
 
       // Adicionar timeout e melhor tratamento de erros
