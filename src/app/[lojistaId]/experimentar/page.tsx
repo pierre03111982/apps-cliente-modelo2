@@ -1103,11 +1103,11 @@ export default function ExperimentarPage() {
         }
         
         if (fetchError.message?.includes("fetch failed") || fetchError.message?.includes("Failed to fetch")) {
-          throw new Error(`Não foi possível conectar com o servidor. Verifique se o painel está rodando em ${backendUrl}`)
+          throw new Error("Não foi possível conectar com o servidor. Tente novamente em alguns instantes.")
         }
         
         if (fetchError.message?.includes("ECONNREFUSED") || fetchError.message?.includes("NetworkError")) {
-          throw new Error(`Servidor não está respondendo. Verifique se o painel está rodando em ${backendUrl}`)
+          throw new Error("Servidor não está respondendo. Tente novamente em alguns instantes.")
         }
         
         throw new Error(`Erro de conexão: ${fetchError.message || "Erro desconhecido"}`)
