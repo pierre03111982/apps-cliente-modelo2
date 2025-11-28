@@ -102,27 +102,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // PHASE 11-B: Scenario/Pose Shuffler com prompts mais descritivos
-    // Prompts mais detalhados forçam mudanças visuais mais dramáticas
+    // PHASE 14: Scenario/Pose Shuffler - Mudança Drástica (Prompt Mestre v2.1)
+    // Cenários mais distintos e variados para forçar mudanças visuais dramáticas
     const scenarios = [
-      "located in a vibrant sunny park with trees in background, distinct natural lighting, outdoor setting",
-      "inside a luxury hotel lobby with marble floors, elegant furniture, warm ambient lighting, sophisticated atmosphere",
-      "on a modern city street with bokeh lights, urban architecture, dynamic street photography style",
-      "in a minimalist concrete studio with dramatic shadows, professional photography setup, clean aesthetic",
-      "at a rooftop bar at night with city skyline in background, neon lights, evening atmosphere",
-      "in a cozy living room with warm lighting, comfortable furniture, homey atmosphere, natural indoor setting",
-      "at a beach during golden hour with ocean waves, sand, sunset colors, tropical paradise vibe",
-      "in a modern art gallery with white walls, contemporary art pieces, gallery lighting, cultural setting"
+      "at a vibrant sunny beach during golden hour, ocean waves in background, sand, palm trees, tropical paradise, sunset colors, warm natural lighting",
+      "inside a luxury 5-star hotel lobby with marble floors, crystal chandeliers, elegant modern furniture, warm ambient lighting, sophisticated upscale atmosphere",
+      "on a bustling modern city street at night with neon signs, bokeh lights, urban architecture, dynamic street photography style, vibrant nightlife",
+      "in a minimalist high-end photography studio with concrete walls, dramatic shadows, professional lighting setup, clean modern aesthetic, fashion editorial style",
+      "at an exclusive rooftop bar overlooking city skyline at sunset, modern outdoor furniture, warm evening atmosphere, sophisticated urban setting",
+      "in a cozy Scandinavian-style living room with natural wood, plants, large windows, warm soft lighting, comfortable minimalist furniture, homey atmosphere",
+      "at a luxury resort poolside during day, infinity pool, tropical plants, blue sky, bright natural sunlight, vacation paradise setting",
+      "in a contemporary art gallery with white walls, high ceilings, modern art installations, gallery track lighting, cultural sophisticated atmosphere",
+      "on a European cobblestone street in historic district, old architecture, charming cafes, golden hour lighting, romantic old-world atmosphere",
+      "at a modern fitness center with glass walls, natural light, sleek equipment, active lifestyle setting, energetic atmosphere"
     ];
 
+    // PHASE 14: Pose Variation - Mudança Drástica mantendo identidade facial
     const poses = [
-      "Walking confidently towards camera, dynamic movement, natural stride",
-      "Leaning against wall casually, relaxed posture, hands visible",
-      "Sitting on modern chair elegantly, composed pose, professional stance",
-      "Hands in pockets casual stance, relaxed body language, natural positioning",
-      "Looking over shoulder with engaging expression, dynamic angle, eye contact",
-      "Standing with one hand on hip, confident pose, fashion model stance",
-      "Sitting cross-legged on floor, casual relaxed pose, comfortable positioning"
+      "Walking confidently towards camera with dynamic movement, natural stride, engaging expression, fashion model walk",
+      "Leaning against wall casually with relaxed posture, hands visible, one leg crossed, confident casual stance",
+      "Sitting elegantly on modern furniture with composed pose, professional stance, hands resting naturally, sophisticated positioning",
+      "Standing with hands in pockets, relaxed body language, natural positioning, casual confident expression",
+      "Looking over shoulder with engaging expression, dynamic angle, direct eye contact, fashion editorial pose",
+      "Standing with one hand on hip, confident powerful pose, fashion model stance, strong presence",
+      "Sitting cross-legged on floor or surface, casual relaxed pose, comfortable positioning, natural body language",
+      "Standing with arms crossed, confident assertive pose, strong body language, professional demeanor",
+      "Walking away from camera then turning back, dynamic movement, cinematic pose, engaging presence",
+      "Sitting on edge of furniture with legs crossed, elegant composed pose, sophisticated positioning"
     ];
 
     // PHASE 11-B: Selecionar aleatoriamente um cenário e uma pose

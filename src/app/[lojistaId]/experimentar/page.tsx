@@ -684,7 +684,7 @@ export default function ExperimentarPage() {
         return
       }
 
-      // Verificar se já tem 2 produtos selecionados
+      // PHASE 14: Limitar a 2 produtos (Prompt Mestre v2.1 - Fresh Synthesis Logic)
       if (selectedProducts.length >= 2) {
         setCategoryWarning(
           "Você pode selecionar até 2 produtos de categorias diferentes. Remova um produto antes de selecionar outro."
