@@ -136,9 +136,12 @@ async function createOrder(
 }
 
 export async function POST(request: NextRequest) {
+  // PHASE 12 FIX: Declarar variável fora do try para acesso no catch
+  let lojistaId: string | undefined;
+  
   try {
     const body = await request.json().catch(() => ({}))
-    const lojistaId = body?.lojistaId as string | undefined
+    lojistaId = body?.lojistaId as string | undefined
     const cartItems = (body?.cartItems || []) as CartItem[]
     const shippingOption = body?.shippingOption as { id: string; price: number } | null
     const destinationZip = body?.destinationZip as string | undefined
