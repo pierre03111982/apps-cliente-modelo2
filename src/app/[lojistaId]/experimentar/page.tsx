@@ -977,18 +977,49 @@ export default function ExperimentarPage() {
       setIsGenerating(true)
       setGenerationError(null)
 
-      // 1. Upload da foto (se tiver File, fazer upload; se não, usar URL salva)
+      // PHASE 11 FIX: SEMPRE usar a foto ORIGINAL (não a foto gerada anteriormente)
+      // Isso evita o "efeito colagem" quando adiciona acessórios
       let personImageUrl: string
-      if (userPhoto) {
-        // Se tiver File (incluindo avatares), sempre fazer upload
-        console.log("[handleVisualize] 📤 Fazendo upload do File:", {
+      
+      // Prioridade 1: Buscar foto original do sessionStorage
+      const originalPhotoUrl = sessionStorage.getItem(`original_photo_${lojistaId}`)
+      
+      if (originalPhotoUrl) {
+        // Se tiver foto original salva, usar ela (pode ser blob ou HTTP)
+        console.log("[handleVisualize] 📸 Usando foto ORIGINAL do sessionStorage:", originalPhotoUrl.substring(0, 50) + "...")
+        
+        if (originalPhotoUrl.startsWith('blob:')) {
+          // Se for blob, converter para File e fazer upload
+          try {
+            const response = await fetch(originalPhotoUrl)
+            const blob = await response.blob()
+            const fileName = `original-${Date.now()}.${blob.type.split('/')[1] || 'png'}`
+            const file = new File([blob], fileName, { type: blob.type || 'image/png' })
+            personImageUrl = await uploadPersonPhoto(file)
+            console.log("[handleVisualize] ✅ Foto original (blob) convertida e enviada:", personImageUrl?.substring(0, 50) + "...")
+          } catch (blobError) {
+            console.error("[handleVisualize] Erro ao converter blob original para File:", blobError)
+            // Fallback: tentar usar diretamente
+            personImageUrl = originalPhotoUrl
+          }
+        } else {
+          // URL HTTP/HTTPS (já foi enviada anteriormente)
+          personImageUrl = originalPhotoUrl
+          console.log("[handleVisualize] ✅ Usando foto original (HTTP):", personImageUrl?.substring(0, 50) + "...")
+        }
+      } else if (userPhoto) {
+        // Fallback: Se não tiver original, usar File atual (primeira vez)
+        console.log("[handleVisualize] 📤 Fazendo upload do File (primeira vez):", {
           fileName: userPhoto.name,
           fileSize: userPhoto.size,
           fileType: userPhoto.type,
         })
         personImageUrl = await uploadPersonPhoto(userPhoto)
+        // Salvar como original para próximas gerações
+        sessionStorage.setItem(`original_photo_${lojistaId}`, personImageUrl)
+        console.log("[handleVisualize] ✅ Foto salva como original:", personImageUrl?.substring(0, 50) + "...")
       } else if (userPhotoUrl) {
-        // Se não tiver File mas tiver URL blob, tentar converter para File
+        // Fallback: Se não tiver original nem File, usar URL atual
         if (userPhotoUrl.startsWith('blob:')) {
           console.warn("[handleVisualize] ⚠️ URL blob sem File, tentando converter...")
           try {
@@ -997,6 +1028,8 @@ export default function ExperimentarPage() {
             const fileName = `avatar-${Date.now()}.${blob.type.split('/')[1] || 'png'}`
             const file = new File([blob], fileName, { type: blob.type || 'image/png' })
             personImageUrl = await uploadPersonPhoto(file)
+            // Salvar como original
+            sessionStorage.setItem(`original_photo_${lojistaId}`, personImageUrl)
           } catch (blobError) {
             console.error("[handleVisualize] Erro ao converter blob para File:", blobError)
             throw new Error("Erro ao processar foto. Tente selecionar novamente.")
@@ -1004,11 +1037,16 @@ export default function ExperimentarPage() {
         } else {
           // URL HTTP/HTTPS (já foi enviada anteriormente)
           personImageUrl = userPhotoUrl
+          // Salvar como original se não estiver salva
+          if (!originalPhotoUrl) {
+            sessionStorage.setItem(`original_photo_${lojistaId}`, personImageUrl)
+          }
         }
       } else {
         throw new Error("Foto não encontrada")
       }
-      console.log("[handleVisualize] ✅ Foto enviada:", personImageUrl?.substring(0, 50) + "...")
+      
+      console.log("[handleVisualize] ✅ Foto final enviada:", personImageUrl?.substring(0, 50) + "...")
 
       // 2. Preparar dados para geração
       const productImageUrls = selectedProducts

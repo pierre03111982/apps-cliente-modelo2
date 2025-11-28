@@ -634,7 +634,7 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
           {/* Header - Topo */}
           <div className="relative z-10 flex flex-col items-center gap-4 text-center w-full">
             {lojistaData?.logoUrl && (
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-4 border-white/40 shadow-2xl bg-white/10 backdrop-blur-lg">
+              <div className="neon-border w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-4 border-white/40 shadow-2xl bg-white/10 backdrop-blur-lg">
                 <img src={lojistaData.logoUrl} alt={lojistaData.nome || "Logo"} className="w-full h-full object-cover" />
               </div>
             )}
@@ -649,7 +649,7 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
           {/* Centro - QR Code (O Herói) */}
           <div className="relative z-10 flex flex-col items-center gap-6 flex-grow justify-center">
             <div 
-              className="relative rounded-3xl border border-white/20 bg-white/10 p-8 backdrop-blur-lg shadow-xl"
+              className="neon-border relative rounded-3xl border border-white/20 bg-white/10 p-8 backdrop-blur-lg shadow-xl"
               style={{
                 boxShadow: "0 25px 60px rgba(0,0,0,0.35), 0 0 40px rgba(255,255,255,0.1)",
               }}
@@ -698,7 +698,7 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
 
         <div className="flex flex-col items-center gap-8">
           <div 
-            className="relative bg-white/95 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border-4 border-white/50 transform transition-transform hover:scale-105"
+            className="neon-border relative bg-white/95 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border-4 border-white/50 transform transition-transform hover:scale-105"
             style={{
               boxShadow: "0 20px 60px rgba(0,0,0,0.3), 0 0 40px rgba(255,255,255,0.2) inset"
             }}
@@ -743,7 +743,7 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
           <div className="flex flex-col gap-6">
             <div 
               key={currentPhraseIndex}
-              className="flex items-center gap-4 bg-white/20 backdrop-blur-md rounded-2xl p-6 border border-white/30 shadow-xl transform transition-all duration-500 animate-fade-in"
+              className="neon-border flex items-center gap-4 bg-white/20 backdrop-blur-md rounded-2xl p-6 border border-white/30 shadow-xl transform transition-all duration-500 animate-fade-in"
             >
               <div className={`p-4 rounded-xl bg-gradient-to-br ${currentPhrase.color} shadow-lg`}>
                 <IconComponent className="w-8 h-8 text-white" />
@@ -833,7 +833,7 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
 
 
         {/* Seção Superior - O Look (Ocupa ~65% da altura) */}
-        <div className="relative z-10 flex-1 rounded-3xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur-sm shadow-2xl" style={{ flex: "0 0 65%" }}>
+        <div className="neon-border relative z-10 flex-1 rounded-3xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur-sm shadow-2xl" style={{ flex: "0 0 65%" }}>
 
           <SafeImage
 
@@ -882,7 +882,7 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
         <div className="relative z-10 grid grid-cols-3 gap-6 w-full" style={{ flex: "0 0 35%", minHeight: "35vh" }}>
 
           {/* Coluna Esquerda (Info do Produto - Ocupa 2/3) */}
-          <div className="col-span-2 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-lg shadow-2xl p-6 flex flex-col justify-center text-left">
+          <div className="neon-border col-span-2 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-lg shadow-2xl p-6 flex flex-col justify-center text-left">
 
             <p className="text-xs uppercase tracking-[0.6em] text-yellow-200/90 mb-2">Produtos Selecionados</p>
 
@@ -909,7 +909,7 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
 
 
           {/* Coluna Direita (Novo Cliente - Ocupa 1/3) */}
-          <div className="col-span-1 rounded-2xl border border-white/20 bg-indigo-900/30 backdrop-blur-lg shadow-2xl p-4 flex flex-col items-center justify-center text-center gap-3">
+          <div className="neon-border col-span-1 rounded-2xl border border-white/20 bg-indigo-900/30 backdrop-blur-lg shadow-2xl p-4 flex flex-col items-center justify-center text-center gap-3">
 
             <p className="text-base uppercase tracking-[0.3em] text-white/80 font-semibold">Sua vez!</p>
 
@@ -969,7 +969,7 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
 
         <div className="absolute top-8 left-8 z-10">
 
-          <div className="w-20 h-20 rounded-full overflow-hidden border-3 border-white/40 shadow-xl bg-white/10 backdrop-blur-md">
+          <div className="neon-border w-20 h-20 rounded-full overflow-hidden border-3 border-white/40 shadow-xl bg-white/10 backdrop-blur-md">
 
             <img
 
@@ -991,7 +991,7 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
 
       {/* Sidebar com QR Code (quando em modo active) */}
 
-      <div className="absolute left-8 top-1/2 -translate-y-1/2 w-64 z-10 flex flex-col items-center justify-center bg-white/10 backdrop-blur-xl rounded-3xl p-6 border border-white/20 shadow-2xl">
+      <div className="neon-border absolute left-8 top-1/2 -translate-y-1/2 w-64 z-10 flex flex-col items-center justify-center bg-white/10 backdrop-blur-xl rounded-3xl p-6 border border-white/20 shadow-2xl">
 
           <div className="mb-4 text-center">
 
@@ -1043,7 +1043,7 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
 
           <div 
 
-            className="relative w-full h-full max-w-full max-h-[95vh] rounded-3xl overflow-hidden shadow-2xl border-4 border-white/30 animate-scale-in bg-white/5 backdrop-blur-sm"
+            className="neon-border relative w-full h-full max-w-full max-h-[95vh] rounded-3xl overflow-hidden shadow-2xl border-4 border-white/30 animate-scale-in bg-white/5 backdrop-blur-sm"
 
             style={{
 

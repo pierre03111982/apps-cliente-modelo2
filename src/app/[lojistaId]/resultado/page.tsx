@@ -1510,7 +1510,7 @@ export default function ResultadoPage() {
         {/* Caixa com Logo e Nome da Loja */}
         <div className="w-full max-w-sm">
           <div
-            className="rounded-xl border-2 border-white/30 backdrop-blur-md px-3 sm:px-4 py-2 shadow-xl flex items-center justify-center gap-2 sm:gap-3 relative"
+            className="neon-border rounded-xl border-2 border-white/30 backdrop-blur-md px-3 sm:px-4 py-2 shadow-xl flex items-center justify-center gap-2 sm:gap-3 relative"
             style={{
               background:
                 "linear-gradient(to right, rgba(0,0,0,0.5), rgba(147,51,234,0.5), rgba(59,130,246,0.5), rgba(147,51,234,0.5), rgba(0,0,0,0.5))",
@@ -1550,7 +1550,7 @@ export default function ResultadoPage() {
         </div>
         
         <div 
-          className="relative w-full max-w-sm space-y-4 rounded-2xl border-2 border-white/30 backdrop-blur p-4 shadow-2xl"
+          className="neon-border relative w-full max-w-sm space-y-4 rounded-2xl border-2 border-white/30 backdrop-blur p-4 shadow-2xl"
           style={{
             background:
               "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
@@ -1570,7 +1570,7 @@ export default function ResultadoPage() {
             </div>
             {/* Imagem Gerada */}
             <div className="w-full rounded-xl overflow-hidden">
-              <div className="relative rounded-2xl border-2 border-white/50 p-2 shadow-lg bg-white/10 inline-block w-full">
+              <div className="neon-border relative rounded-2xl border-2 border-white/50 p-2 shadow-lg bg-white/10 inline-block w-full">
                 <div 
                   className={`relative border-2 border-dashed border-white/30 rounded-xl p-1 inline-block w-full ${
                     hasVoted ? 'cursor-pointer' : 'cursor-default'
@@ -1910,7 +1910,7 @@ export default function ResultadoPage() {
       {/* Modal de Detalhes do Favorito */}
       {selectedFavoriteDetail && (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-8 sm:pt-12 backdrop-blur-sm overflow-y-auto">
-          <div className="w-full max-w-6xl rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl mb-8">
+          <div className="neon-border w-full max-w-6xl rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl mb-8">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">Detalhes do Look</h2>
               <button 
@@ -1981,7 +1981,7 @@ export default function ResultadoPage() {
 
                 {/* Produtos Selecionados - Se houver informações de produtos no favorito */}
                 {selectedFavoriteDetail.productName && (
-                  <div className="mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4 w-full">
+                  <div className="neon-border mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4 w-full">
                     <h3 className="text-lg font-bold text-white mb-3">Produtos Selecionados</h3>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between p-2 rounded-lg bg-white/5">
@@ -2048,7 +2048,7 @@ export default function ResultadoPage() {
       {/* Modal de Detalhes da Imagem Gerada */}
       {showImageDetailModal && currentLook && (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-8 sm:pt-12 backdrop-blur-sm overflow-y-auto">
-          <div className="w-full max-w-6xl rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl mb-8">
+          <div className="neon-border w-full max-w-6xl rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl mb-8">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">Detalhes do Look</h2>
               <button 
@@ -2108,7 +2108,7 @@ export default function ResultadoPage() {
 
                 {/* Produtos Selecionados */}
                 {selectedProducts.length > 0 && (
-                  <div className="mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4 w-full">
+                  <div className="neon-border mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4 w-full">
                     <h3 className="text-lg font-bold text-white mb-3">Produtos Selecionados</h3>
                     <div className="space-y-2">
                       {selectedProducts.map((produto: any, index: number) => (

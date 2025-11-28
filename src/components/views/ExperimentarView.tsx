@@ -512,7 +512,13 @@ export function ExperimentarView({
           {/* Caixa com Logo e Nome da Loja - Mobile Otimizado */}
           <div>
             <div
-              className="rounded-lg sm:rounded-xl border-2 border-purple-500 dark:border-purple-400 bg-purple-600 dark:bg-purple-700 px-3 py-2 sm:px-4 sm:py-2 shadow-xl flex items-center justify-center gap-2 sm:gap-3 relative"
+              className="neon-border rounded-xl border-2 border-white/30 backdrop-blur-md px-3 sm:px-4 py-2 shadow-xl flex items-center justify-center gap-2 sm:gap-3 relative"
+              style={{
+                background:
+                  "linear-gradient(to right, rgba(0,0,0,0.5), rgba(147,51,234,0.5), rgba(59,130,246,0.5), rgba(147,51,234,0.5), rgba(0,0,0,0.5))",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+              }}
             >
               <button
                 onClick={() => {
@@ -527,7 +533,7 @@ export function ExperimentarView({
                 <ArrowLeftCircle className="h-5 w-5 sm:h-6 sm:w-6" />
               </button>
               {lojistaData?.logoUrl && (
-                <div className="h-10 w-10 sm:h-12 sm:w-12 md:h-16 md:w-16 overflow-hidden rounded-full border-2 border-white/30 flex-shrink-0 bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center">
+                <div className="h-12 w-12 sm:h-14 sm:w-14 overflow-hidden rounded-full border-2 border-white/30 flex-shrink-0">
                   <Image
                     src={lojistaData.logoUrl}
                     alt={lojistaData.nome || "Logo"}
@@ -559,8 +565,11 @@ export function ExperimentarView({
               {userPhotoUrl && !isRefineMode ? (
                 // Exibir foto quando disponível
                 <div className="relative inline-block w-full" style={{ position: 'relative' }}>
-                  <div className="relative rounded-2xl p-2 shadow-md border-2 border-blue-500 dark:border-blue-400 bg-white dark:bg-[#1E293B] inline-block w-full">
-                    <div className="relative rounded-xl p-1 inline-block w-full border-2 border-blue-400 dark:border-blue-500 bg-gray-50 dark:bg-slate-800" style={{ 
+                  <div className="neon-border relative rounded-2xl border-2 border-white/30 backdrop-blur p-2 shadow-2xl inline-block w-full" style={{
+                    background:
+                      "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
+                  }}>
+                    <div className="relative rounded-xl border-2 border-white/50 p-1 inline-block w-full bg-white/10" style={{ 
                       minHeight: '200px',
                       display: 'flex',
                       alignItems: 'center',
@@ -595,8 +604,11 @@ export function ExperimentarView({
                 </div>
               ) : isRefineMode ? (
                 <div className="relative inline-block w-full">
-                  <div className="relative rounded-2xl p-2 shadow-md border-2 border-blue-500 dark:border-blue-400 bg-white dark:bg-[#1E293B] inline-block w-full">
-                    <div className="relative rounded-xl p-1 inline-block w-full border-2 border-blue-400 dark:border-blue-500 bg-gray-50 dark:bg-slate-800" style={{ 
+                  <div className="neon-border relative rounded-2xl border-2 border-white/30 backdrop-blur p-2 shadow-2xl inline-block w-full" style={{
+                    background:
+                      "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
+                  }}>
+                    <div className="relative rounded-xl border-2 border-white/50 p-1 inline-block w-full bg-white/10" style={{ 
                       aspectRatio: 'auto'
                     }}>
                       {refineBaseImageUrl && (
@@ -614,7 +626,10 @@ export function ExperimentarView({
                 </div>
               ) : (
                 <div className="relative inline-block w-full" style={{ position: "relative" }}>
-                  <div className="rounded-2xl border-2 border-blue-500 dark:border-blue-400 bg-white dark:bg-[#1E293B] p-3 shadow-md">
+                  <div className="neon-border rounded-2xl border-2 border-white/30 backdrop-blur p-3 shadow-2xl" style={{
+                    background:
+                      "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
+                  }}>
                     <SmartUploadZone onFileSelect={handleSmartUploadSelect} isLoading={isGenerating} />
                     {privacyMode === "private" && !isRefineMode && (
                       <AvatarSelector onSelect={handleSmartUploadSelect} />
@@ -635,7 +650,11 @@ export function ExperimentarView({
             {/* Área: Personalize o seu Look */}
             {userPhotoUrl && (
               <div
-                className="w-full sm:flex-1 self-stretch rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-[#1E293B] p-3 sm:p-4 md:p-5 shadow-md flex flex-col min-h-0 sm:max-w-[48%] md:max-w-[42%]"
+                className="neon-border w-full sm:flex-1 self-stretch rounded-2xl border-2 border-white/30 backdrop-blur p-3 sm:p-4 md:p-5 shadow-2xl flex flex-col min-h-0 sm:max-w-[48%] md:max-w-[42%]"
+                style={{
+                  background:
+                    "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
+                }}
               >
                 <div className="mb-3 sm:mb-4 shrink-0">
                   <div className="rounded-lg border-2 border-purple-500 dark:border-purple-400 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 p-2 sm:p-3 shadow-lg">
@@ -678,7 +697,11 @@ export function ExperimentarView({
           {/* Caixa com Produtos Selecionados */}
           {userPhotoUrl && selectedProducts.length > 0 && (
             <div
-              className="rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-[#1E293B] p-2 sm:p-2.5 shadow-md w-full sm:w-[90%] md:w-[80%] lg:w-[70%] mx-auto"
+              className="neon-border rounded-2xl border-2 border-white/30 backdrop-blur p-2 sm:p-2.5 shadow-2xl w-full sm:w-[90%] md:w-[80%] lg:w-[70%] mx-auto"
+              style={{
+                background:
+                  "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
+              }}
             >
               <h3 className="mb-2 text-center text-xs sm:text-sm font-bold text-white">
                 Produtos Selecionados
@@ -754,7 +777,11 @@ export function ExperimentarView({
           {/* Aviso sobre seleção de produtos */}
           {userPhotoUrl && (
             <div
-              className="rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-[#1E293B] p-4 shadow-md"
+              className="neon-border rounded-2xl border-2 border-white/30 backdrop-blur p-4 shadow-2xl"
+              style={{
+                background:
+                  "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
+              }}
             >
               {isRefineMode ? (
                 <p className="text-xs font-medium text-white text-center">
@@ -770,7 +797,11 @@ export function ExperimentarView({
 
           {/* Caixa de Redes Sociais e Desconto - Mobile Otimizado */}
           <div
-            className="rounded-lg sm:rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-[#1E293B] px-4 sm:px-5 md:px-6 py-3 sm:py-4 md:py-5 shadow-md"
+            className="neon-border rounded-2xl border-2 border-white/30 backdrop-blur px-4 sm:px-5 md:px-6 py-3 sm:py-4 md:py-5 shadow-2xl"
+            style={{
+              background:
+                "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
+            }}
           >
             <div className="flex flex-col items-center gap-3 sm:gap-4 md:gap-5">
               <div className="rounded-lg sm:rounded-md border-2 border-white/40 bg-red-700 px-3 sm:px-4 py-2 sm:py-2 md:py-2.5 w-full">
@@ -805,7 +836,11 @@ export function ExperimentarView({
 
           {/* Card Principal */}
           <div
-            className="rounded-2xl sm:rounded-3xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-[#1E293B] p-4 sm:p-6 md:p-8 shadow-md"
+              className="neon-border rounded-2xl sm:rounded-3xl border-2 border-white/30 backdrop-blur p-4 sm:p-6 md:p-8 shadow-2xl"
+            style={{
+              background:
+                "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
+            }}
           >
             {/* Abas de Categoria */}
             <div className="mb-4 sm:mb-5 md:mb-6 overflow-x-auto pb-2 -mx-1 sm:-mx-2 md:mx-0">
@@ -965,9 +1000,9 @@ export function ExperimentarView({
 
       {/* Modal de Detalhes do Produto */}
       {selectedProductDetail && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/80 dark:bg-black/90 p-4 pt-8 sm:pt-12 overflow-y-auto" onClick={() => setSelectedProductDetail(null)}>
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-8 sm:pt-12 backdrop-blur-sm overflow-y-auto" onClick={() => setSelectedProductDetail(null)}>
           <div
-            className="w-full max-w-2xl rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-[#1E293B] p-6 shadow-lg mb-8"
+            className="neon-border w-full max-w-2xl rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl mb-8"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">
@@ -1130,8 +1165,8 @@ export function ExperimentarView({
 
       {/* Modal de Favoritos */}
       {showFavoritesModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/80 dark:bg-black/90 p-4 pt-8 sm:pt-12 overflow-y-auto">
-          <div className="w-full max-w-4xl rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-[#1E293B] p-6 shadow-lg mb-8">
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-8 sm:pt-12 backdrop-blur-sm overflow-y-auto">
+          <div className="neon-border w-full max-w-4xl rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl mb-8">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">Meus Favoritos</h2>
               <button onClick={() => setShowFavoritesModal(false)} className="text-white/70 hover:text-white transition"><X className="h-6 w-6" /></button>
@@ -1150,12 +1185,12 @@ export function ExperimentarView({
                         {/* Marca d'água com logo da loja no canto superior esquerdo */}
                         {lojistaData?.logoUrl && (
                           <div className="absolute top-2 left-2 z-10 opacity-60">
-                            <div className="h-6 w-6 sm:h-8 sm:w-8 overflow-hidden rounded-full border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700">
+                            <div className="h-8 w-8 sm:h-10 sm:w-10 overflow-hidden rounded-full border border-white/30 bg-white/40">
                               <Image
                                 src={lojistaData.logoUrl}
                                 alt={lojistaData.nome || "Logo"}
-                                width={32}
-                                height={32}
+                                width={40}
+                                height={40}
                                 className="h-full w-full object-cover opacity-80"
                               />
                             </div>
@@ -1198,8 +1233,8 @@ export function ExperimentarView({
 
       {/* Modal de Detalhes do Favorito */}
       {selectedFavoriteDetail && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/80 dark:bg-black/90 p-4 pt-8 sm:pt-12 overflow-y-auto">
-          <div className="w-full max-w-4xl rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-[#1E293B] p-6 shadow-lg mb-8">
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-8 sm:pt-12 backdrop-blur-sm overflow-y-auto">
+          <div className="neon-border w-full max-w-4xl rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl mb-8">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">Detalhes do Look</h2>
               <button 
@@ -1222,14 +1257,14 @@ export function ExperimentarView({
                   />
                   {/* Marca d'água com logo da loja no canto superior esquerdo */}
                   {lojistaData?.logoUrl && (
-                    <div className="absolute top-4 left-4 z-10 opacity-60">
-                      <div className="h-12 w-12 sm:h-14 sm:w-14 overflow-hidden rounded-full border border-white/30 bg-white/40">
+                    <div className="absolute top-4 left-4 z-10 opacity-70">
+                      <div className="h-12 w-12 sm:h-16 sm:w-16 overflow-hidden rounded-full border-2 border-white/50 bg-white/60 shadow-lg">
                         <Image
                           src={lojistaData.logoUrl}
                           alt={lojistaData.nome || "Logo"}
-                          width={56}
-                          height={56}
-                          className="h-full w-full object-cover opacity-80"
+                          width={64}
+                          height={64}
+                          className="h-full w-full object-cover"
                         />
                       </div>
                     </div>
