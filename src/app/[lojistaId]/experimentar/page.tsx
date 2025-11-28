@@ -493,9 +493,16 @@ export default function ExperimentarPage() {
     // Quando uma foto é selecionada pelo botão da câmera, ela deve substituir tanto photo quanto original_photo
     // Isso garante que ao voltar da tela 3, a foto selecionada pelo botão da câmera seja mantida
     
-    // IMPORTANTE: Atualizar estados de forma síncrona para garantir que a foto seja exibida imediatamente
+      // IMPORTANTE: Atualizar estados de forma síncrona para garantir que a foto seja exibida imediatamente
+    // SEMPRE setar userPhoto quando houver um File (incluindo avatares)
     setUserPhoto(file)
     applyPhotoUrl(newPhotoUrl)
+    
+    console.log("[ExperimentarPage] ✅ File salvo no estado userPhoto:", {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type,
+    })
     
     console.log("[ExperimentarPage] ✅✅✅ Foto carregada e exibida com sucesso:", {
       fileName: file.name,
@@ -759,6 +766,12 @@ export default function ExperimentarPage() {
   // Upload de foto para o backend (usar proxy interno)
   const uploadPersonPhoto = async (file: File): Promise<string> => {
     try {
+      console.log("[uploadPersonPhoto] Iniciando upload:", {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+      })
+      
       // Comprimir imagem antes do upload (máximo 1920x1920, qualidade 85%)
       let fileToUpload = file
       
@@ -766,26 +779,73 @@ export default function ExperimentarPage() {
       if (file.size > 1024 * 1024) {
         console.log("[uploadPersonPhoto] Comprimindo imagem antes do upload...")
         fileToUpload = await compressImage(file, 1920, 1920, 0.85)
+        console.log("[uploadPersonPhoto] Imagem comprimida:", {
+          originalSize: file.size,
+          compressedSize: fileToUpload.size,
+        })
       }
       
-    const formData = new FormData()
+      const formData = new FormData()
       formData.append("photo", fileToUpload)
-    formData.append("lojistaId", lojistaId)
+      formData.append("lojistaId", lojistaId)
 
-    const response = await fetch("/api/upload-photo", {
-      method: "POST",
-      body: formData,
-    })
+      console.log("[uploadPersonPhoto] Enviando para /api/upload-photo...")
+      const response = await fetch("/api/upload-photo", {
+        method: "POST",
+        body: formData,
+      })
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.error || `Erro ao fazer upload: ${response.status}`)
-    }
+      console.log("[uploadPersonPhoto] Resposta recebida:", {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+      })
 
-    const data = await response.json()
-    return data.imageUrl
+      if (!response.ok) {
+        let errorData: any = {}
+        try {
+          const responseText = await response.text()
+          if (responseText) {
+            errorData = JSON.parse(responseText)
+          }
+        } catch (parseError) {
+          console.error("[uploadPersonPhoto] Erro ao parsear resposta de erro:", parseError)
+        }
+        
+        const errorMessage = errorData.error || errorData.message || `Erro ao fazer upload: ${response.status} ${response.statusText}`
+        console.error("[uploadPersonPhoto] Erro do servidor:", {
+          status: response.status,
+          error: errorMessage,
+          errorData,
+        })
+        throw new Error(errorMessage)
+      }
+
+      let data: any
+      try {
+        const responseText = await response.text()
+        if (!responseText) {
+          throw new Error("Resposta vazia do servidor")
+        }
+        data = JSON.parse(responseText)
+      } catch (parseError) {
+        console.error("[uploadPersonPhoto] Erro ao parsear resposta:", parseError)
+        throw new Error("Erro ao processar resposta do servidor")
+      }
+
+      if (!data.imageUrl) {
+        console.error("[uploadPersonPhoto] Resposta sem imageUrl:", data)
+        throw new Error("Servidor não retornou URL da imagem")
+      }
+
+      console.log("[uploadPersonPhoto] ✅ Upload concluído:", data.imageUrl.substring(0, 50) + "...")
+      return data.imageUrl
     } catch (error: any) {
-      console.error("[uploadPersonPhoto] Erro:", error)
+      console.error("[uploadPersonPhoto] Erro completo:", {
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+      })
       throw error
     }
   }
@@ -920,10 +980,31 @@ export default function ExperimentarPage() {
       // 1. Upload da foto (se tiver File, fazer upload; se não, usar URL salva)
       let personImageUrl: string
       if (userPhoto) {
+        // Se tiver File (incluindo avatares), sempre fazer upload
+        console.log("[handleVisualize] 📤 Fazendo upload do File:", {
+          fileName: userPhoto.name,
+          fileSize: userPhoto.size,
+          fileType: userPhoto.type,
+        })
         personImageUrl = await uploadPersonPhoto(userPhoto)
       } else if (userPhotoUrl) {
-        // Se não tiver File mas tiver URL, usar a URL diretamente
-        personImageUrl = userPhotoUrl
+        // Se não tiver File mas tiver URL blob, tentar converter para File
+        if (userPhotoUrl.startsWith('blob:')) {
+          console.warn("[handleVisualize] ⚠️ URL blob sem File, tentando converter...")
+          try {
+            const response = await fetch(userPhotoUrl)
+            const blob = await response.blob()
+            const fileName = `avatar-${Date.now()}.${blob.type.split('/')[1] || 'png'}`
+            const file = new File([blob], fileName, { type: blob.type || 'image/png' })
+            personImageUrl = await uploadPersonPhoto(file)
+          } catch (blobError) {
+            console.error("[handleVisualize] Erro ao converter blob para File:", blobError)
+            throw new Error("Erro ao processar foto. Tente selecionar novamente.")
+          }
+        } else {
+          // URL HTTP/HTTPS (já foi enviada anteriormente)
+          personImageUrl = userPhotoUrl
+        }
       } else {
         throw new Error("Foto não encontrada")
       }
