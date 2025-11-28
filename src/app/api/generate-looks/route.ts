@@ -9,7 +9,16 @@ export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    let body: any;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      console.error("[modelo-2/api/generate-looks] Erro ao parsear body:", parseError);
+      return NextResponse.json(
+        { error: "Corpo da requisição inválido", details: "JSON malformado" },
+        { status: 400 }
+      );
+    }
 
     if (!body?.lojistaId) {
       return NextResponse.json(
@@ -18,7 +27,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const creditValidation = await consumeGenerationCredit(body.lojistaId);
+    let creditValidation;
+    try {
+      creditValidation = await consumeGenerationCredit(body.lojistaId);
+    } catch (creditError: any) {
+      console.error("[modelo-2/api/generate-looks] Erro ao validar créditos:", creditError);
+      return NextResponse.json(
+        { 
+          error: "Erro ao validar créditos", 
+          details: creditError?.message || "Erro interno na validação de créditos" 
+        },
+        { status: 500 }
+      );
+    }
     if (!creditValidation.allowed) {
       // Type narrowing: quando allowed é false, message e status existem
       const errorMessage = "message" in creditValidation ? creditValidation.message : "Créditos insuficientes";
@@ -38,14 +59,33 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_PAINELADM_URL ||
       DEFAULT_LOCAL_BACKEND;
 
+    // Validar campos obrigatórios
+    if (!body.personImageUrl) {
+      return NextResponse.json(
+        { error: "personImageUrl é obrigatório", details: "Foto da pessoa não fornecida" },
+        { status: 400 }
+      );
+    }
+
+    if (!body.productIds || !Array.isArray(body.productIds) || body.productIds.length === 0) {
+      return NextResponse.json(
+        { error: "productIds é obrigatório", details: "Pelo menos um produto deve ser selecionado" },
+        { status: 400 }
+      );
+    }
+
     console.log("[modelo-2/api/generate-looks] Iniciando requisição:", {
       backendUrl,
       hasPersonImageUrl: !!body.personImageUrl,
+      personImageUrlLength: body.personImageUrl?.length || 0,
       productIdsCount: body.productIds?.length || 0,
+      productIds: body.productIds,
       lojistaId: body.lojistaId,
       customerId: body.customerId,
       sandbox: creditValidation.sandbox ?? false,
       remainingCredits: creditValidation.remainingBalance,
+      hasScenePrompts: !!body.scenePrompts,
+      hasOptions: !!body.options,
     });
 
     const controller = new AbortController();
@@ -53,6 +93,13 @@ export async function POST(request: NextRequest) {
 
     let paineladmResponse: Response;
     try {
+      console.log("[modelo-2/api/generate-looks] Enviando requisição para backend:", {
+        url: `${backendUrl}/api/lojista/composicoes/generate`,
+        hasPersonImageUrl: !!body.personImageUrl,
+        productIdsCount: body.productIds?.length || 0,
+        hasScenePrompts: !!body.scenePrompts,
+      });
+      
       paineladmResponse = await fetch(
         `${backendUrl}/api/lojista/composicoes/generate`,
         {
@@ -65,6 +112,11 @@ export async function POST(request: NextRequest) {
         }
       );
       clearTimeout(timeoutId);
+      console.log("[modelo-2/api/generate-looks] Resposta recebida:", {
+        status: paineladmResponse.status,
+        statusText: paineladmResponse.statusText,
+        ok: paineladmResponse.ok,
+      });
     } catch (fetchError: any) {
       clearTimeout(timeoutId);
       console.error("[modelo-2/api/generate-looks] Erro ao conectar com backend:", fetchError);

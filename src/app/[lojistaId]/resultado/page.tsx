@@ -1261,12 +1261,27 @@ export default function ResultadoPage() {
         body: JSON.stringify(payload),
       })
 
-      const responseData = await response.json()
+      let responseData: any;
+      try {
+        const responseText = await response.text();
+        if (!responseText) {
+          throw new Error("Resposta vazia do servidor");
+        }
+        responseData = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error("[handleRegenerate] Erro ao parsear resposta:", parseError);
+        throw new Error("Erro ao processar resposta do servidor");
+      }
 
       if (!response.ok) {
         // Usar apenas a mensagem amigável do backend (já trata erro 429)
-        const errorMessage = responseData.error || "Erro ao gerar novo look"
-        throw new Error(errorMessage)
+        const errorMessage = responseData?.error || responseData?.details || `Erro ao gerar novo look (${response.status})`;
+        console.error("[handleRegenerate] Erro do servidor:", {
+          status: response.status,
+          error: responseData?.error,
+          details: responseData?.details,
+        });
+        throw new Error(errorMessage);
       }
 
       // Salvar novos resultados
@@ -1352,7 +1367,18 @@ export default function ResultadoPage() {
       
       // Mensagem de erro mais amigável
       const errorMessage = error.message || "Erro ao remixar look. Tente novamente."
-      alert(errorMessage)
+      console.error("[handleRegenerate] Erro completo:", {
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+      });
+      
+      // Usar toast ou alert dependendo do que estiver disponível
+      if (typeof window !== "undefined" && (window as any).toast) {
+        (window as any).toast.error(errorMessage);
+      } else {
+        alert(errorMessage);
+      }
     } finally {
       setLoadingAction(null)
       setIsRemixing(false)
