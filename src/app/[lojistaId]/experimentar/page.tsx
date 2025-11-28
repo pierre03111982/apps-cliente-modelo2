@@ -447,11 +447,6 @@ export default function ExperimentarPage() {
     sessionStorage.removeItem(`products_${lojistaId}`)
   }
 
-  const handleAvatarSelect = (avatarUrl: string) => {
-    console.log("[ExperimentarPage] Avatar selecionado para modo privado:", avatarUrl.substring(0, 50))
-    applyPhotoUrl(avatarUrl)
-  }
-
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     
@@ -1200,7 +1195,6 @@ export default function ExperimentarPage() {
       photoInputRef={photoInputRef}
       isDisplayConnected={isConnected && connectedStoreId === lojistaId}
       onDisplayConnect={(storeId, targetDisplay) => connect(storeId, targetDisplay)}
-      onAvatarSelect={handleAvatarSelect}
     />
     </>
   )

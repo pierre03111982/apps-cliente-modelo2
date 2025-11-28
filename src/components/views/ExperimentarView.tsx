@@ -27,62 +27,9 @@ import { Button } from "../ui/Button"
 import { VideoBackground } from "../VideoBackground"
 import { SendToDisplayButton } from "../SendToDisplayButton"
 import { SmartUploadZone } from "@/components/ui/SmartUploadZone"
+import { AvatarSelector } from "@/components/ui/AvatarSelector"
 import { PrivacyOnboardingModal } from "@/components/modals/PrivacyOnboardingModal"
 import type { LojistaData, Produto, GeneratedLook } from "@/lib/types"
-
-type AvatarOption = {
-  id: string
-  label: string
-  src: string
-}
-
-const AVATAR_OPTIONS: AvatarOption[] = [
-  {
-    id: "avatar-aurora",
-    label: "Avatar Aurora",
-    src: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
-      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#2563eb;stop-opacity:1"/><stop offset="100%" style="stop-color:#9333ea;stop-opacity:1"/></linearGradient></defs><rect width="512" height="512" rx="48" fill="url(#grad1)"/><circle cx="256" cy="188" r="96" fill="#f0f9ff" opacity="0.95"/><path d="M128 420c0-88 58-144 128-144s128 56 128 144" fill="#f0f9ff" opacity="0.9"/></svg>`
-    )}`,
-  },
-  {
-    id: "avatar-neon",
-    label: "Avatar Neon",
-    src: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
-      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="48" fill="#0f172a"/><circle cx="256" cy="180" r="90" fill="#a5b4fc"/><path d="M96 420c0-100 72-156 160-156s160 56 160 156" fill="#a5b4fc" opacity="0.85"/><path d="M256 88c40 0 64 12 64 36s-24 36-64 36-64-12-64-36 24-36 64-36z" fill="#312e81"/></svg>`
-    )}`,
-  },
-  {
-    id: "avatar-sunset",
-    label: "Avatar Sunset",
-    src: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
-      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="grad2" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#fb923c;stop-opacity:1"/><stop offset="100%" style="stop-color:#ef4444;stop-opacity:1"/></linearGradient></defs><rect width="512" height="512" rx="48" fill="url(#grad2)"/><circle cx="256" cy="180" r="92" fill="#fff7ed" opacity="0.9"/><path d="M120 420c0-96 72-152 136-152s136 56 136 152" fill="#fff7ed" opacity="0.85"/></svg>`
-    )}`,
-  },
-]
-
-function AvatarQuickSelect({ onSelect }: { onSelect?: (url: string) => void }) {
-  return (
-    <div className="mt-4 rounded-2xl border border-white/20 bg-white/5 p-4 text-white">
-      <p className="text-sm font-semibold">Modo privado ativado</p>
-      <p className="mt-1 text-xs text-white/70">Escolha um avatar para continuar sem enviar sua foto real.</p>
-      <div className="mt-3 grid grid-cols-3 gap-3">
-        {AVATAR_OPTIONS.map((avatar) => (
-          <button
-            key={avatar.id}
-            type="button"
-            onClick={() => onSelect?.(avatar.src)}
-            className="group rounded-2xl border border-white/10 bg-white/10 p-2 text-left transition hover:border-white/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/80"
-          >
-            <div className="overflow-hidden rounded-xl bg-white/5">
-              <img src={avatar.src} alt={avatar.label} className="h-28 w-full object-cover" />
-            </div>
-            <p className="mt-2 text-xs font-medium">{avatar.label}</p>
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
 
 export interface ExperimentarViewProps {
   lojistaData: LojistaData | null
@@ -117,7 +64,6 @@ export interface ExperimentarViewProps {
   photoInputRef?: React.RefObject<HTMLInputElement>
   isDisplayConnected: boolean
   onDisplayConnect: (storeId: string, targetDisplay?: string | null) => void
-  onAvatarSelect?: (avatarUrl: string) => void
 }
 
 export function ExperimentarView({
@@ -153,7 +99,6 @@ export function ExperimentarView({
   photoInputRef,
   isDisplayConnected,
   onDisplayConnect,
-  onAvatarSelect,
 }: ExperimentarViewProps) {
   const [selectedProductDetail, setSelectedProductDetail] = useState<Produto | null>(null)
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
@@ -699,7 +644,7 @@ export function ExperimentarView({
                   <div className="rounded-2xl border-4 border-double border-blue-500/70 bg-white/60 p-3 shadow-lg">
                     <SmartUploadZone onFileSelect={handleSmartUploadSelect} isLoading={isGenerating} />
                     {privacyMode === "private" && !isRefineMode && (
-                      <AvatarQuickSelect onSelect={onAvatarSelect} />
+                      <AvatarSelector onSelect={handleSmartUploadSelect} />
                     )}
                   </div>
                   <input
