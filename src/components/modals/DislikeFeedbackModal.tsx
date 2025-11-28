@@ -56,15 +56,10 @@ export function DislikeFeedbackModal({ open, onSelect, onSkip, isSubmitting = fa
   return (
     <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/60 px-4 pb-6 pt-20 sm:items-center sm:pt-6">
       <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl sm:rounded-2xl">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-zinc-400">Feedback rápido</p>
-            <h3 className="text-xl font-semibold text-zinc-900">O que não agradou?</h3>
-            <p className="text-sm text-zinc-500">Seu feedback ajuda a loja a personalizar melhor os looks.</p>
-          </div>
-          <button onClick={handleClose} className="text-sm font-medium text-zinc-400 hover:text-zinc-700">
-            Pular
-          </button>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Feedback rápido</p>
+          <h3 className="text-xl font-semibold text-slate-900">O que não agradou?</h3>
+          <p className="text-sm text-slate-600">Seu feedback ajuda a loja a personalizar melhor os looks.</p>
         </div>
 
         <div className="mt-5 grid gap-3">
@@ -76,7 +71,7 @@ export function DislikeFeedbackModal({ open, onSelect, onSkip, isSubmitting = fa
                 disabled={isSubmitting}
                 onClick={() => onSelect(option.reason)}
                 className={clsx(
-                  "flex items-center gap-4 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left transition hover:border-indigo-200 hover:bg-indigo-50",
+                  "flex items-center gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-indigo-200 hover:bg-indigo-50",
                   isSubmitting && "opacity-60"
                 )}
               >
@@ -84,8 +79,8 @@ export function DislikeFeedbackModal({ open, onSelect, onSkip, isSubmitting = fa
                   <Icon className="h-5 w-5" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-zinc-900">{option.label}</p>
-                  <p className="text-xs text-zinc-500">{option.description}</p>
+                  <p className="text-sm font-semibold text-slate-900">{option.label}</p>
+                  <p className="text-xs text-slate-600">{option.description}</p>
                 </div>
               </button>
             )
@@ -94,7 +89,7 @@ export function DislikeFeedbackModal({ open, onSelect, onSkip, isSubmitting = fa
 
         <Button
           variant="ghost"
-          className="mt-4 w-full justify-center border-zinc-200 text-sm font-semibold text-zinc-600 hover:border-zinc-300"
+          className="mt-4 w-full justify-center border-slate-200 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50"
           onClick={handleClose}
           disabled={isSubmitting}
         >

@@ -381,7 +381,7 @@ export function Step2Workspace({
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-4">
               {lojistaLogoUrl && (
-                <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl border-2 border-white/30 bg-white/10 shadow-lg shadow-black/40">
+                <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-2 border-slate-100 bg-white shadow-2xl shadow-black/60">
                   <Image
                     src={lojistaLogoUrl}
                     alt={`Logo da ${lojistaNome}`}

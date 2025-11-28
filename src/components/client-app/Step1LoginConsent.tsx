@@ -239,7 +239,7 @@ export function Step1LoginConsent({
       <div className="space-y-10">
         <div className="text-center">
           {lojistaLogoUrl && (
-            <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-2 border-white/30 bg-white shadow-xl">
+            <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-2 border-slate-100 bg-white shadow-2xl shadow-black/60">
               <Image src={lojistaLogoUrl} alt={`Logo da ${lojistaNome}`} width={96} height={96} className="h-full w-full object-contain" />
             </div>
           )}
