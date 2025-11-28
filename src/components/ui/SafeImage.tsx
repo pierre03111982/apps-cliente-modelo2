@@ -50,27 +50,12 @@ export function SafeImage({
       onError(e)
     }
   }
-  
-  // Validar URL antes de renderizar
-  if (!src || src.trim() === "") {
-    console.warn("[SafeImage] URL vazia ou inválida:", src)
-    return (
-      <div
-        className={cn("flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 min-h-[200px] p-4", className)}
-        style={{ position: "relative", ...style }}
-        title={title || "Imagem não disponível"}
-      >
-        {placeholderSvg}
-        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">URL da imagem inválida</p>
-      </div>
-    )
-  }
 
   const handleLoad = () => {
     setIsLoading(false)
   }
 
-  // Placeholder SVG quando há erro
+  // Placeholder SVG quando há erro (declarado antes de ser usado)
   const placeholderSvg = (
     <svg
       width="200"
@@ -97,6 +82,21 @@ export function SafeImage({
       />
     </svg>
   )
+  
+  // Validar URL antes de renderizar
+  if (!src || src.trim() === "") {
+    console.warn("[SafeImage] URL vazia ou inválida:", src)
+    return (
+      <div
+        className={cn("flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 min-h-[200px] p-4", className)}
+        style={{ position: "relative", ...style }}
+        title={title || "Imagem não disponível"}
+      >
+        {placeholderSvg}
+        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">URL da imagem inválida</p>
+      </div>
+    )
+  }
 
   if (hasError) {
     return (
