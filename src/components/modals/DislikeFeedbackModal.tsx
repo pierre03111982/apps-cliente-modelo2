@@ -86,15 +86,6 @@ export function DislikeFeedbackModal({ open, onSelect, onSkip, isSubmitting = fa
             )
           })}
         </div>
-
-        <Button
-          variant="ghost"
-          className="mt-4 w-full justify-center border-slate-200 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50"
-          onClick={handleClose}
-          disabled={isSubmitting}
-        >
-          Registrar apenas o dislike
-        </Button>
       </div>
     </div>
   )

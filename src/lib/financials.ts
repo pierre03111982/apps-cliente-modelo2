@@ -46,20 +46,14 @@ export async function consumeGenerationCredit(lojistaId?: string): Promise<Credi
       const isSandbox = Boolean(docData.is_sandbox_mode)
       const financials = docData.financials as LojistaFinancials | undefined
 
-      if (isSandbox) {
+      // Se estiver em modo sandbox OU não tiver dados financeiros configurados,
+      // permitir geração (tratar como sandbox)
+      if (isSandbox || !financials) {
         return {
           allowed: true,
           sandbox: true,
           planTier: financials?.plan_tier ?? "micro",
-          remainingBalance: financials?.credits_balance ?? 0,
-        }
-      }
-
-      if (!financials) {
-        return {
-          allowed: false,
-          status: 400,
-          message: "Dados financeiros não encontrados. Configure a carteira para continuar.",
+          remainingBalance: financials?.credits_balance ?? 999999, // Créditos ilimitados em sandbox
         }
       }
 
@@ -81,14 +75,17 @@ export async function consumeGenerationCredit(lojistaId?: string): Promise<Credi
         }
       }
 
-      tx.update(lojistaRef, {
-        "financials.credits_balance": FieldValue.increment(-1),
-      })
+      // Decrementar créditos apenas se não estiver em sandbox
+      if (!isSandbox) {
+        tx.update(lojistaRef, {
+          "financials.credits_balance": FieldValue.increment(-1),
+        })
+      }
 
       return {
         allowed: true,
         planTier: financials.plan_tier,
-        remainingBalance: financials.credits_balance - 1,
+        remainingBalance: isSandbox ? financials.credits_balance : financials.credits_balance - 1,
       }
     })
   } catch (error) {
@@ -100,4 +97,5 @@ export async function consumeGenerationCredit(lojistaId?: string): Promise<Credi
     }
   }
 }
+
 

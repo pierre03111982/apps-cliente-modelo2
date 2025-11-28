@@ -35,3 +35,4 @@ export function getFirestoreAdmin() {
   return firestoreSingleton
 }
 
+
