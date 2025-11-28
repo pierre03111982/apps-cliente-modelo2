@@ -120,10 +120,14 @@ async function calculateMelhorEnvioShipping(
 }
 
 export async function POST(request: NextRequest) {
+  // PHASE 12 FIX: Declarar variáveis fora do try para acesso no catch
+  let lojistaId: string | undefined;
+  let destinationZip: string | undefined;
+  
   try {
     const body = await request.json().catch(() => ({}))
-    const lojistaId = body?.lojistaId as string | undefined
-    const destinationZip = body?.destination_zip as string | undefined
+    lojistaId = body?.lojistaId as string | undefined
+    destinationZip = body?.destination_zip as string | undefined
     const items = (body?.items || []) as CartItem[]
     const config = body?.config as SalesConfig | undefined
 
