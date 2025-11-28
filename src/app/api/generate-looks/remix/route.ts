@@ -102,31 +102,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // PHASE 11: Scenario/Pose Shuffler
+    // PHASE 11-B: Scenario/Pose Shuffler com prompts mais descritivos
+    // Prompts mais detalhados forçam mudanças visuais mais dramáticas
     const scenarios = [
-      "Luxury Hotel Lobby",
-      "Modern City Street with Bokeh",
-      "Minimalist Concrete Studio",
-      "Golden Hour Park",
-      "Rooftop Bar at Night",
-      "Cozy Living Room"
+      "located in a vibrant sunny park with trees in background, distinct natural lighting, outdoor setting",
+      "inside a luxury hotel lobby with marble floors, elegant furniture, warm ambient lighting, sophisticated atmosphere",
+      "on a modern city street with bokeh lights, urban architecture, dynamic street photography style",
+      "in a minimalist concrete studio with dramatic shadows, professional photography setup, clean aesthetic",
+      "at a rooftop bar at night with city skyline in background, neon lights, evening atmosphere",
+      "in a cozy living room with warm lighting, comfortable furniture, homey atmosphere, natural indoor setting",
+      "at a beach during golden hour with ocean waves, sand, sunset colors, tropical paradise vibe",
+      "in a modern art gallery with white walls, contemporary art pieces, gallery lighting, cultural setting"
     ];
 
     const poses = [
-      "Walking confidently",
-      "Leaning against wall",
-      "Sitting on modern chair",
-      "Hands in pockets casual stance",
-      "Looking over shoulder"
+      "Walking confidently towards camera, dynamic movement, natural stride",
+      "Leaning against wall casually, relaxed posture, hands visible",
+      "Sitting on modern chair elegantly, composed pose, professional stance",
+      "Hands in pockets casual stance, relaxed body language, natural positioning",
+      "Looking over shoulder with engaging expression, dynamic angle, eye contact",
+      "Standing with one hand on hip, confident pose, fashion model stance",
+      "Sitting cross-legged on floor, casual relaxed pose, comfortable positioning"
     ];
 
-    // Selecionar aleatoriamente um cenário e uma pose
+    // PHASE 11-B: Selecionar aleatoriamente um cenário e uma pose
     const randomScenario = scenarios[Math.floor(Math.random() * scenarios.length)];
     const randomPose = poses[Math.floor(Math.random() * poses.length)];
+    
+    // PHASE 11-B: Gerar random seed para forçar variação na IA
+    const randomSeed = Math.floor(Math.random() * 999999);
 
-    console.log("[remix] Scenario/Pose selecionados:", {
+    console.log("[remix] PHASE 11-B Scenario/Pose/Seed selecionados:", {
       scenario: randomScenario,
       pose: randomPose,
+      randomSeed,
     });
 
     // PHASE 11 FIX: Combinar descrições de TODOS os produtos
@@ -158,8 +167,9 @@ export async function POST(request: NextRequest) {
           : "A stylish man")
       : "A stylish person";
 
-    // PHASE 11 FIX: Construir prompt com TODOS os produtos
-    const remixPrompt = `${subjectDescription} ${randomPose} wearing ${productPrompt}, in ${randomScenario}. Photorealistic, 8k, highly detailed.`;
+    // PHASE 11-B FIX: Construir prompt mais descritivo com TODOS os produtos
+    // Adicionar keywords de harmonização e variação para forçar mudanças visuais
+    const remixPrompt = `${subjectDescription} ${randomPose} wearing ${productPrompt}, harmonious outfit combination, ${randomScenario}. Photorealistic, 8k, highly detailed, professional fashion photography, distinct visual style.`;
 
     console.log("[remix] Prompt gerado:", remixPrompt);
 
@@ -168,32 +178,44 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_PAINELADM_URL ||
       DEFAULT_LOCAL_BACKEND;
 
-    // Preparar payload para o backend
+    // PHASE 11-B: Preparar payload para o backend
     // IMPORTANTE: Usar a foto ORIGINAL (original_photo_url) para manter identidade
+    // PHASE 11-B: Detectar categoria para Smart Framing (previne "cut legs")
+    const hasShoes = products.some((p: any) => {
+      const cat = (p.categoria || "").toLowerCase();
+      return cat.includes("calçado") || cat.includes("calcado") || 
+             cat.includes("sapato") || cat.includes("tênis") || 
+             cat.includes("tenis") || cat.includes("shoe") || 
+             cat.includes("footwear");
+    });
+    
     const payload = {
-      personImageUrl: body.original_photo_url, // Foto original para manter identidade
+      personImageUrl: body.original_photo_url, // PHASE 11-B: Foto original para manter identidade
       productIds: productIds, // Usar os IDs extraídos
       lojistaId: body.lojistaId,
       customerId: body.customerId || null,
-      scenePrompts: [remixPrompt], // Passar o prompt de remix como scenePrompt
+      scenePrompts: [remixPrompt], // PHASE 11-B: Prompt descritivo de remix
       options: {
         quality: body.options?.quality || "high",
         skipWatermark: body.options?.skipWatermark !== false, // Default: true
         lookType: "creative", // Sempre usar look criativo para remix
-        // Detectar categoria principal (se houver calçados, forçar full body)
-        productCategory: products.find((p: any) => p.categoria?.toLowerCase().includes("calçado")) 
-          ? "Calçados" 
-          : body.product_category || undefined,
+        // PHASE 11-B: Smart Framing - Se houver calçados, forçar full body
+        productCategory: hasShoes ? "Calçados" : body.product_category || undefined,
+        // PHASE 11-B: Random seed para forçar variação (se a API suportar)
+        seed: randomSeed,
       },
     };
 
-    console.log("[remix] Enviando requisição para backend:", {
+    console.log("[remix] PHASE 11-B Enviando requisição para backend:", {
       url: `${backendUrl}/api/lojista/composicoes/generate`,
       hasOriginalPhoto: !!body.original_photo_url,
       productIdsCount: productIds.length,
       productsCount: products.length,
       productPrompt: productPrompt.substring(0, 100) + "...",
       remixPrompt: remixPrompt.substring(0, 150) + "...",
+      randomSeed,
+      hasShoes,
+      productCategory: payload.options.productCategory,
     });
 
     const controller = new AbortController();
@@ -281,20 +303,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("[remix] Remix gerado com sucesso:", {
+    console.log("[remix] PHASE 11-B Remix gerado com sucesso:", {
       composicaoId: data.composicaoId,
       looksCount: data.looks?.length || 0,
       scenario: randomScenario,
       pose: randomPose,
+      randomSeed,
     });
 
-    // Retornar dados com informações do remix
+    // PHASE 11-B: Retornar dados com informações do remix (incluindo seed)
     return NextResponse.json({
       ...data,
       remixInfo: {
         scenario: randomScenario,
         pose: randomPose,
         prompt: remixPrompt,
+        randomSeed, // PHASE 11-B: Incluir seed na resposta
       },
     }, { status: backendResponse.status });
 

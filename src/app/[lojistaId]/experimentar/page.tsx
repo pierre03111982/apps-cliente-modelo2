@@ -1049,11 +1049,10 @@ export default function ExperimentarPage() {
       console.log("[handleVisualize] ✅ Foto final enviada:", personImageUrl?.substring(0, 50) + "...")
 
       // 2. Preparar dados para geração
-      const productImageUrls = selectedProducts
-        .map((p) => p.imagemUrl)
-        .filter(Boolean) as string[]
+      // PHASE 11-B FIX: Enviar TODOS os produtos selecionados (não apenas o primeiro)
+      const productIds = selectedProducts.map((p) => p.id).filter(Boolean)
 
-      if (productImageUrls.length === 0) {
+      if (productIds.length === 0) {
         throw new Error("Nenhum produto válido selecionado")
       }
 
@@ -1062,20 +1061,25 @@ export default function ExperimentarPage() {
       const clienteData = stored ? JSON.parse(stored) : null
       const clienteId = clienteData?.clienteId || null
 
-      // Obter URL do backend (paineladm)
-      const backendUrl = getBackendUrl()
-
-      // 3. Gerar imagem usando a nova API do paineladm (Gemini + Imagen)
-        // NOTA: Transmissão para display agora é manual via botão, não automática
+      // PHASE 11-B FIX: Usar a API correta (/api/generate-looks) e enviar original_photo_url
       const payload = {
+        personImageUrl: personImageUrl, // Foto original (sempre)
+        productIds: productIds, // TODOS os produtos selecionados
         lojistaId,
         customerId: clienteId,
-        userImageUrl: personImageUrl,
-        productImageUrl: productImageUrls.length === 1 ? productImageUrls[0] : productImageUrls,
-          broadcast: false, // Transmissão manual via botão
+        options: {
+          quality: "high",
+          skipWatermark: false,
+          lookType: "creative", // Sempre usar Look Criativo para multi-produto
+        },
       }
 
-      console.log("[handleVisualize] Chamando API do paineladm:", `${backendUrl}/api/ai/generate`)
+      console.log("[handleVisualize] PHASE 11-B: Enviando para /api/generate-looks:", {
+        hasOriginalPhoto: !!personImageUrl,
+        originalPhotoUrl: personImageUrl?.substring(0, 50) + "...",
+        totalProducts: productIds.length,
+        productIds,
+      })
 
       // Adicionar timeout e melhor tratamento de erros
       const controller = new AbortController()
@@ -1083,12 +1087,13 @@ export default function ExperimentarPage() {
 
       let response: Response
       try {
-        response = await fetch(`${backendUrl}/api/ai/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        // PHASE 11-B FIX: Usar a rota correta /api/generate-looks
+        response = await fetch("/api/generate-looks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
           signal: controller.signal,
-      })
+        })
       } catch (fetchError: any) {
         clearTimeout(timeoutId)
         
@@ -1142,10 +1147,30 @@ export default function ExperimentarPage() {
       const responseData = await response.json()
 
       // 4. Salvar resultados e navegar
-      // NOTA: Transmissão para display agora é manual via botão, não automática
-      if (responseData.imageUrl) {
-
+      // PHASE 11-B FIX: A resposta vem com looks[] array
+      if (responseData.looks && responseData.looks.length > 0) {
+        // Usar o primeiro look gerado
+        const firstLook = responseData.looks[0]
+        
         // Formatar como look para compatibilidade com a tela de resultado
+        const generatedLook = {
+          id: firstLook.id || responseData.compositionId || `generated-${Date.now()}`,
+          titulo: firstLook.titulo || "Look Gerado",
+          imagemUrl: firstLook.imagemUrl,
+          produtoNome: selectedProducts.map((p) => p.nome).join(" + "),
+          produtoPreco: selectedProducts.reduce((sum, p) => sum + (p.preco || 0), 0),
+          compositionId: responseData.compositionId || firstLook.compositionId || null,
+        }
+
+        sessionStorage.setItem(`looks_${lojistaId}`, JSON.stringify([generatedLook]))
+        // Salvar a URL da foto ORIGINAL que foi enviada ao backend
+        sessionStorage.setItem(`photo_${lojistaId}`, personImageUrl || userPhotoUrl || "")
+        sessionStorage.setItem(`products_${lojistaId}`, JSON.stringify(selectedProducts))
+        // Marcar que uma nova imagem foi gerada (para resetar hasVoted na tela de resultado)
+        sessionStorage.setItem(`new_looks_generated_${lojistaId}`, "true")
+        router.push(`/${lojistaId}/resultado`)
+      } else if (responseData.imageUrl) {
+        // Fallback: se vier imageUrl direto (compatibilidade)
         const generatedLook = {
           id: responseData.compositionId || `generated-${Date.now()}`,
           titulo: "Look Gerado",
@@ -1154,12 +1179,9 @@ export default function ExperimentarPage() {
           produtoPreco: selectedProducts.reduce((sum, p) => sum + (p.preco || 0), 0),
           compositionId: responseData.compositionId || null,
         }
-
         sessionStorage.setItem(`looks_${lojistaId}`, JSON.stringify([generatedLook]))
-        // Salvar a URL da foto que foi enviada ao backend (personImageUrl)
         sessionStorage.setItem(`photo_${lojistaId}`, personImageUrl || userPhotoUrl || "")
         sessionStorage.setItem(`products_${lojistaId}`, JSON.stringify(selectedProducts))
-        // Marcar que uma nova imagem foi gerada (para resetar hasVoted na tela de resultado)
         sessionStorage.setItem(`new_looks_generated_${lojistaId}`, "true")
         router.push(`/${lojistaId}/resultado`)
       } else {
