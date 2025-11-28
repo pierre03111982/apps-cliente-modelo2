@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getFirestoreAdmin } from "@/lib/firebaseAdmin"
 import type { SalesConfig, CartItem } from "@/lib/types"
 import { MercadoPagoConfig, Preference } from "mercadopago"
+import { logError } from "@/lib/logger"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -81,6 +82,18 @@ async function createMercadoPagoPreference(
     }
   } catch (error: any) {
     console.error("[createMercadoPagoPreference] Erro ao criar preference:", error)
+    
+    // PHASE 12: Logar erro crítico no Firestore
+    await logError(
+      "Payment API - MercadoPago Preference",
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        storeId: lojistaId,
+        errorType: "PaymentFailed",
+        gateway: "mercadopago",
+      }
+    ).catch(err => console.error("[Payment API] Erro ao salvar log:", err));
+    
     throw new Error(
       error?.message || "Erro ao criar preference no Mercado Pago. Verifique as credenciais."
     )
@@ -243,6 +256,17 @@ export async function POST(request: NextRequest) {
     )
   } catch (error) {
     console.error("[sales/create-payment] erro:", error)
+    
+    // PHASE 12: Logar erro crítico no Firestore
+    await logError(
+      "Payment API - Create Payment",
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        storeId: lojistaId || "unknown",
+        errorType: "PaymentFailed",
+      }
+    ).catch(err => console.error("[Payment API] Erro ao salvar log:", err));
+    
     return NextResponse.json(
       { error: "Erro ao iniciar pagamento." },
       { status: 500 }

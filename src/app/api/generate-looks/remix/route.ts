@@ -1,5 +1,6 @@
 import { consumeGenerationCredit } from "@/lib/financials";
 import { NextRequest, NextResponse } from "next/server";
+import { getFirestoreAdmin } from "@/lib/firebaseAdmin";
 
 const DEFAULT_LOCAL_BACKEND = "http://localhost:3000";
 
@@ -40,9 +41,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!body?.productIds || !Array.isArray(body.productIds) || body.productIds.length === 0) {
+    // PHASE 11 FIX: Aceitar products[] array OU productIds[]
+    let productIds: string[] = [];
+    let products: any[] = [];
+    
+    if (body?.products && Array.isArray(body.products) && body.products.length > 0) {
+      // Se products[] foi enviado, usar diretamente
+      products = body.products;
+      productIds = products.map((p: any) => p.id || p.productId).filter(Boolean);
+    } else if (body?.productIds && Array.isArray(body.productIds) && body.productIds.length > 0) {
+      // Fallback: se apenas productIds foi enviado, buscar produtos do Firestore
+      productIds = body.productIds;
+      try {
+        const db = getFirestoreAdmin();
+        const lojistaRef = db.collection("lojas").doc(body.lojistaId);
+        const produtosSnapshot = await lojistaRef.collection("produtos").get();
+        
+        products = produtosSnapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter((p: any) => productIds.includes(p.id));
+      } catch (fetchError) {
+        console.warn("[remix] Erro ao buscar produtos do Firestore:", fetchError);
+        // Continuar com productIds mesmo sem descrições
+      }
+    } else {
       return NextResponse.json(
-        { error: "productIds é obrigatório", details: "Pelo menos um produto deve ser selecionado" },
+        { error: "products ou productIds é obrigatório", details: "Pelo menos um produto deve ser selecionado" },
+        { status: 400 }
+      );
+    }
+    
+    if (productIds.length === 0) {
+      return NextResponse.json(
+        { error: "Nenhum produto válido encontrado" },
         { status: 400 }
       );
     }
@@ -98,10 +129,28 @@ export async function POST(request: NextRequest) {
       pose: randomPose,
     });
 
-    // Construir prompt de remix
-    // Usar a descrição do produto se disponível, senão usar genérico
-    const productDescription = body.product_description || "the selected product";
-    const gender = body.gender || ""; // "masculino", "feminino", etc.
+    // PHASE 11 FIX: Combinar descrições de TODOS os produtos
+    let productDescriptions: string[] = [];
+    
+    if (products.length > 0) {
+      // Usar descrições dos produtos fornecidos
+      productDescriptions = products.map((p: any) => {
+        // Priorizar descrição, depois nome, depois categoria
+        return p.descricao || p.nome || p.categoria || "product";
+      });
+    } else {
+      // Fallback: usar IDs como descrição genérica
+      productDescriptions = productIds.map(id => `product ${id}`);
+    }
+    
+    // Combinar todas as descrições com "AND" conforme especificação
+    const productPrompt = productDescriptions.join(" AND ");
+    
+    // Detectar gênero (verificar se algum produto tem categoria que indique gênero)
+    const gender = body.gender || 
+      (products.find((p: any) => p.genero)?.genero) ||
+      (products.find((p: any) => p.categoria?.toLowerCase().includes("feminino")) ? "feminino" : 
+       products.find((p: any) => p.categoria?.toLowerCase().includes("masculino")) ? "masculino" : "");
     
     const subjectDescription = gender 
       ? (gender.toLowerCase().includes("feminino") || gender.toLowerCase().includes("feminine") 
@@ -109,8 +158,8 @@ export async function POST(request: NextRequest) {
           : "A stylish man")
       : "A stylish person";
 
-    // Construir prompt conforme especificação do MD
-    const remixPrompt = `${subjectDescription} ${randomPose} wearing ${productDescription}, in ${randomScenario}. Photorealistic, 8k, highly detailed.`;
+    // PHASE 11 FIX: Construir prompt com TODOS os produtos
+    const remixPrompt = `${subjectDescription} ${randomPose} wearing ${productPrompt}, in ${randomScenario}. Photorealistic, 8k, highly detailed.`;
 
     console.log("[remix] Prompt gerado:", remixPrompt);
 
@@ -123,7 +172,7 @@ export async function POST(request: NextRequest) {
     // IMPORTANTE: Usar a foto ORIGINAL (original_photo_url) para manter identidade
     const payload = {
       personImageUrl: body.original_photo_url, // Foto original para manter identidade
-      productIds: body.productIds,
+      productIds: productIds, // Usar os IDs extraídos
       lojistaId: body.lojistaId,
       customerId: body.customerId || null,
       scenePrompts: [remixPrompt], // Passar o prompt de remix como scenePrompt
@@ -131,15 +180,20 @@ export async function POST(request: NextRequest) {
         quality: body.options?.quality || "high",
         skipWatermark: body.options?.skipWatermark !== false, // Default: true
         lookType: "creative", // Sempre usar look criativo para remix
-        productCategory: body.product_category || undefined,
+        // Detectar categoria principal (se houver calçados, forçar full body)
+        productCategory: products.find((p: any) => p.categoria?.toLowerCase().includes("calçado")) 
+          ? "Calçados" 
+          : body.product_category || undefined,
       },
     };
 
     console.log("[remix] Enviando requisição para backend:", {
       url: `${backendUrl}/api/lojista/composicoes/generate`,
       hasOriginalPhoto: !!body.original_photo_url,
-      productIdsCount: body.productIds.length,
-      remixPrompt: remixPrompt.substring(0, 100) + "...",
+      productIdsCount: productIds.length,
+      productsCount: products.length,
+      productPrompt: productPrompt.substring(0, 100) + "...",
+      remixPrompt: remixPrompt.substring(0, 150) + "...",
     });
 
     const controller = new AbortController();

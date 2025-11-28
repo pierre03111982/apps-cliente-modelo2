@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getFirestoreAdmin } from "@/lib/firebaseAdmin"
 import type { SalesConfig, CartItem } from "@/lib/types"
+import { logError } from "@/lib/logger"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -220,6 +221,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ quotes })
   } catch (error) {
     console.error("[sales/calculate-shipping] erro:", error)
+    
+    // PHASE 12: Logar erro crítico no Firestore
+    await logError(
+      "Shipping API - Calculate Shipping",
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        storeId: lojistaId || "unknown",
+        errorType: "ShippingError",
+        destinationZip: destinationZip || "unknown",
+      }
+    ).catch(err => console.error("[Shipping API] Erro ao salvar log:", err));
+    
     return NextResponse.json(
       { error: "Erro ao calcular frete." },
       { status: 500 }

@@ -1201,21 +1201,28 @@ export default function ResultadoPage() {
         }
       }, 2500)
 
-      // Se veio de favoritos, usar a imagem atual que está sendo exibida
-      let personImageUrl: string
-      if (fromFavoritos && currentLook && currentLook.imagemUrl) {
-        personImageUrl = currentLook.imagemUrl
-      } else {
-        // Buscar dados anteriores do sessionStorage
-        const storedPhoto = sessionStorage.getItem(`photo_${lojistaId}`)
-        if (!storedPhoto) {
-          // Se não houver dados salvos, redirecionar para experimentar
-          router.push(`/${lojistaId}/experimentar`)
-          return
+      // PHASE 11 FIX: Buscar foto ORIGINAL (não a foto gerada) para manter identidade
+      let originalPhotoUrl: string | null = null
+      
+      // Prioridade: buscar foto original do sessionStorage
+      originalPhotoUrl = sessionStorage.getItem(`original_photo_${lojistaId}`)
+      
+      // Se não houver foto original, tentar usar a foto atual (fallback)
+      if (!originalPhotoUrl) {
+        if (fromFavoritos && currentLook && currentLook.imagemUrl) {
+          originalPhotoUrl = currentLook.imagemUrl
+        } else {
+          originalPhotoUrl = sessionStorage.getItem(`photo_${lojistaId}`)
         }
-        personImageUrl = storedPhoto
       }
 
+      if (!originalPhotoUrl) {
+        // Se não houver dados salvos, redirecionar para experimentar
+        router.push(`/${lojistaId}/experimentar`)
+        return
+      }
+
+      // PHASE 11 FIX: Buscar produtos completos (não apenas IDs)
       const storedProducts = sessionStorage.getItem(`products_${lojistaId}`)
       if (!storedProducts) {
         router.push(`/${lojistaId}/experimentar`)
@@ -1225,7 +1232,7 @@ export default function ResultadoPage() {
       const products = JSON.parse(storedProducts)
       const productIds = products.map((p: any) => p.id).filter(Boolean)
 
-      if (productIds.length === 0) {
+      if (productIds.length === 0 || products.length === 0) {
         throw new Error("Nenhum produto encontrado")
       }
 
@@ -1234,28 +1241,22 @@ export default function ResultadoPage() {
       const clienteData = stored ? JSON.parse(stored) : null
       const clienteId = clienteData?.clienteId || null
 
-      if (!personImageUrl) {
-        throw new Error("Foto não encontrada")
-      }
-
-      // Adicionar prompts para mudar cenário e pose quando remixar
-      const scenePrompts = [
-        "Change the background scene to a completely different location and environment",
-        "Change the person's pose to a different position and angle",
-        "Apply creative variations to the scene and pose"
-      ]
-
+      // PHASE 11 FIX: Usar API de Remix dedicada
       const payload = {
-        personImageUrl,
-        productIds,
+        original_photo_url: originalPhotoUrl, // Foto original para manter identidade
+        products: products, // Passar produtos completos (com nome, descrição, categoria)
+        productIds: productIds, // IDs também para compatibilidade
         lojistaId,
         customerId: clienteId,
-        scenePrompts,
-        options: { quality: "high", skipWatermark: true },
+        gender: products.find((p: any) => p.genero)?.genero || null, // Detectar gênero dos produtos
+        options: { 
+          quality: "high", 
+          skipWatermark: true 
+        },
       }
 
-      // Gerar novo look criativo
-      const response = await fetch("/api/generate-looks", {
+      // PHASE 11 FIX: Chamar API de Remix (não a API genérica)
+      const response = await fetch("/api/generate-looks/remix", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -1287,8 +1288,11 @@ export default function ResultadoPage() {
       // Salvar novos resultados
       if (responseData.looks && Array.isArray(responseData.looks) && responseData.looks.length > 0) {
         sessionStorage.setItem(`looks_${lojistaId}`, JSON.stringify(responseData.looks))
-        // Manter foto e produtos salvos
-        sessionStorage.setItem(`photo_${lojistaId}`, personImageUrl)
+        // PHASE 11 FIX: Manter foto ORIGINAL (não sobrescrever com foto gerada)
+        // A foto original deve permanecer para próximos remixes
+        if (originalPhotoUrl) {
+          sessionStorage.setItem(`original_photo_${lojistaId}`, originalPhotoUrl)
+        }
         sessionStorage.setItem(`products_${lojistaId}`, storedProducts)
         
         // SEMPRE marcar como nova imagem gerada (remixar gera imagem NOVA, sempre permite like/dislike)
