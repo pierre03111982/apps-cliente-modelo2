@@ -38,12 +38,32 @@ export function SafeImage({
   const [isLoading, setIsLoading] = useState(true)
 
   const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    console.error("[SafeImage] Erro ao carregar imagem:", src, e)
+    console.error("[SafeImage] Erro ao carregar imagem:", {
+      src: src?.substring(0, 100) + "...",
+      srcLength: src?.length || 0,
+      srcType: src?.startsWith("data:") ? "data URL" : src?.startsWith("http") ? "HTTP URL" : "outro",
+      error: e,
+    })
     setHasError(true)
     setIsLoading(false)
     if (onError) {
       onError(e)
     }
+  }
+  
+  // Validar URL antes de renderizar
+  if (!src || src.trim() === "") {
+    console.warn("[SafeImage] URL vazia ou inválida:", src)
+    return (
+      <div
+        className={cn("flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 min-h-[200px] p-4", className)}
+        style={{ position: "relative", ...style }}
+        title={title || "Imagem não disponível"}
+      >
+        {placeholderSvg}
+        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">URL da imagem inválida</p>
+      </div>
+    )
   }
 
   const handleLoad = () => {

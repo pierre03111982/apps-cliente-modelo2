@@ -9,6 +9,7 @@ import { LoadingSpinner } from "@/components/LoadingSpinner"
 import { VideoBackground } from "@/components/VideoBackground"
 import { SendToDisplayButton } from "@/components/SendToDisplayButton"
 import { StoreConnectionIndicator } from "@/components/StoreConnectionIndicator"
+import { SafeImage } from "@/components/ui/SafeImage"
 import { useStoreSession } from "@/hooks/useStoreSession"
 import { CLOSET_BACKGROUND_IMAGE } from "@/lib/constants"
 import { fetchLojistaData } from "@/lib/firebaseQueries"
@@ -1556,18 +1557,7 @@ export default function ResultadoPage() {
               "linear-gradient(to right, rgba(0,0,0,0.2), rgba(59,130,246,0.2), rgba(34,197,94,0.2), rgba(59,130,246,0.2), rgba(0,0,0,0.2))",
           }}
         >
-            <div className="absolute top-4 right-4 z-10">
-                <span 
-                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium border-2 border-white/50 text-white"
-                  style={{
-                    background:
-                      "linear-gradient(45deg, rgba(37,99,235,1), rgba(147,51,234,1), rgba(249,115,22,1), rgba(34,197,94,1))",
-                  }}
-                >
-                    <Sparkles className="h-4 w-4 text-white" style={{ filter: "drop-shadow(0 0 2px white)"}} />
-                    Look Criativo IA
-                </span>
-            </div>
+            {/* PHASE 14: Removido badge "Look Criativo IA" que estava causando overlay problemático */}
             {/* Imagem Gerada */}
             <div className="w-full rounded-xl overflow-hidden">
               <div className="neon-border relative rounded-2xl border-2 border-white/50 p-2 shadow-lg bg-white/10 inline-block w-full">
@@ -1582,11 +1572,22 @@ export default function ResultadoPage() {
                     }
                   }}
                 >
-                    <img
-                      src={currentLook.imagemUrl}
-                      alt={currentLook.titulo}
-                      className="h-auto w-full object-cover rounded-lg"
-                    />
+                    {currentLook.imagemUrl ? (
+                      <SafeImage
+                        src={currentLook.imagemUrl}
+                        alt={currentLook.titulo || "Look gerado"}
+                        className="h-auto w-full object-cover rounded-lg"
+                        containerClassName="w-full"
+                        onError={(e) => {
+                          console.error("[ResultadoPage] Erro ao carregar imagem:", currentLook.imagemUrl, e)
+                        }}
+                        title={currentLook.titulo || "Look gerado"}
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 min-h-[400px] p-4 rounded-lg">
+                        <p className="text-gray-500 dark:text-gray-400">Imagem não disponível</p>
+                      </div>
+                    )}
                     {/* Marca d'água com logo da loja no canto superior esquerdo */}
                     {lojistaData?.logoUrl && (
                       <div className="absolute top-2 left-2 z-10 opacity-60">
@@ -1928,11 +1929,21 @@ export default function ResultadoPage() {
                 {selectedFavoriteDetail.imagemUrl && (
                   <div className="relative rounded-xl overflow-hidden">
                     <div className="relative w-full">
-                      <img
-                        src={selectedFavoriteDetail.imagemUrl}
-                        alt={selectedFavoriteDetail.productName || "Look favorito"}
-                        className="w-full h-auto object-contain rounded-lg"
-                      />
+                      {selectedFavoriteDetail.imagemUrl ? (
+                        <SafeImage
+                          src={selectedFavoriteDetail.imagemUrl}
+                          alt={selectedFavoriteDetail.productName || "Look favorito"}
+                          className="w-full h-auto object-contain rounded-lg"
+                          containerClassName="w-full"
+                          onError={(e) => {
+                            console.error("[ResultadoPage] Erro ao carregar imagem do favorito:", selectedFavoriteDetail.imagemUrl, e)
+                          }}
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 min-h-[400px] p-4 rounded-lg">
+                          <p className="text-gray-500 dark:text-gray-400">Imagem não disponível</p>
+                        </div>
+                      )}
                       {/* Marca d'água com logo da loja no canto superior esquerdo */}
                       {lojistaData?.logoUrl && (
                         <div className="absolute top-4 left-4 z-10 opacity-70">
@@ -2066,11 +2077,21 @@ export default function ResultadoPage() {
                 {currentLook.imagemUrl && (
                   <div className="relative rounded-xl overflow-hidden">
                     <div className="relative w-full">
-                      <img
-                        src={currentLook.imagemUrl}
-                        alt={currentLook.titulo || "Look gerado"}
-                        className="w-full h-auto object-contain rounded-lg"
-                      />
+                      {currentLook.imagemUrl ? (
+                        <SafeImage
+                          src={currentLook.imagemUrl}
+                          alt={currentLook.titulo || "Look gerado"}
+                          className="w-full h-auto object-contain rounded-lg"
+                          containerClassName="w-full"
+                          onError={(e) => {
+                            console.error("[ResultadoPage] Erro ao carregar imagem no modal:", currentLook.imagemUrl, e)
+                          }}
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 min-h-[400px] p-4 rounded-lg">
+                          <p className="text-gray-500 dark:text-gray-400">Imagem não disponível</p>
+                        </div>
+                      )}
                       {/* Marca d'água com logo da loja no canto superior esquerdo */}
                       {lojistaData?.logoUrl && (
                         <div className="absolute top-4 left-4 z-10 opacity-70">

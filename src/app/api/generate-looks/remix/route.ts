@@ -189,24 +189,33 @@ export async function POST(request: NextRequest) {
              cat.includes("footwear");
     });
     
-    // PHASE 13: Preparar payload garantindo que sempre usa original_photo_url
+    // PHASE 14: Preparar payload garantindo que sempre usa original_photo_url
+    // PHASE 14: Injetar flag "GERAR NOVO LOOK" para ativar mudança de pose
     const payload = {
-      original_photo_url: body.original_photo_url, // PHASE 13: Source of Truth - Foto original
-      personImageUrl: body.original_photo_url, // PHASE 13: Também enviar como personImageUrl para compatibilidade
-      productIds: productIds, // Usar os IDs extraídos
+      original_photo_url: body.original_photo_url, // PHASE 14: Source of Truth - Foto original
+      personImageUrl: body.original_photo_url, // PHASE 14: Também enviar como personImageUrl para compatibilidade
+      productIds: productIds, // PHASE 14: TODOS os produtos selecionados (não apenas o último)
       lojistaId: body.lojistaId,
       customerId: body.customerId || null,
-      scenePrompts: [remixPrompt], // PHASE 13: Prompt descritivo de remix com cenário e pose variados
+      scenePrompts: [remixPrompt], // PHASE 14: Prompt descritivo de remix com cenário e pose variados
       options: {
         quality: body.options?.quality || "high",
         skipWatermark: body.options?.skipWatermark !== false, // Default: true
         lookType: "creative", // Sempre usar look criativo para remix
-        // PHASE 13: Smart Framing - Se houver calçados, forçar full body
+        // PHASE 14: Smart Framing - Se houver calçados, forçar full body
         productCategory: hasShoes ? "Calçados" : body.product_category || undefined,
-        // PHASE 13: Random seed para forçar variação na IA
+        // PHASE 14: Random seed para forçar variação na IA
         seed: randomSeed,
+        // PHASE 14: Flag "GERAR NOVO LOOK" para ativar mudança de pose (Regra de Postura Condicional)
+        gerarNovoLook: true, // CRÍTICO: Sempre ativar no remix para permitir mudança de pose
       },
     };
+    
+    console.log("[remix] PHASE 14: Flag 'GERAR NOVO LOOK' ativada no payload:", {
+      gerarNovoLook: payload.options.gerarNovoLook,
+      totalProdutos: productIds.length,
+      hasShoes,
+    });
 
     console.log("[remix] PHASE 13: Enviando requisição para backend com foto ORIGINAL:", {
       url: `${backendUrl}/api/lojista/composicoes/generate`,
