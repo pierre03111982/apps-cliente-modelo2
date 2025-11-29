@@ -1183,10 +1183,16 @@ export default function ResultadoPage() {
 
   // Função para comprimir imagem antes do upload
   const compressImage = (file: File, maxWidth: number = 1920, maxHeight: number = 1920, quality: number = 0.85): Promise<File> => {
+    // Verificar se está no cliente (browser)
+    if (typeof window === 'undefined') {
+      return Promise.reject(new Error('compressImage só pode ser usado no cliente'))
+    }
+    
     return new Promise((resolve, reject) => {
       const reader = new FileReader()
       reader.onload = (e) => {
-        const img = new Image()
+        // Usar HTMLImageElement explicitamente para evitar conflito com Next.js Image
+        const img = document.createElement('img') as HTMLImageElement
         img.onload = () => {
           // Calcular novas dimensões mantendo proporção
           let width = img.width
