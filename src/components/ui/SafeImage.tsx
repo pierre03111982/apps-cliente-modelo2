@@ -138,7 +138,10 @@ export function SafeImage({
         style={{
           position: "relative",
           maxWidth: "100%",
+          width: "100%",
           height: "auto",
+          display: "block",
+          objectFit: "contain",
         }}
         onClick={onClick}
         onError={handleError}

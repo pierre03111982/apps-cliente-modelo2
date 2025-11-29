@@ -1717,9 +1717,9 @@ export default function ResultadoPage() {
             {/* PHASE 14: Removido badge "Look Criativo IA" que estava causando overlay problemático */}
             {/* Imagem Gerada */}
             <div className="w-full rounded-xl overflow-hidden">
-              <div className="neon-border relative rounded-2xl border-2 border-white/50 p-2 shadow-lg bg-white/10 inline-block w-full">
+              <div className="neon-border relative rounded-2xl border-2 border-white/50 shadow-lg bg-transparent inline-block w-full">
                 <div 
-                  className={`relative border-2 border-dashed border-white/30 rounded-xl p-1 inline-block w-full ${
+                  className={`relative border-2 border-dashed border-white/30 rounded-xl inline-block w-full ${
                     hasVoted ? 'cursor-pointer' : 'cursor-default'
                   }`}
                   onClick={() => {
@@ -1732,15 +1732,23 @@ export default function ResultadoPage() {
                     // PHASE 14 FIX: Ocultar qualquer elemento filho que possa estar sendo renderizado incorretamente
                     overflow: 'hidden',
                     // Ocultar qualquer elemento absoluto que possa estar sendo renderizado sobre a imagem
-                    position: 'relative'
+                    position: 'relative',
+                    // Remover padding para eliminar barras brancas
+                    padding: 0,
                   }}
                 >
                     {currentLook.imagemUrl ? (
                       <SafeImage
                         src={currentLook.imagemUrl}
                         alt={currentLook.titulo || "Look gerado"}
-                        className="h-auto w-full object-cover rounded-lg"
+                        className="w-full h-auto rounded-lg"
                         containerClassName="w-full"
+                        style={{
+                          display: 'block',
+                          width: '100%',
+                          height: 'auto',
+                          objectFit: 'contain',
+                        }}
                         onError={(e) => {
                           console.error("[ResultadoPage] Erro ao carregar imagem:", currentLook.imagemUrl, e)
                         }}
@@ -2438,14 +2446,20 @@ export default function ResultadoPage() {
               {/* Coluna Esquerda: Imagem */}
               <div className="flex-shrink-0 lg:w-1/2">
                 {currentLook.imagemUrl && (
-                  <div className="neon-border relative rounded-xl overflow-hidden p-2">
+                  <div className="neon-border relative rounded-xl overflow-hidden">
                     <div className="relative w-full rounded-lg overflow-hidden">
                       {currentLook.imagemUrl ? (
                         <SafeImage
                           src={currentLook.imagemUrl}
                           alt={currentLook.titulo || "Look gerado"}
-                          className="w-full h-auto object-contain rounded-lg"
+                          className="w-full h-auto rounded-lg"
                           containerClassName="w-full"
+                          style={{
+                            display: 'block',
+                            width: '100%',
+                            height: 'auto',
+                            objectFit: 'contain',
+                          }}
                           onError={(e) => {
                             console.error("[ResultadoPage] Erro ao carregar imagem no modal:", currentLook.imagemUrl, e)
                           }}
