@@ -1032,18 +1032,18 @@ export function ExperimentarView({
               )}
 
               {/* Nome */}
-              <div>
+              <div className="text-center">
                 <h3 className="text-xl font-bold text-white mb-2">{selectedProductDetail.nome}</h3>
               </div>
 
               {/* Preço */}
-              <div className="p-4 bg-blue-900 rounded-lg">
+              <div className="p-4 bg-blue-900 rounded-lg text-center">
                 {hasDiscountApplied(selectedProductDetail) && selectedProductDetail.preco ? (
                   <div className="space-y-2">
                     {/* Preço cheio riscado */}
                     <p className="text-lg text-gray-400 line-through">{formatPrice(selectedProductDetail.preco)}</p>
                     {/* Preço com desconto destacado */}
-                    <div className="flex items-baseline gap-2">
+                    <div className="flex items-baseline justify-center gap-2">
                       <p className="text-3xl font-bold text-green-400">
                         {formatPrice(selectedProductDetail.preco * (1 - getTotalDiscount(selectedProductDetail) / 100))}
                       </p>
@@ -1066,7 +1066,7 @@ export function ExperimentarView({
 
               {/* Categoria */}
               {selectedProductDetail.categoria && (
-                <div>
+                <div className="text-center">
                   <p className="text-sm font-semibold text-white/80 mb-1">Categoria:</p>
                   <p className="text-base text-white">{selectedProductDetail.categoria}</p>
                 </div>
@@ -1074,10 +1074,10 @@ export function ExperimentarView({
 
               {/* Tamanhos */}
               {selectedProductDetail.tamanhos && selectedProductDetail.tamanhos.length > 0 && (
-                <div>
+                <div className="text-center">
                   <p className="text-sm font-semibold text-white/80 mb-2">Tamanhos disponíveis:</p>
                   {selectedProductDetail.tamanhos.length > 1 ? (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 justify-center">
                       {selectedProductDetail.tamanhos.map((tamanho, index) => (
                         <button
                           key={index}
@@ -1093,7 +1093,7 @@ export function ExperimentarView({
                       ))}
                     </div>
                   ) : (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 justify-center">
                       {selectedProductDetail.tamanhos.map((tamanho, index) => (
                         <span key={index} className="px-3 py-1 bg-white/10 text-white border border-white/30 rounded-full text-sm font-medium">
                           {tamanho}
@@ -1106,9 +1106,9 @@ export function ExperimentarView({
 
               {/* Cores */}
               {selectedProductDetail.cores && selectedProductDetail.cores.length > 0 && (
-                <div>
+                <div className="text-center">
                   <p className="text-sm font-semibold text-white/80 mb-1">Cores disponíveis:</p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 justify-center">
                     {selectedProductDetail.cores.map((cor, index) => (
                       <span key={index} className="px-3 py-1 bg-white/10 text-white border border-white/30 rounded-full text-sm font-medium">
                         {cor}
@@ -1120,7 +1120,7 @@ export function ExperimentarView({
 
               {/* Medidas */}
               {selectedProductDetail.medidas && (
-                <div>
+                <div className="text-center">
                   <p className="text-sm font-semibold text-white/80 mb-1">Medidas:</p>
                   <p className="text-base text-white">{selectedProductDetail.medidas}</p>
                 </div>
@@ -1128,7 +1128,7 @@ export function ExperimentarView({
 
               {/* Estoque */}
               {selectedProductDetail.estoque !== null && selectedProductDetail.estoque !== undefined && (
-                <div>
+                <div className="text-center">
                   <p className="text-sm font-semibold text-white/80 mb-1">Estoque:</p>
                   <p className={`text-base font-medium ${selectedProductDetail.estoque > 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {selectedProductDetail.estoque > 0 ? `${selectedProductDetail.estoque} unidades disponíveis` : 'Fora de estoque'}
@@ -1138,7 +1138,7 @@ export function ExperimentarView({
 
               {/* Observações */}
               {selectedProductDetail.obs && (
-                <div>
+                <div className="text-center">
                   <p className="text-sm font-semibold text-white/80 mb-1">Observações:</p>
                   <p className="text-base text-white whitespace-pre-wrap">{selectedProductDetail.obs}</p>
                 </div>
