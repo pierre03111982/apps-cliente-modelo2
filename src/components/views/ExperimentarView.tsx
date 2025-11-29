@@ -1018,7 +1018,7 @@ export function ExperimentarView({
             <div className="space-y-4">
               {/* Imagem do Produto */}
               {getProdutoImagem(selectedProductDetail) && (
-                <div className="neon-border relative w-full min-h-96 rounded-lg overflow-hidden bg-white flex items-center justify-center" style={{ position: 'relative' }}>
+                <div className="neon-border relative w-full min-h-96 rounded-lg overflow-hidden bg-gray-900 flex items-center justify-center" style={{ position: 'relative' }}>
                   <SafeImage
                     src={getProdutoImagem(selectedProductDetail)!}
                     alt={selectedProductDetail.nome}
@@ -1034,7 +1034,7 @@ export function ExperimentarView({
               </div>
 
               {/* Preço */}
-              <div className="p-4 bg-purple-900 rounded-lg">
+              <div className="p-4 bg-blue-900 rounded-lg">
                 {hasDiscountApplied(selectedProductDetail) && selectedProductDetail.preco ? (
                   <div className="space-y-1">
                     <p className="text-lg text-purple-300 line-through">{formatPrice(selectedProductDetail.preco)}</p>
