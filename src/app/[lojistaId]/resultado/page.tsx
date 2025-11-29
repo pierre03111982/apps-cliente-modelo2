@@ -2038,10 +2038,12 @@ export default function ResultadoPage() {
                 <div className="mb-6 w-full">
                   <button
                     onClick={handleCheckout}
-                    className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-bold text-white text-base hover:opacity-90 transition relative overflow-hidden"
+                    className="neon-border w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-bold text-white text-base hover:opacity-90 transition relative overflow-hidden"
                     style={{ 
                       background: "linear-gradient(to right, #1e3a8a, #3b82f6, #60a5fa, #3b82f6, #1e3a8a)",
-                      animation: "pulse-glow-strong 1.5s ease-in-out infinite"
+                      animation: "pulse-glow-strong 1.5s ease-in-out infinite",
+                      border: "2px solid rgba(30, 58, 138, 0.9)",
+                      boxShadow: "0 0 15px rgba(30, 58, 138, 0.8), 0 0 30px rgba(30, 58, 138, 0.6), 0 0 45px rgba(30, 58, 138, 0.4)"
                     }}
                   >
                     <ShoppingCart className="h-5 w-5" /> Comprar Agora
@@ -2220,10 +2222,12 @@ export default function ResultadoPage() {
                 <div className="mb-6 w-full">
                   <button
                     onClick={handleCheckout}
-                    className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-bold text-white text-base hover:opacity-90 transition relative overflow-hidden"
+                    className="neon-border w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-bold text-white text-base hover:opacity-90 transition relative overflow-hidden"
                     style={{ 
                       background: "linear-gradient(to right, #1e3a8a, #3b82f6, #60a5fa, #3b82f6, #1e3a8a)",
-                      animation: "pulse-glow-strong 1.5s ease-in-out infinite"
+                      animation: "pulse-glow-strong 1.5s ease-in-out infinite",
+                      border: "2px solid rgba(30, 58, 138, 0.9)",
+                      boxShadow: "0 0 15px rgba(30, 58, 138, 0.8), 0 0 30px rgba(30, 58, 138, 0.6), 0 0 45px rgba(30, 58, 138, 0.4)"
                     }}
                   >
                     <ShoppingCart className="h-5 w-5" /> Comprar Agora
