@@ -7,6 +7,8 @@
 import { ImageResponse } from 'next/og';
 import { getFirestoreAdmin } from '@/lib/firebaseAdmin';
 
+// Usar nodejs runtime porque Firebase Admin não funciona no edge
+export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(
@@ -40,6 +42,13 @@ export async function GET(
     
     const nome = lojaData?.nome || "Loja";
     const logoUrl = lojaData?.logoUrl || null;
+    const appIconUrl = lojaData?.app_icon_url || null;
+    
+    console.log("[OG Image] Dados encontrados:", {
+      nome,
+      logoUrl: logoUrl ? "presente" : "ausente",
+      appIconUrl: appIconUrl ? "presente" : "ausente"
+    });
     
     // URL base
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
@@ -48,16 +57,19 @@ export async function GET(
                    'https://experimente.ai';
     
     // Construir URL da logo (garantir URL absoluta)
+    // Priorizar logoUrl, depois app_icon_url
     let logoImageUrl: string | null = null;
-    if (logoUrl) {
-      if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) {
-        logoImageUrl = logoUrl;
+    const logoToUse = logoUrl || appIconUrl;
+    
+    if (logoToUse) {
+      if (logoToUse.startsWith('http://') || logoToUse.startsWith('https://')) {
+        logoImageUrl = logoToUse;
       } else {
-        logoImageUrl = logoUrl.startsWith('/') ? `${baseUrl}${logoUrl}` : `${baseUrl}/${logoUrl}`;
+        logoImageUrl = logoToUse.startsWith('/') ? `${baseUrl}${logoToUse}` : `${baseUrl}/${logoToUse}`;
       }
-      console.log("[OG Image] Logo URL:", logoImageUrl);
+      console.log("[OG Image] Logo URL final:", logoImageUrl);
     } else {
-      console.log("[OG Image] Logo não encontrada, gerando imagem sem logo");
+      console.log("[OG Image] Nenhuma logo encontrada, gerando imagem sem logo");
     }
     
     // Gerar imagem Open Graph

@@ -41,7 +41,12 @@ export async function generateMetadata({
       const descricao = lojaData?.descricao || "Experimente as roupas sem sair de casa";
       const logoUrl = lojaData?.logoUrl || null;
       
-      console.log("[Layout] Dados da loja:", { lojistaId, nome, logoUrl: logoUrl ? "presente" : "ausente" });
+      console.log("[Layout] Dados da loja:", { 
+        lojistaId, 
+        nome, 
+        logoUrl: logoUrl ? (logoUrl.length > 50 ? logoUrl.substring(0, 50) + "..." : logoUrl) : "ausente",
+        app_icon_url: lojaData?.app_icon_url ? "presente" : "ausente"
+      });
       
       // URL base do site
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
@@ -49,10 +54,23 @@ export async function generateMetadata({
                      `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 
                      'https://experimente.ai';
       
-      // Imagem Open Graph - SEMPRE usar a rota de geração dinâmica
-      // Isso garante que a imagem tenha o tamanho correto (1200x630px) e inclua a logo
-      const ogImage = `${baseUrl}/api/og-image/${lojistaId}`;
-      console.log("[Layout] Usando imagem Open Graph gerada dinamicamente:", ogImage);
+      // Imagem Open Graph
+      // Se temos logo, usar diretamente (mais rápido e confiável)
+      // Se não temos logo, usar rota dinâmica que gera imagem com nome da loja
+      let ogImage: string;
+      if (logoUrl) {
+        // Usar logo diretamente - Facebook aceita qualquer tamanho, mas ideal é 1200x630px
+        if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) {
+          ogImage = logoUrl;
+        } else {
+          ogImage = logoUrl.startsWith('/') ? `${baseUrl}${logoUrl}` : `${baseUrl}/${logoUrl}`;
+        }
+        console.log("[Layout] Usando logoUrl diretamente como og:image:", ogImage);
+      } else {
+        // Fallback: gerar imagem Open Graph dinamicamente
+        ogImage = `${baseUrl}/api/og-image/${lojistaId}`;
+        console.log("[Layout] Logo não encontrada, usando imagem gerada:", ogImage);
+      }
       
       const themeColor = lojaData?.themeColor || '#000000';
       
@@ -150,11 +168,15 @@ export default async function LojistaLayout({
     if (perfilDadosDoc.exists) {
       const lojaData = perfilDadosDoc.data();
       faviconUrl = lojaData?.logoUrl || lojaData?.app_icon_url || null;
+      console.log("[Layout] Favicon encontrado em perfil/dados:", faviconUrl ? "sim" : "não");
     } else {
       const lojaDoc = await db.collection("lojas").doc(lojistaId).get();
       if (lojaDoc.exists) {
         const lojaData = lojaDoc.data();
         faviconUrl = lojaData?.logoUrl || lojaData?.app_icon_url || null;
+        console.log("[Layout] Favicon encontrado no documento da loja:", faviconUrl ? "sim" : "não");
+      } else {
+        console.log("[Layout] Loja não encontrada para favicon");
       }
     }
   } catch (error) {
