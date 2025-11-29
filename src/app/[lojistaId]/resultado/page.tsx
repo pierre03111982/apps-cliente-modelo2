@@ -1223,6 +1223,27 @@ export default function ResultadoPage() {
         return
       }
 
+      // FIX MOBILE: Se a URL for blob: ou data:, converter para uma URL HTTP válida
+      // URLs blob: não podem ser acessadas pelo backend, precisam ser convertidas
+      if (originalPhotoUrl.startsWith('blob:')) {
+        try {
+          console.log("[handleRegenerate] Convertendo blob URL para data URL...");
+          const response = await fetch(originalPhotoUrl);
+          const blob = await response.blob();
+          const reader = new FileReader();
+          const dataUrl = await new Promise<string>((resolve, reject) => {
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+          originalPhotoUrl = dataUrl;
+          console.log("[handleRegenerate] Blob convertido para data URL com sucesso");
+        } catch (blobError) {
+          console.error("[handleRegenerate] Erro ao converter blob URL:", blobError);
+          throw new Error("Erro ao processar foto. Por favor, faça upload de uma nova foto.");
+        }
+      }
+
       // PHASE 11 FIX: Buscar produtos completos (não apenas IDs)
       const storedProducts = sessionStorage.getItem(`products_${lojistaId}`)
       if (!storedProducts) {

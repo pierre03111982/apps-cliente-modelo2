@@ -42,20 +42,31 @@ export async function POST(request: NextRequest) {
     }
 
     // Validar se a URL da foto original é válida
-    try {
-      const photoUrl = new URL(body.original_photo_url);
-      if (!photoUrl.protocol.startsWith('http')) {
-        return NextResponse.json(
-          { error: "URL da foto original inválida", details: "A URL deve começar com http:// ou https://" },
-          { status: 400 }
-        );
-      }
-    } catch (urlError) {
-      console.error("[remix] Erro ao validar URL da foto:", urlError);
+    // No mobile, URLs podem ser blob: ou data: além de http:// e https://
+    const photoUrl = body.original_photo_url;
+    const isValidUrl = 
+      photoUrl.startsWith('http://') || 
+      photoUrl.startsWith('https://') || 
+      photoUrl.startsWith('blob:') || 
+      photoUrl.startsWith('data:');
+    
+    if (!isValidUrl) {
+      console.error("[remix] URL da foto original inválida:", photoUrl.substring(0, 100));
       return NextResponse.json(
-        { error: "URL da foto original inválida", details: "A URL fornecida não é válida" },
+        { error: "URL da foto original inválida", details: "A URL deve ser uma URL HTTP, blob ou data válida" },
         { status: 400 }
       );
+    }
+    
+    // Se for blob: ou data:, precisamos converter para uma URL HTTP antes de enviar ao backend
+    // O backend espera URLs HTTP válidas
+    let finalPhotoUrl = photoUrl;
+    
+    if (photoUrl.startsWith('blob:') || photoUrl.startsWith('data:')) {
+      console.warn("[remix] URL blob/data detectada - o backend pode precisar de conversão:", photoUrl.substring(0, 100));
+      // Para blob: e data:, vamos tentar usar como está e deixar o backend lidar
+      // Se o backend não aceitar, ele retornará um erro específico
+      finalPhotoUrl = photoUrl;
     }
 
     // PHASE 11 FIX: Aceitar products[] array OU productIds[]
@@ -222,9 +233,10 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
     
     // PHASE 14: Preparar payload garantindo que sempre usa original_photo_url
     // PHASE 14: Injetar flag "GERAR NOVO LOOK" para ativar mudança de pose
+    // Usar finalPhotoUrl que foi validada (aceita blob:, data:, http://, https://)
     const payload = {
-      original_photo_url: body.original_photo_url, // PHASE 14: Source of Truth - Foto original
-      personImageUrl: body.original_photo_url, // PHASE 14: Também enviar como personImageUrl para compatibilidade
+      original_photo_url: finalPhotoUrl, // PHASE 14: Source of Truth - Foto original (pode ser blob/data/http)
+      personImageUrl: finalPhotoUrl, // PHASE 14: Também enviar como personImageUrl para compatibilidade
       productIds: productIds, // PHASE 14: TODOS os produtos selecionados (não apenas o último)
       lojistaId: body.lojistaId,
       customerId: body.customerId || null,

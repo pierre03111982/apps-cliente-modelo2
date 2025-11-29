@@ -1045,8 +1045,8 @@ export function ExperimentarView({
         </div>
       </div>
 
-      {/* Botão FAB - Visualize (fixo no rodapé com z-index alto) */}
-      {(userPhotoUrl) && selectedProducts.length > 0 && (
+      {/* Botão FAB - Visualize (fixo no rodapé com z-index alto) - Oculto quando modal de detalhes do produto estiver aberto */}
+      {(userPhotoUrl) && selectedProducts.length > 0 && !selectedProductDetail && (
         <div 
           className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[9999] transition-all duration-500"
           style={{ 
