@@ -1482,6 +1482,37 @@ export default function ResultadoPage() {
       ? value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
       : "Consultar preço"
 
+  // Calcular total dos produtos e desconto
+  const calcularTotalProdutos = useMemo(() => {
+    if (!selectedProducts || selectedProducts.length === 0) {
+      return { total: 0, totalComDesconto: 0, percentualDesconto: 0, temDesconto: false }
+    }
+
+    const total = selectedProducts.reduce((sum, produto) => sum + (produto.preco || 0), 0)
+    
+    // Verificar se há desconto aplicado
+    const descontoAplicado = localStorage.getItem(`desconto_aplicado_${lojistaId}`) === 'true'
+    const descontoRedesSociais = lojistaData?.descontoRedesSociais || 0
+    const descontoExpiraEm = lojistaData?.descontoRedesSociaisExpiraEm
+    
+    // Verificar se o desconto está válido
+    const descontoValido = descontoAplicado && 
+                           descontoRedesSociais > 0 && 
+                           (!descontoExpiraEm || new Date(descontoExpiraEm) >= new Date())
+    
+    if (descontoValido) {
+      const totalComDesconto = total * (1 - descontoRedesSociais / 100)
+      return {
+        total,
+        totalComDesconto,
+        percentualDesconto: descontoRedesSociais,
+        temDesconto: true
+      }
+    }
+    
+    return { total, totalComDesconto: total, percentualDesconto: 0, temDesconto: false }
+  }, [selectedProducts, lojistaData, lojistaId])
+
   if (!currentLook) {
     return (
       <div className="relative min-h-screen w-screen overflow-hidden flex items-center justify-center">
@@ -2021,7 +2052,7 @@ export default function ResultadoPage() {
                 {selectedFavoriteDetail.productName && (
                   <div className="neon-border mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4 w-full">
                     <h3 className="text-lg font-bold text-white mb-3">Produtos Selecionados</h3>
-                    <div className="space-y-2">
+                    <div className="space-y-2 mb-4">
                       <div className="flex items-center justify-between p-2 rounded-lg bg-white/5">
                         <span className="text-sm text-white">{selectedFavoriteDetail.productName}</span>
                         {selectedFavoriteDetail.productPrice && (
@@ -2029,6 +2060,51 @@ export default function ResultadoPage() {
                         )}
                       </div>
                     </div>
+                    
+                    {/* Total do Favorito */}
+                    {selectedFavoriteDetail.productPrice && (
+                      <div className="pt-3 border-t border-white/10">
+                        {(() => {
+                          const precoFavorito = selectedFavoriteDetail.productPrice || 0
+                          const descontoAplicado = localStorage.getItem(`desconto_aplicado_${lojistaId}`) === 'true'
+                          const descontoRedesSociais = lojistaData?.descontoRedesSociais || 0
+                          const descontoExpiraEm = lojistaData?.descontoRedesSociaisExpiraEm
+                          const descontoValido = descontoAplicado && 
+                                                 descontoRedesSociais > 0 && 
+                                                 (!descontoExpiraEm || new Date(descontoExpiraEm) >= new Date())
+                          
+                          if (descontoValido) {
+                            const totalComDesconto = precoFavorito * (1 - descontoRedesSociais / 100)
+                            return (
+                              <>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-white/80">Subtotal:</span>
+                                  <span className="text-sm text-white/80 line-through">{formatPrice(precoFavorito)}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex flex-col">
+                                    <span className="text-sm font-semibold text-green-400">
+                                      Desconto de {descontoRedesSociais}% aplicado!
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-between pt-2 border-t border-white/10">
+                                  <span className="text-lg font-bold text-white">Total:</span>
+                                  <span className="text-xl font-bold text-green-400">{formatPrice(totalComDesconto)}</span>
+                                </div>
+                              </>
+                            )
+                          }
+                          
+                          return (
+                            <div className="flex items-center justify-between pt-2">
+                              <span className="text-lg font-bold text-white">Total:</span>
+                              <span className="text-xl font-bold text-yellow-300">{formatPrice(precoFavorito)}</span>
+                            </div>
+                          )
+                        })()}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -2158,7 +2234,7 @@ export default function ResultadoPage() {
                 {selectedProducts.length > 0 && (
                   <div className="neon-border mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4 w-full">
                     <h3 className="text-lg font-bold text-white mb-3">Produtos Selecionados</h3>
-                    <div className="space-y-2">
+                    <div className="space-y-2 mb-4">
                       {selectedProducts.map((produto: any, index: number) => (
                         <div key={produto.id || index} className="flex items-center justify-between p-2 rounded-lg bg-white/5">
                           <span className="text-sm text-white">{produto.nome}</span>
@@ -2167,6 +2243,36 @@ export default function ResultadoPage() {
                           )}
                         </div>
                       ))}
+                    </div>
+                    
+                    {/* Total dos Produtos */}
+                    <div className="pt-3 border-t border-white/10">
+                      <div className="flex flex-col gap-2">
+                        {calcularTotalProdutos.temDesconto ? (
+                          <>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-white/80">Subtotal:</span>
+                              <span className="text-sm text-white/80 line-through">{formatPrice(calcularTotalProdutos.total)}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div className="flex flex-col">
+                                <span className="text-sm font-semibold text-green-400">
+                                  Desconto de {calcularTotalProdutos.percentualDesconto}% aplicado!
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between pt-2 border-t border-white/10">
+                              <span className="text-lg font-bold text-white">Total:</span>
+                              <span className="text-xl font-bold text-green-400">{formatPrice(calcularTotalProdutos.totalComDesconto)}</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex items-center justify-between pt-2">
+                            <span className="text-lg font-bold text-white">Total:</span>
+                            <span className="text-xl font-bold text-yellow-300">{formatPrice(calcularTotalProdutos.total)}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
