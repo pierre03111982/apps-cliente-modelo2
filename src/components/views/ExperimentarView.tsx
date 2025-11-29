@@ -131,6 +131,45 @@ export function ExperimentarView({
     return Math.max(0, Math.min(total, 80))
   }
 
+  // Função para obter cor de fundo e texto baseado no nome da cor
+  const getCorStyle = (cor: string) => {
+    const corLower = cor.toLowerCase().trim()
+    const corMap: Record<string, { bg: string; text: string }> = {
+      'preto': { bg: '#000000', text: '#ffffff' },
+      'black': { bg: '#000000', text: '#ffffff' },
+      'branco': { bg: '#ffffff', text: '#000000' },
+      'white': { bg: '#ffffff', text: '#000000' },
+      'vermelho': { bg: '#dc2626', text: '#ffffff' },
+      'red': { bg: '#dc2626', text: '#ffffff' },
+      'azul': { bg: '#2563eb', text: '#ffffff' },
+      'blue': { bg: '#2563eb', text: '#ffffff' },
+      'verde': { bg: '#16a34a', text: '#ffffff' },
+      'green': { bg: '#16a34a', text: '#ffffff' },
+      'amarelo': { bg: '#eab308', text: '#000000' },
+      'yellow': { bg: '#eab308', text: '#000000' },
+      'rosa': { bg: '#ec4899', text: '#ffffff' },
+      'pink': { bg: '#ec4899', text: '#ffffff' },
+      'roxo': { bg: '#9333ea', text: '#ffffff' },
+      'purple': { bg: '#9333ea', text: '#ffffff' },
+      'laranja': { bg: '#f97316', text: '#ffffff' },
+      'orange': { bg: '#f97316', text: '#ffffff' },
+      'marrom': { bg: '#92400e', text: '#ffffff' },
+      'brown': { bg: '#92400e', text: '#ffffff' },
+      'cinza': { bg: '#6b7280', text: '#ffffff' },
+      'gray': { bg: '#6b7280', text: '#ffffff' },
+      'bege': { bg: '#f5f5dc', text: '#000000' },
+      'beige': { bg: '#f5f5dc', text: '#000000' },
+    }
+    
+    const corStyle = corMap[corLower]
+    if (corStyle) {
+      return { backgroundColor: corStyle.bg, color: corStyle.text }
+    }
+    
+    // Fallback para cores não mapeadas
+    return { backgroundColor: '#6b7280', color: '#ffffff' }
+  }
+
   const ensureLocalClientData = useCallback(() => {
     if (typeof window === "undefined" || !lojistaId) return null
     const stored = localStorage.getItem(`cliente_${lojistaId}`)
@@ -1033,7 +1072,7 @@ export function ExperimentarView({
 
               {/* Nome */}
               <div className="text-center">
-                <h3 className="text-xl font-bold text-white mb-2">{selectedProductDetail.nome}</h3>
+                <h3 className="text-2xl font-bold text-white mb-2">{selectedProductDetail.nome}</h3>
               </div>
 
               {/* Preço */}
@@ -1067,22 +1106,22 @@ export function ExperimentarView({
               {/* Categoria */}
               {selectedProductDetail.categoria && (
                 <div className="text-center">
-                  <p className="text-sm font-semibold text-white/80 mb-1">Categoria:</p>
-                  <p className="text-base text-white">{selectedProductDetail.categoria}</p>
+                  <p className="text-base font-semibold text-white/80 mb-1">Categoria:</p>
+                  <p className="text-lg text-white">{selectedProductDetail.categoria}</p>
                 </div>
               )}
 
               {/* Tamanhos */}
               {selectedProductDetail.tamanhos && selectedProductDetail.tamanhos.length > 0 && (
                 <div className="text-center">
-                  <p className="text-sm font-semibold text-white/80 mb-2">Tamanhos disponíveis:</p>
+                  <p className="text-base font-semibold text-white/80 mb-2">Tamanhos disponíveis:</p>
                   {selectedProductDetail.tamanhos.length > 1 ? (
                     <div className="flex flex-wrap gap-2 justify-center">
                       {selectedProductDetail.tamanhos.map((tamanho, index) => (
                         <button
                           key={index}
                           onClick={() => setSelectedSize(selectedSize === tamanho ? null : tamanho)}
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                          className={`px-6 py-3 rounded-lg text-base font-medium transition ${
                             selectedSize === tamanho
                               ? 'bg-blue-600 text-white border-2 border-blue-500 shadow-lg'
                               : 'bg-white/10 text-white border-2 border-white/30 hover:bg-white/20'
@@ -1095,7 +1134,7 @@ export function ExperimentarView({
                   ) : (
                     <div className="flex flex-wrap gap-2 justify-center">
                       {selectedProductDetail.tamanhos.map((tamanho, index) => (
-                        <span key={index} className="px-3 py-1 bg-white/10 text-white border border-white/30 rounded-full text-sm font-medium">
+                        <span key={index} className="px-5 py-2 bg-white/10 text-white border border-white/30 rounded-full text-base font-medium">
                           {tamanho}
                         </span>
                       ))}
@@ -1107,13 +1146,20 @@ export function ExperimentarView({
               {/* Cores */}
               {selectedProductDetail.cores && selectedProductDetail.cores.length > 0 && (
                 <div className="text-center">
-                  <p className="text-sm font-semibold text-white/80 mb-1">Cores disponíveis:</p>
+                  <p className="text-base font-semibold text-white/80 mb-2">Cores disponíveis:</p>
                   <div className="flex flex-wrap gap-2 justify-center">
-                    {selectedProductDetail.cores.map((cor, index) => (
-                      <span key={index} className="px-3 py-1 bg-white/10 text-white border border-white/30 rounded-full text-sm font-medium">
-                        {cor}
-                      </span>
-                    ))}
+                    {selectedProductDetail.cores.map((cor, index) => {
+                      const corStyle = getCorStyle(cor)
+                      return (
+                        <span 
+                          key={index} 
+                          className="px-5 py-2 rounded-full text-base font-medium border-2 border-white/50"
+                          style={corStyle}
+                        >
+                          {cor}
+                        </span>
+                      )
+                    })}
                   </div>
                 </div>
               )}
@@ -1121,16 +1167,16 @@ export function ExperimentarView({
               {/* Medidas */}
               {selectedProductDetail.medidas && (
                 <div className="text-center">
-                  <p className="text-sm font-semibold text-white/80 mb-1">Medidas:</p>
-                  <p className="text-base text-white">{selectedProductDetail.medidas}</p>
+                  <p className="text-base font-semibold text-white/80 mb-1">Medidas:</p>
+                  <p className="text-lg text-white">{selectedProductDetail.medidas}</p>
                 </div>
               )}
 
               {/* Estoque */}
               {selectedProductDetail.estoque !== null && selectedProductDetail.estoque !== undefined && (
                 <div className="text-center">
-                  <p className="text-sm font-semibold text-white/80 mb-1">Estoque:</p>
-                  <p className={`text-base font-medium ${selectedProductDetail.estoque > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  <p className="text-base font-semibold text-white/80 mb-1">Estoque:</p>
+                  <p className={`text-lg font-medium ${selectedProductDetail.estoque > 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {selectedProductDetail.estoque > 0 ? `${selectedProductDetail.estoque} unidades disponíveis` : 'Fora de estoque'}
                   </p>
                 </div>
@@ -1139,8 +1185,8 @@ export function ExperimentarView({
               {/* Observações */}
               {selectedProductDetail.obs && (
                 <div className="text-center">
-                  <p className="text-sm font-semibold text-white/80 mb-1">Observações:</p>
-                  <p className="text-base text-white whitespace-pre-wrap">{selectedProductDetail.obs}</p>
+                  <p className="text-base font-semibold text-white/80 mb-1">Observações:</p>
+                  <p className="text-lg text-white whitespace-pre-wrap">{selectedProductDetail.obs}</p>
                 </div>
               )}
 
