@@ -1494,7 +1494,7 @@ export default function ResultadoPage() {
     }
   }
 
-  // Voltar para início
+  // Voltar para início (Tela 2 - Experimentar)
   const handleGoHome = () => {
     // NOVA REGRA: Resetar produtos selecionados mas manter a imagem original do upload
     // A foto original (matriz) deve ser preservada, mas os produtos selecionados devem ser limpos
@@ -1505,6 +1505,12 @@ export default function ResultadoPage() {
     // Resetar produtos selecionados
     sessionStorage.removeItem(`products_${lojistaId}`)
     console.log("[ResultadoPage] Produtos selecionados resetados ao voltar para compras")
+    
+    // IMPORTANTE: Limpar modo refine para garantir que volta para tela normal de experimentar
+    sessionStorage.removeItem(`refine_mode_${lojistaId}`)
+    sessionStorage.removeItem(`refine_baseImage_${lojistaId}`)
+    sessionStorage.removeItem(`refine_compositionId_${lojistaId}`)
+    console.log("[ResultadoPage] Modo refine limpo ao voltar para compras")
     
     // Prioridade: sempre usar a foto original (que foi salva quando selecionada pelos favoritos ou botão da câmera)
     if (originalPhoto) {
@@ -1525,6 +1531,7 @@ export default function ResultadoPage() {
     // Limpar flag de favoritos se existir
     sessionStorage.removeItem(`from_favoritos_${lojistaId}`)
     
+    // Voltar para tela 2 (Experimentar) SEM modo refine
     router.push(`/${lojistaId}/experimentar`)
   }
 
