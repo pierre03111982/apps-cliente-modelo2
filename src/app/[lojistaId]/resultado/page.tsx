@@ -1252,6 +1252,7 @@ export default function ResultadoPage() {
           const uploadController = new AbortController();
           const uploadTimeout = setTimeout(() => uploadController.abort(), 30000); // 30 segundos
           
+          let uploadData: any;
           try {
             const uploadResponse = await fetch('/api/upload-photo', {
               method: 'POST',
@@ -1273,6 +1274,26 @@ export default function ResultadoPage() {
               }
               throw new Error(errorData.error || errorData.message || `Erro ao fazer upload: ${uploadResponse.status}`);
             }
+            
+            // Processar resposta dentro do mesmo bloco try
+            try {
+              const uploadText = await uploadResponse.text();
+              if (!uploadText) {
+                throw new Error("Resposta vazia do servidor");
+              }
+              uploadData = JSON.parse(uploadText);
+            } catch (parseError) {
+              console.error("[handleRegenerate] Erro ao parsear resposta de upload:", parseError);
+              throw new Error("Erro ao processar resposta do servidor de upload");
+            }
+            
+            // A API retorna imageUrl
+            if (!uploadData.imageUrl || !uploadData.imageUrl.startsWith('http')) {
+              console.error("[handleRegenerate] URL de upload inválida:", uploadData);
+              throw new Error('URL de upload inválida retornada pelo servidor');
+            }
+            
+            originalPhotoUrl = uploadData.imageUrl;
           } catch (fetchError: any) {
             clearTimeout(uploadTimeout);
             
@@ -1286,26 +1307,6 @@ export default function ResultadoPage() {
             
             throw fetchError; // Re-throw para ser capturado pelo catch externo
           }
-          
-          let uploadData: any;
-          try {
-            const uploadText = await uploadResponse.text();
-            if (!uploadText) {
-              throw new Error("Resposta vazia do servidor");
-            }
-            uploadData = JSON.parse(uploadText);
-          } catch (parseError) {
-            console.error("[handleRegenerate] Erro ao parsear resposta de upload:", parseError);
-            throw new Error("Erro ao processar resposta do servidor de upload");
-          }
-          
-          // A API retorna imageUrl
-          if (!uploadData.imageUrl || !uploadData.imageUrl.startsWith('http')) {
-            console.error("[handleRegenerate] URL de upload inválida:", uploadData);
-            throw new Error('URL de upload inválida retornada pelo servidor');
-          }
-          
-          originalPhotoUrl = uploadData.imageUrl;
           // Atualizar sessionStorage com a URL HTTP válida
           sessionStorage.setItem(`original_photo_${lojistaId}`, originalPhotoUrl);
           console.log("[handleRegenerate] Blob/data URL convertida para URL HTTP com sucesso:", originalPhotoUrl.substring(0, 100));
