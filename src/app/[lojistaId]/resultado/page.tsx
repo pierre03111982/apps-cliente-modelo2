@@ -1248,22 +1248,43 @@ export default function ResultadoPage() {
           formData.append('photo', file);
           formData.append('lojistaId', lojistaId);
           
-          const uploadResponse = await fetch('/api/upload-photo', {
-            method: 'POST',
-            body: formData,
-          });
+          // Criar AbortController para timeout
+          const uploadController = new AbortController();
+          const uploadTimeout = setTimeout(() => uploadController.abort(), 30000); // 30 segundos
           
-          if (!uploadResponse.ok) {
-            let errorData: any = {};
-            try {
-              const errorText = await uploadResponse.text();
-              if (errorText) {
-                errorData = JSON.parse(errorText);
+          try {
+            const uploadResponse = await fetch('/api/upload-photo', {
+              method: 'POST',
+              body: formData,
+              signal: uploadController.signal,
+            });
+            
+            clearTimeout(uploadTimeout);
+            
+            if (!uploadResponse.ok) {
+              let errorData: any = {};
+              try {
+                const errorText = await uploadResponse.text();
+                if (errorText) {
+                  errorData = JSON.parse(errorText);
+                }
+              } catch (parseError) {
+                console.error("[handleRegenerate] Erro ao parsear resposta de erro:", parseError);
               }
-            } catch (parseError) {
-              console.error("[handleRegenerate] Erro ao parsear resposta de erro:", parseError);
+              throw new Error(errorData.error || errorData.message || `Erro ao fazer upload: ${uploadResponse.status}`);
             }
-            throw new Error(errorData.error || errorData.message || `Erro ao fazer upload: ${uploadResponse.status}`);
+          } catch (fetchError: any) {
+            clearTimeout(uploadTimeout);
+            
+            if (fetchError.name === 'AbortError') {
+              throw new Error("Tempo de resposta excedido ao fazer upload da foto. Tente novamente.");
+            }
+            
+            if (fetchError.message?.includes('fetch failed') || fetchError.message?.includes('Failed to fetch')) {
+              throw new Error("Não foi possível conectar com o servidor. Verifique sua conexão e tente novamente.");
+            }
+            
+            throw fetchError; // Re-throw para ser capturado pelo catch externo
           }
           
           let uploadData: any;

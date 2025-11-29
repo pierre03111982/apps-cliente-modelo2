@@ -863,10 +863,32 @@ export default function ExperimentarPage() {
       formData.append("lojistaId", lojistaId)
 
       console.log("[uploadPersonPhoto] Enviando para /api/upload-photo...")
-      const response = await fetch("/api/upload-photo", {
-        method: "POST",
-        body: formData,
-      })
+      
+      // Criar AbortController para timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos
+      
+      let response: Response;
+      try {
+        response = await fetch("/api/upload-photo", {
+          method: "POST",
+          body: formData,
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        
+        if (fetchError.name === 'AbortError') {
+          throw new Error("Tempo de resposta excedido ao fazer upload da foto. Tente novamente.");
+        }
+        
+        if (fetchError.message?.includes('fetch failed') || fetchError.message?.includes('Failed to fetch')) {
+          throw new Error("Não foi possível conectar com o servidor. Verifique sua conexão e tente novamente.");
+        }
+        
+        throw fetchError;
+      }
 
       console.log("[uploadPersonPhoto] Resposta recebida:", {
         status: response.status,
