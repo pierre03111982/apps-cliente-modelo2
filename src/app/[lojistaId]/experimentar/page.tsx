@@ -976,19 +976,63 @@ export default function ExperimentarPage() {
       if (originalPhotoUrl.startsWith('blob:') || originalPhotoUrl.startsWith('data:')) {
         // Se for blob ou data URL, converter para File e fazer upload
         try {
-          const response = await fetch(originalPhotoUrl)
-          const blob = await response.blob()
+          console.log("[handleRefine] Convertendo blob/data URL para File...");
+          
+          // Criar AbortController para timeout no fetch da blob
+          const fetchController = new AbortController();
+          const fetchTimeout = setTimeout(() => fetchController.abort(), 10000); // 10 segundos para fetch
+          
+          let response: Response;
+          try {
+            response = await fetch(originalPhotoUrl, { signal: fetchController.signal });
+            clearTimeout(fetchTimeout);
+          } catch (fetchError: any) {
+            clearTimeout(fetchTimeout);
+            
+            if (fetchError.name === 'AbortError') {
+              throw new Error("Tempo de resposta excedido ao carregar a foto. Tente fazer upload novamente.");
+            }
+            
+            if (fetchError.message?.includes('fetch failed') || fetchError.message?.includes('Failed to fetch')) {
+              throw new Error("Não foi possível carregar a foto. Tente fazer upload novamente.");
+            }
+            
+            throw fetchError;
+          }
+          
+          if (!response.ok) {
+            throw new Error(`Erro ao carregar foto: ${response.status} ${response.statusText}`);
+          }
+          
+          const blob = await response.blob();
+          if (!blob || blob.size === 0) {
+            throw new Error("Foto vazia ou inválida. Tente fazer upload novamente.");
+          }
+          
           const fileName = `original-${Date.now()}.${blob.type.split('/')[1] || 'png'}`
           const file = new File([blob], fileName, { type: blob.type || 'image/png' })
+          
+          console.log("[handleRefine] Fazendo upload da foto convertida...");
           personImageUrl = await uploadPersonPhoto(file)
           console.log("[handleRefine] ✅ Foto original (blob/data) convertida e enviada:", personImageUrl?.substring(0, 50) + "...")
-        } catch (blobError) {
-          console.error("[handleRefine] Erro ao converter blob/data original para File:", blobError)
-          // Tentar usar diretamente se for HTTP
+        } catch (blobError: any) {
+          console.error("[handleRefine] Erro ao converter blob/data original para File:", {
+            message: blobError.message,
+            name: blobError.name,
+            stack: blobError.stack,
+          });
+          
+          // Se o erro já tem uma mensagem específica, usar ela
+          if (blobError.message && !blobError.message.includes("Erro ao processar foto original")) {
+            throw blobError;
+          }
+          
+          // Tentar usar diretamente se for HTTP (fallback)
           if (originalPhotoUrl.startsWith('http')) {
+            console.warn("[handleRefine] ⚠️ Usando URL HTTP diretamente como fallback");
             personImageUrl = originalPhotoUrl
           } else {
-            throw new Error("Erro ao processar foto original. Tente fazer upload novamente.")
+            throw new Error(blobError.message || "Erro ao processar foto original. Tente fazer upload novamente.");
           }
         }
       } else {
@@ -1151,17 +1195,56 @@ export default function ExperimentarPage() {
         if (userPhotoUrl.startsWith('blob:') || userPhotoUrl.startsWith('data:')) {
           console.warn("[handleVisualize] ⚠️ URL blob/data sem File, tentando converter...")
           try {
-            const response = await fetch(userPhotoUrl)
+            // Criar AbortController para timeout no fetch da blob
+            const fetchController = new AbortController();
+            const fetchTimeout = setTimeout(() => fetchController.abort(), 10000); // 10 segundos para fetch
+            
+            let response: Response;
+            try {
+              response = await fetch(userPhotoUrl, { signal: fetchController.signal });
+              clearTimeout(fetchTimeout);
+            } catch (fetchError: any) {
+              clearTimeout(fetchTimeout);
+              
+              if (fetchError.name === 'AbortError') {
+                throw new Error("Tempo de resposta excedido ao carregar a foto. Tente selecionar novamente.");
+              }
+              
+              if (fetchError.message?.includes('fetch failed') || fetchError.message?.includes('Failed to fetch')) {
+                throw new Error("Não foi possível carregar a foto. Tente selecionar novamente.");
+              }
+              
+              throw fetchError;
+            }
+            
+            if (!response.ok) {
+              throw new Error(`Erro ao carregar foto: ${response.status} ${response.statusText}`);
+            }
+            
             const blob = await response.blob()
+            if (!blob || blob.size === 0) {
+              throw new Error("Foto vazia ou inválida. Tente selecionar novamente.");
+            }
+            
             const fileName = `avatar-${Date.now()}.${blob.type.split('/')[1] || 'png'}`
             const file = new File([blob], fileName, { type: blob.type || 'image/png' })
             personImageUrl = await uploadPersonPhoto(file)
             // Salvar como original
             sessionStorage.setItem(`original_photo_${lojistaId}`, personImageUrl)
             sessionStorage.setItem(`photo_${lojistaId}`, personImageUrl)
-          } catch (blobError) {
-            console.error("[handleVisualize] Erro ao converter blob/data para File:", blobError)
-            throw new Error("Erro ao processar foto. Tente selecionar novamente.")
+          } catch (blobError: any) {
+            console.error("[handleVisualize] Erro ao converter blob/data para File:", {
+              message: blobError.message,
+              name: blobError.name,
+              stack: blobError.stack,
+            });
+            
+            // Se o erro já tem uma mensagem específica, usar ela
+            if (blobError.message && !blobError.message.includes("Erro ao processar foto")) {
+              throw blobError;
+            }
+            
+            throw new Error(blobError.message || "Erro ao processar foto. Tente selecionar novamente.")
           }
         } else {
           // URL HTTP/HTTPS (já foi enviada anteriormente)
