@@ -1002,7 +1002,7 @@ export function ExperimentarView({
       {selectedProductDetail && (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-8 sm:pt-12 backdrop-blur-sm overflow-y-auto" onClick={() => setSelectedProductDetail(null)}>
           <div
-            className="neon-border w-full max-w-2xl rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-lg p-6 shadow-2xl mb-8"
+            className="neon-border w-full max-w-2xl rounded-xl border-2 border-white/20 bg-black/50 backdrop-blur-lg p-6 shadow-2xl mb-8"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">
