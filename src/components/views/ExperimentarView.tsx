@@ -1018,13 +1018,16 @@ export function ExperimentarView({
             <div className="space-y-4">
               {/* Imagem do Produto */}
               {getProdutoImagem(selectedProductDetail) && (
-                <div className="neon-border relative w-full min-h-96 rounded-lg overflow-hidden bg-gray-900 flex items-center justify-center" style={{ position: 'relative' }}>
-                  <SafeImage
-                    src={getProdutoImagem(selectedProductDetail)!}
-                    alt={selectedProductDetail.nome}
-                    className="max-h-[600px] w-auto h-auto object-contain"
-                    loading="lazy"
-                  />
+                <div className="neon-border relative w-full min-h-96 rounded-lg overflow-hidden bg-gray-900 p-0" style={{ position: 'relative' }}>
+                  <div className="w-full h-full min-h-[400px] flex items-center justify-center">
+                    <SafeImage
+                      src={getProdutoImagem(selectedProductDetail)!}
+                      alt={selectedProductDetail.nome}
+                      className="w-full h-full object-contain"
+                      containerClassName="w-full h-full"
+                      loading="lazy"
+                    />
+                  </div>
                 </div>
               )}
 
