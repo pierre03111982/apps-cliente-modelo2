@@ -2050,7 +2050,7 @@ export default function ResultadoPage() {
 
                 {/* Produtos Selecionados - Se houver informações de produtos no favorito */}
                 {selectedFavoriteDetail.productName && (
-                  <div className="neon-border mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4 w-full">
+                  <div className="neon-border mb-6 rounded-xl border-2 border-white/20 bg-black/30 p-4 w-full">
                     <h3 className="text-lg font-bold text-white mb-3">Produtos Selecionados</h3>
                     <div className="space-y-2 mb-4">
                       <div className="flex items-center justify-between p-2 rounded-lg bg-white/5">
@@ -2232,7 +2232,7 @@ export default function ResultadoPage() {
 
                 {/* Produtos Selecionados */}
                 {selectedProducts.length > 0 && (
-                  <div className="neon-border mb-6 rounded-xl border-2 border-white/20 bg-white/5 p-4 w-full">
+                  <div className="neon-border mb-6 rounded-xl border-2 border-white/20 bg-black/30 p-4 w-full">
                     <h3 className="text-lg font-bold text-white mb-3">Produtos Selecionados</h3>
                     <div className="space-y-2 mb-4">
                       {selectedProducts.map((produto: any, index: number) => (
