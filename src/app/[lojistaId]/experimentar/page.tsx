@@ -1394,6 +1394,7 @@ export default function ExperimentarPage() {
       descontoAplicado={descontoAplicado}
       formatPrice={formatPrice}
       handleVisualize={handleVisualize}
+      handleRefine={isRefineMode ? handleRefine : undefined}
       isGenerating={isGenerating}
       generationError={generationError}
       showFavoritesModal={showFavoritesModal}

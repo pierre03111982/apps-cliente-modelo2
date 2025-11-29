@@ -54,6 +54,7 @@ export interface ExperimentarViewProps {
   descontoAplicado: boolean
   formatPrice: (value?: number | null) => string
   handleVisualize: () => void
+  handleRefine?: () => void
   isGenerating: boolean
   generationError: string | null
   showFavoritesModal: boolean
@@ -89,6 +90,7 @@ export function ExperimentarView({
   descontoAplicado,
   formatPrice,
   handleVisualize,
+  handleRefine,
   isGenerating,
   generationError,
   showFavoritesModal,
