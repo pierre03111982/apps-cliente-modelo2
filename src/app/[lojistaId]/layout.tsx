@@ -19,14 +19,29 @@ export async function generateMetadata({
   
   try {
     // Buscar dados da loja do Firestore
+    // PRIORIDADE 1: Buscar em perfil/dados (onde salvamos os dados)
     const db = getFirestoreAdmin();
-    const lojaDoc = await db.collection("lojas").doc(lojistaId).get();
+    const perfilDadosDoc = await db.collection("lojas").doc(lojistaId).collection("perfil").doc("dados").get();
     
-    if (lojaDoc.exists) {
-      const lojaData = lojaDoc.data();
+    let lojaData: any = null;
+    if (perfilDadosDoc.exists) {
+      lojaData = perfilDadosDoc.data();
+      console.log("[Layout] Perfil encontrado em perfil/dados:", lojaData?.nome || "sem nome");
+    } else {
+      // PRIORIDADE 2: Tentar buscar dados diretamente do documento da loja
+      const lojaDoc = await db.collection("lojas").doc(lojistaId).get();
+      if (lojaDoc.exists) {
+        lojaData = lojaDoc.data();
+        console.log("[Layout] Perfil encontrado no documento da loja:", lojaData?.nome || "sem nome");
+      }
+    }
+    
+    if (lojaData) {
       const nome = lojaData?.nome || "Loja";
       const descricao = lojaData?.descricao || "Experimente as roupas sem sair de casa";
       const logoUrl = lojaData?.logoUrl || null;
+      
+      console.log("[Layout] Dados da loja:", { lojistaId, nome, logoUrl: logoUrl ? "presente" : "ausente" });
       
       // URL base do site
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
@@ -34,8 +49,24 @@ export async function generateMetadata({
                      `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 
                      'https://experimente.ai';
       
-      // Imagem Open Graph (usar logo da loja ou imagem padrão)
-      const ogImage = logoUrl || `${baseUrl}/og-default.jpg`;
+      // Imagem Open Graph (usar logo da loja ou gerar dinamicamente)
+      // Garantir que a URL seja absoluta e acessível
+      let ogImage: string;
+      if (logoUrl) {
+        // Se a logoUrl já é uma URL completa (http/https), usar diretamente
+        if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) {
+          ogImage = logoUrl;
+          console.log("[Layout] Usando logoUrl completa:", ogImage);
+        } else {
+          // Se for um caminho relativo, construir URL completa
+          ogImage = logoUrl.startsWith('/') ? `${baseUrl}${logoUrl}` : `${baseUrl}/${logoUrl}`;
+          console.log("[Layout] Construindo URL completa:", ogImage);
+        }
+      } else {
+        // Fallback: gerar imagem Open Graph dinamicamente com nome da loja
+        ogImage = `${baseUrl}/api/og-image/${lojistaId}`;
+        console.log("[Layout] Logo não encontrada, usando imagem gerada:", ogImage);
+      }
       
       const themeColor = lojaData?.themeColor || '#000000';
       

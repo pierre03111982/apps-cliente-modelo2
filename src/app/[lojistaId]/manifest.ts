@@ -33,10 +33,24 @@ export async function GET(
   
   try {
     // Buscar dados da loja do Firestore
+    // PRIORIDADE 1: Buscar em perfil/dados (onde salvamos os dados)
     const db = getFirestoreAdmin();
-    const lojaDoc = await db.collection("lojas").doc(lojistaId).get();
+    const perfilDadosDoc = await db.collection("lojas").doc(lojistaId).collection("perfil").doc("dados").get();
     
-    if (!lojaDoc.exists) {
+    let lojaData: any = null;
+    if (perfilDadosDoc.exists) {
+      lojaData = perfilDadosDoc.data();
+      console.log("[Manifest] Perfil encontrado em perfil/dados:", lojaData?.nome || "sem nome");
+    } else {
+      // PRIORIDADE 2: Tentar buscar dados diretamente do documento da loja
+      const lojaDoc = await db.collection("lojas").doc(lojistaId).get();
+      if (lojaDoc.exists) {
+        lojaData = lojaDoc.data();
+        console.log("[Manifest] Perfil encontrado no documento da loja:", lojaData?.nome || "sem nome");
+      }
+    }
+    
+    if (!lojaData) {
       // Retornar manifest padrão se loja não existir
       return Response.json(getDefaultManifest(lojistaId), {
         headers: {
@@ -45,7 +59,6 @@ export async function GET(
       });
     }
     
-    const lojaData = lojaDoc.data();
     const nome = lojaData?.nome || "Loja";
     const descricao = lojaData?.descricao || "Experimente as roupas sem sair de casa";
     const appIconUrl = lojaData?.app_icon_url || lojaData?.logoUrl || '/icons/default-icon.png';
