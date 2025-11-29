@@ -1181,6 +1181,66 @@ export default function ResultadoPage() {
     }
   }, [currentLookIndex, looks, lojistaData])
 
+  // Função para comprimir imagem antes do upload
+  const compressImage = (file: File, maxWidth: number = 1920, maxHeight: number = 1920, quality: number = 0.85): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const img = new Image()
+        img.onload = () => {
+          // Calcular novas dimensões mantendo proporção
+          let width = img.width
+          let height = img.height
+          
+          if (width > maxWidth || height > maxHeight) {
+            const ratio = Math.min(maxWidth / width, maxHeight / height)
+            width = width * ratio
+            height = height * ratio
+          }
+          
+          // Criar canvas para redimensionar e comprimir
+          const canvas = document.createElement('canvas')
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')
+          
+          if (!ctx) {
+            reject(new Error('Não foi possível criar contexto do canvas'))
+            return
+          }
+          
+          // Desenhar imagem redimensionada
+          ctx.drawImage(img, 0, 0, width, height)
+          
+          // Converter para blob com compressão
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error('Erro ao comprimir imagem'))
+                return
+              }
+              
+              // Criar novo File a partir do blob
+              const compressedFile = new File([blob], file.name, {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              })
+              
+              console.log(`[compressImage] Imagem comprimida: ${(file.size / 1024 / 1024).toFixed(2)}MB -> ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`)
+              resolve(compressedFile)
+            },
+            'image/jpeg',
+            quality
+          )
+        }
+        img.onerror = () => reject(new Error('Erro ao carregar imagem'))
+        img.src = e.target?.result as string
+      }
+      reader.onerror = () => reject(new Error('Erro ao ler arquivo'))
+      reader.readAsDataURL(file)
+    })
+  }
+
   // Gerar novo look (remixar) com as mesmas foto e produtos
   const handleRegenerate = async () => {
     let phraseInterval: NodeJS.Timeout | null = null
@@ -1216,6 +1276,12 @@ export default function ResultadoPage() {
           originalPhotoUrl = sessionStorage.getItem(`photo_${lojistaId}`)
         }
       }
+      
+      // Se a foto já é HTTP/HTTPS, não precisa fazer upload novamente
+      if (originalPhotoUrl && (originalPhotoUrl.startsWith('http://') || originalPhotoUrl.startsWith('https://'))) {
+        console.log("[handleRegenerate] ✅ Foto já é HTTP, usando diretamente:", originalPhotoUrl.substring(0, 50) + "...");
+        // Pular a conversão e ir direto para a geração
+      }
 
       if (!originalPhotoUrl) {
         // Se não houver dados salvos, redirecionar para experimentar
@@ -1243,9 +1309,20 @@ export default function ResultadoPage() {
             file = new File([blob], 'photo.jpg', { type: blob.type || 'image/jpeg' });
           }
           
+          // IMPORTANTE: Comprimir imagem antes do upload para evitar erro 413 (Payload Too Large)
+          let fileToUpload = file;
+          if (file.size > 1024 * 1024) { // Se maior que 1MB
+            console.log("[handleRegenerate] Comprimindo imagem antes do upload...");
+            fileToUpload = await compressImage(file, 1920, 1920, 0.85);
+            console.log("[handleRegenerate] Imagem comprimida:", {
+              originalSize: file.size,
+              compressedSize: fileToUpload.size,
+            });
+          }
+          
           // Fazer upload para obter URL HTTP válida
           const formData = new FormData();
-          formData.append('photo', file);
+          formData.append('photo', fileToUpload);
           formData.append('lojistaId', lojistaId);
           
           // Criar AbortController para timeout
