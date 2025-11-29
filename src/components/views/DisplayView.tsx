@@ -344,7 +344,59 @@ export function DisplayView({ lojistaData }: DisplayViewProps) {
 
   }, [])
 
+  // PHASE 16: Hook useInterval para executar função periodicamente
+  const useInterval = (callback: () => void, delay: number | null) => {
+    const savedCallback = useRef<() => void>()
 
+    useEffect(() => {
+      savedCallback.current = callback
+    }, [callback])
+
+    useEffect(() => {
+      if (delay === null) return
+
+      const id = setInterval(() => {
+        savedCallback.current?.()
+      }, delay)
+
+      return () => clearInterval(id)
+    }, [delay])
+  }
+
+  // PHASE 16: Heartbeat a cada 30 segundos para manter IP atualizado
+  useInterval(() => {
+    if (!displayUuid) return
+
+    const sendHeartbeat = async () => {
+      try {
+        // Detectar backend URL
+        const isDev = window.location.hostname === "localhost"
+        const backendUrl = isDev
+          ? process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000"
+          : process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_PAINELADM_URL || "https://painel.experimenteai.com.br"
+
+        const response = await fetch(`${backendUrl}/api/display/heartbeat`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            displayUuid,
+          }),
+        })
+
+        if (response.ok) {
+          console.log("[DisplayView] ✅ Heartbeat enviado com sucesso")
+        } else {
+          console.warn("[DisplayView] ⚠️ Heartbeat falhou:", response.status)
+        }
+      } catch (error) {
+        console.error("[DisplayView] ❌ Erro ao enviar heartbeat:", error)
+      }
+    }
+
+    sendHeartbeat()
+  }, 30000) // 30 segundos
 
   // Gerar URL do QR Code (Fase 10: incluir target_display)
 

@@ -1123,6 +1123,7 @@ export default function ExperimentarPage() {
       const stored = localStorage.getItem(`cliente_${lojistaId}`)
       const clienteData = stored ? JSON.parse(stored) : null
       const clienteId = clienteData?.clienteId || null
+      const clienteNome = clienteData?.nome || clienteData?.name || null
 
       // PHASE 13: Usar a API correta (/api/generate-looks) e enviar original_photo_url explicitamente
       const payload = {
@@ -1131,6 +1132,7 @@ export default function ExperimentarPage() {
         productIds: productIds, // TODOS os produtos selecionados
         lojistaId,
         customerId: clienteId,
+        customerName: clienteNome, // Adicionar customerName para o Radar funcionar
         options: {
           quality: "high",
           // IMPORTANTE: Desabilitar watermark para remover a caixa preta com informações do produto

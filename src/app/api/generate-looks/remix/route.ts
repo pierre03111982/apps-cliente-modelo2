@@ -240,6 +240,7 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
       productIds: productIds, // PHASE 14: TODOS os produtos selecionados (não apenas o último)
       lojistaId: body.lojistaId,
       customerId: body.customerId || null,
+      customerName: body.customerName || null, // Adicionar customerName para o Radar funcionar
       scenePrompts: [remixPrompt], // PHASE 14: Prompt descritivo de remix com cenário e pose variados
       options: {
         quality: body.options?.quality || "high",

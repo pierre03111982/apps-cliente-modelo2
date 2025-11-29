@@ -1312,6 +1312,7 @@ export default function ResultadoPage() {
       const stored = localStorage.getItem(`cliente_${lojistaId}`)
       const clienteData = stored ? JSON.parse(stored) : null
       const clienteId = clienteData?.clienteId || null
+      const clienteNome = clienteData?.nome || clienteData?.name || null
 
       // PHASE 11 FIX: Usar API de Remix dedicada
       const payload = {
@@ -1320,6 +1321,7 @@ export default function ResultadoPage() {
         productIds: productIds, // IDs também para compatibilidade
         lojistaId,
         customerId: clienteId,
+        customerName: clienteNome, // Adicionar customerName para o Radar funcionar
         gender: products.find((p: any) => p.genero)?.genero || null, // Detectar gênero dos produtos
         options: { 
           quality: "high", 
