@@ -28,6 +28,7 @@ import { VideoBackground } from "../VideoBackground"
 import { SendToDisplayButton } from "../SendToDisplayButton"
 import { SmartUploadZone } from "@/components/ui/SmartUploadZone"
 import { AvatarSelector } from "@/components/ui/AvatarSelector"
+import { cn } from "@/lib/utils"
 import { PrivacyOnboardingModal } from "@/components/modals/PrivacyOnboardingModal"
 import type { LojistaData, Produto, GeneratedLook } from "@/lib/types"
 
@@ -1060,16 +1061,27 @@ export function ExperimentarView({
             disabled={isGenerating}
             variant="primary"
             size="lg"
-            className="rounded-full hover:scale-105 gap-2 sm:gap-3 px-5 sm:px-7 py-3.5 sm:py-4.5 md:py-5 text-sm sm:text-base md:text-lg font-extrabold border-4 border-white"
+            className={cn(
+              "rounded-full gap-2 sm:gap-3 px-5 sm:px-7 py-3.5 sm:py-4.5 md:py-5 text-sm sm:text-base md:text-lg font-extrabold border-4 border-white transition-all duration-300",
+              isGenerating 
+                ? "opacity-50 cursor-not-allowed pointer-events-none" 
+                : "hover:scale-105 cursor-pointer"
+            )}
             style={{
-              background: 'linear-gradient(45deg, rgba(37,99,235,1), rgba(147,51,234,1), rgba(249,115,22,1), rgba(34,197,94,1))',
+              background: isGenerating 
+                ? 'linear-gradient(45deg, rgba(37,99,235,0.5), rgba(147,51,234,0.5), rgba(249,115,22,0.5), rgba(34,197,94,0.5))'
+                : 'linear-gradient(45deg, rgba(37,99,235,1), rgba(147,51,234,1), rgba(249,115,22,1), rgba(34,197,94,1))',
               color: '#ffffff',
               textShadow: '2px 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.5)',
-              boxShadow: '0 10px 40px rgba(0,0,0,0.5), 0 0 20px rgba(0,0,0,0.3)',
-              animation: 'pulse-scale 2s ease-in-out infinite',
+              boxShadow: isGenerating 
+                ? '0 5px 20px rgba(0,0,0,0.3), 0 0 10px rgba(0,0,0,0.2)'
+                : '0 10px 40px rgba(0,0,0,0.5), 0 0 20px rgba(0,0,0,0.3)',
+              animation: isGenerating ? 'none' : 'pulse-scale 2s ease-in-out infinite',
             }}
           >
-            <Wand2 className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-white drop-shadow-lg" style={{ color: '#ffffff' }} />
+            {!isGenerating && (
+              <Wand2 className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-white drop-shadow-lg" style={{ color: '#ffffff' }} />
+            )}
             <span className="hidden sm:inline font-extrabold" style={{ color: '#ffffff' }}>CRIAR LOOK</span>
             <span className="sm:hidden font-extrabold" style={{ color: '#ffffff' }}>CRIAR</span>
           </Button>
