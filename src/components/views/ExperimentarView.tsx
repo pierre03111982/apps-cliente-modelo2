@@ -1053,7 +1053,7 @@ export function ExperimentarView({
       </div>
 
       {/* Botão FAB - Visualize (fixo no rodapé com z-index alto) - Oculto quando modal de detalhes do produto estiver aberto */}
-      {(userPhotoUrl) && selectedProducts.length > 0 && !selectedProductDetail && (
+      {(userPhotoUrl) && selectedProducts.length > 0 && !selectedProductDetail && !isGenerating && (
         <div 
           className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[9999] transition-all duration-500"
           style={{ 
@@ -1063,31 +1063,22 @@ export function ExperimentarView({
         >
           <Button
             onClick={handleCreateClick}
-            isLoading={isGenerating}
-            disabled={isGenerating}
+            isLoading={false}
+            disabled={false}
             variant="primary"
             size="lg"
             className={cn(
-              "rounded-full gap-2 sm:gap-3 px-5 sm:px-7 py-3.5 sm:py-4.5 md:py-5 text-sm sm:text-base md:text-lg font-extrabold border-4 border-white transition-all duration-300",
-              isGenerating 
-                ? "opacity-50 cursor-not-allowed pointer-events-none" 
-                : "hover:scale-105 cursor-pointer"
+              "rounded-full gap-2 sm:gap-3 px-5 sm:px-7 py-3.5 sm:py-4.5 md:py-5 text-sm sm:text-base md:text-lg font-extrabold border-4 border-white transition-all duration-300 hover:scale-105 cursor-pointer"
             )}
             style={{
-              background: isGenerating 
-                ? 'linear-gradient(45deg, rgba(37,99,235,0.5), rgba(147,51,234,0.5), rgba(249,115,22,0.5), rgba(34,197,94,0.5))'
-                : 'linear-gradient(45deg, rgba(37,99,235,1), rgba(147,51,234,1), rgba(249,115,22,1), rgba(34,197,94,1))',
+              background: 'linear-gradient(45deg, rgba(37,99,235,1), rgba(147,51,234,1), rgba(249,115,22,1), rgba(34,197,94,1))',
               color: '#ffffff',
               textShadow: '2px 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.5)',
-              boxShadow: isGenerating 
-                ? '0 5px 20px rgba(0,0,0,0.3), 0 0 10px rgba(0,0,0,0.2)'
-                : '0 10px 40px rgba(0,0,0,0.5), 0 0 20px rgba(0,0,0,0.3)',
-              animation: isGenerating ? 'none' : 'pulse-scale 2s ease-in-out infinite',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.5), 0 0 20px rgba(0,0,0,0.3)',
+              animation: 'pulse-scale 2s ease-in-out infinite',
             }}
           >
-            {!isGenerating && (
-              <Wand2 className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-white drop-shadow-lg" style={{ color: '#ffffff' }} />
-            )}
+            <Wand2 className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-white drop-shadow-lg" style={{ color: '#ffffff' }} />
             <span className="hidden sm:inline font-extrabold" style={{ color: '#ffffff' }}>CRIAR LOOK</span>
             <span className="sm:hidden font-extrabold" style={{ color: '#ffffff' }}>CRIAR</span>
           </Button>
