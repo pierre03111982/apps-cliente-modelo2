@@ -37,9 +37,15 @@ export async function generateMetadata({
       // Imagem Open Graph (usar logo da loja ou imagem padrão)
       const ogImage = logoUrl || `${baseUrl}/og-default.jpg`;
       
+      const themeColor = lojaData?.themeColor || '#000000';
+      
       return {
         title: `${nome} | Provador Virtual com IA`,
         description: `Experimente as roupas da ${nome} sem sair de casa. ${descricao}. Tecnologia de Provador Virtual Inteligente.`,
+        other: {
+          'theme-color': themeColor,
+          'msapplication-navbutton-color': themeColor,
+        },
         openGraph: {
           title: `${nome} | Provador Virtual com IA`,
           description: `Experimente as roupas da ${nome} sem sair de casa. Tecnologia de Provador Virtual Inteligente.`,
@@ -70,6 +76,10 @@ export async function generateMetadata({
   return {
     title: "Provador Virtual com IA | Experimente.ai",
     description: "Experimente roupas sem sair de casa. Tecnologia de Provador Virtual Inteligente.",
+    other: {
+      'theme-color': '#000000',
+      'msapplication-navbutton-color': '#000000',
+    },
     openGraph: {
       title: "Provador Virtual com IA | Experimente.ai",
       description: "Experimente roupas sem sair de casa. Tecnologia de Provador Virtual Inteligente.",

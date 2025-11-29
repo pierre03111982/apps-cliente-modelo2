@@ -50,7 +50,8 @@ export async function GET(
     const descricao = lojaData?.descricao || "Experimente as roupas sem sair de casa";
     const appIconUrl = lojaData?.app_icon_url || lojaData?.logoUrl || '/icons/default-icon.png';
     const themeColor = lojaData?.themeColor || '#000000';
-    const backgroundColor = lojaData?.backgroundColor || '#ffffff';
+    // PHASE 17: Background color preto para barra de navegação inferior
+    const backgroundColor = lojaData?.backgroundColor || '#000000';
     
     // URL base
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
@@ -119,7 +120,7 @@ function getDefaultManifest(lojistaId: string): Manifest {
     description: "Experimente roupas sem sair de casa",
     start_url: `/${lojistaId}/experimentar`,
     display: 'standalone',
-    background_color: '#ffffff',
+    background_color: '#000000', // PHASE 17: Preto para barra de navegação inferior
     theme_color: '#000000',
     icons: [
       {
