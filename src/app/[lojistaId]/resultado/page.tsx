@@ -1223,24 +1223,74 @@ export default function ResultadoPage() {
         return
       }
 
-      // FIX MOBILE: Se a URL for blob: ou data:, converter para uma URL HTTP válida
-      // URLs blob: não podem ser acessadas pelo backend, precisam ser convertidas
-      if (originalPhotoUrl.startsWith('blob:')) {
+      // FIX MOBILE: Se a URL for blob: ou data:, fazer upload para obter URL HTTP válida
+      // URLs blob: e data: não podem ser acessadas pelo backend, precisam ser convertidas para HTTP
+      if (originalPhotoUrl.startsWith('blob:') || originalPhotoUrl.startsWith('data:')) {
         try {
-          console.log("[handleRegenerate] Convertendo blob URL para data URL...");
-          const response = await fetch(originalPhotoUrl);
-          const blob = await response.blob();
-          const reader = new FileReader();
-          const dataUrl = await new Promise<string>((resolve, reject) => {
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
+          console.log("[handleRegenerate] Convertendo blob/data URL para URL HTTP...");
+          
+          let file: File;
+          
+          if (originalPhotoUrl.startsWith('blob:')) {
+            // Converter blob: para File
+            const response = await fetch(originalPhotoUrl);
+            const blob = await response.blob();
+            file = new File([blob], 'photo.jpg', { type: blob.type || 'image/jpeg' });
+          } else {
+            // Converter data: para File
+            const response = await fetch(originalPhotoUrl);
+            const blob = await response.blob();
+            file = new File([blob], 'photo.jpg', { type: blob.type || 'image/jpeg' });
+          }
+          
+          // Fazer upload para obter URL HTTP válida
+          const formData = new FormData();
+          formData.append('photo', file);
+          formData.append('lojistaId', lojistaId);
+          
+          const uploadResponse = await fetch('/api/upload-photo', {
+            method: 'POST',
+            body: formData,
           });
-          originalPhotoUrl = dataUrl;
-          console.log("[handleRegenerate] Blob convertido para data URL com sucesso");
-        } catch (blobError) {
-          console.error("[handleRegenerate] Erro ao converter blob URL:", blobError);
-          throw new Error("Erro ao processar foto. Por favor, faça upload de uma nova foto.");
+          
+          if (!uploadResponse.ok) {
+            let errorData: any = {};
+            try {
+              const errorText = await uploadResponse.text();
+              if (errorText) {
+                errorData = JSON.parse(errorText);
+              }
+            } catch (parseError) {
+              console.error("[handleRegenerate] Erro ao parsear resposta de erro:", parseError);
+            }
+            throw new Error(errorData.error || errorData.message || `Erro ao fazer upload: ${uploadResponse.status}`);
+          }
+          
+          let uploadData: any;
+          try {
+            const uploadText = await uploadResponse.text();
+            if (!uploadText) {
+              throw new Error("Resposta vazia do servidor");
+            }
+            uploadData = JSON.parse(uploadText);
+          } catch (parseError) {
+            console.error("[handleRegenerate] Erro ao parsear resposta de upload:", parseError);
+            throw new Error("Erro ao processar resposta do servidor de upload");
+          }
+          
+          // A API retorna imageUrl
+          if (!uploadData.imageUrl || !uploadData.imageUrl.startsWith('http')) {
+            console.error("[handleRegenerate] URL de upload inválida:", uploadData);
+            throw new Error('URL de upload inválida retornada pelo servidor');
+          }
+          
+          originalPhotoUrl = uploadData.imageUrl;
+          // Atualizar sessionStorage com a URL HTTP válida
+          sessionStorage.setItem(`original_photo_${lojistaId}`, originalPhotoUrl);
+          console.log("[handleRegenerate] Blob/data URL convertida para URL HTTP com sucesso:", originalPhotoUrl.substring(0, 100));
+        } catch (uploadError: any) {
+          console.error("[handleRegenerate] Erro ao converter/fazer upload da foto:", uploadError);
+          throw new Error(`Erro ao processar foto: ${uploadError.message || 'Por favor, faça upload de uma nova foto.'}`);
         }
       }
 

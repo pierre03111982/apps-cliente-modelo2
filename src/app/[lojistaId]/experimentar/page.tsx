@@ -1082,8 +1082,8 @@ export default function ExperimentarPage() {
         console.log("[handleVisualize] ✅ Foto salva como original:", personImageUrl?.substring(0, 50) + "...")
       } else if (userPhotoUrl) {
         // Fallback: Se não tiver original nem File, usar URL atual
-        if (userPhotoUrl.startsWith('blob:')) {
-          console.warn("[handleVisualize] ⚠️ URL blob sem File, tentando converter...")
+        if (userPhotoUrl.startsWith('blob:') || userPhotoUrl.startsWith('data:')) {
+          console.warn("[handleVisualize] ⚠️ URL blob/data sem File, tentando converter...")
           try {
             const response = await fetch(userPhotoUrl)
             const blob = await response.blob()
@@ -1092,8 +1092,9 @@ export default function ExperimentarPage() {
             personImageUrl = await uploadPersonPhoto(file)
             // Salvar como original
             sessionStorage.setItem(`original_photo_${lojistaId}`, personImageUrl)
+            sessionStorage.setItem(`photo_${lojistaId}`, personImageUrl)
           } catch (blobError) {
-            console.error("[handleVisualize] Erro ao converter blob para File:", blobError)
+            console.error("[handleVisualize] Erro ao converter blob/data para File:", blobError)
             throw new Error("Erro ao processar foto. Tente selecionar novamente.")
           }
         } else {
