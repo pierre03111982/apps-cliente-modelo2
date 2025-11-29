@@ -41,6 +41,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validar se a URL da foto original é válida
+    try {
+      const photoUrl = new URL(body.original_photo_url);
+      if (!photoUrl.protocol.startsWith('http')) {
+        return NextResponse.json(
+          { error: "URL da foto original inválida", details: "A URL deve começar com http:// ou https://" },
+          { status: 400 }
+        );
+      }
+    } catch (urlError) {
+      console.error("[remix] Erro ao validar URL da foto:", urlError);
+      return NextResponse.json(
+        { error: "URL da foto original inválida", details: "A URL fornecida não é válida" },
+        { status: 400 }
+      );
+    }
+
     // PHASE 11 FIX: Aceitar products[] array OU productIds[]
     let productIds: string[] = [];
     let products: any[] = [];
@@ -246,10 +263,12 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
     });
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minutos
+    // Aumentar timeout para 3 minutos em dispositivos móveis (conexões mais lentas)
+    const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutos
 
     let backendResponse: Response;
     try {
+      console.log("[remix] Iniciando requisição para backend...");
       backendResponse = await fetch(
         `${backendUrl}/api/lojista/composicoes/generate`,
         {
@@ -262,31 +281,43 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
         }
       );
       clearTimeout(timeoutId);
+      console.log("[remix] Resposta recebida do backend:", backendResponse.status);
     } catch (fetchError: any) {
       clearTimeout(timeoutId);
-      console.error("[remix] Erro ao conectar com backend:", fetchError);
+      console.error("[remix] Erro ao conectar com backend:", {
+        name: fetchError.name,
+        message: fetchError.message,
+        stack: fetchError.stack,
+      });
       
-      if (fetchError.name === 'AbortError' || fetchError.message?.includes('timeout')) {
+      if (fetchError.name === 'AbortError' || fetchError.message?.includes('timeout') || fetchError.message?.includes('aborted')) {
         return NextResponse.json(
           {
-            error: "Timeout ao gerar remix. O processo está demorando mais que o esperado.",
-            details: "Tente novamente em alguns instantes.",
+            error: "Erro ao gerar composição",
+            details: "O processo está demorando mais que o esperado. Tente novamente em alguns instantes.",
           },
           { status: 504 }
         );
       }
       
-      if (fetchError.message?.includes('ECONNREFUSED') || fetchError.message?.includes('fetch failed')) {
+      if (fetchError.message?.includes('ECONNREFUSED') || fetchError.message?.includes('fetch failed') || fetchError.message?.includes('network')) {
         return NextResponse.json(
           {
-            error: "Servidor backend não está disponível.",
-            details: `Verifique se o backend está rodando em ${backendUrl}`,
+            error: "Erro ao gerar composição",
+            details: "Não foi possível conectar ao servidor. Verifique sua conexão com a internet.",
           },
           { status: 503 }
         );
       }
       
-      throw fetchError;
+      // Erro genérico de rede
+      return NextResponse.json(
+        {
+          error: "Erro ao gerar composição",
+          details: "Erro de conexão. Tente novamente em alguns instantes.",
+        },
+        { status: 500 }
+      );
     }
 
     let data: any;
@@ -319,12 +350,32 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
         status: backendResponse.status,
         error: data.error,
         details: data.details,
+        message: data.message,
+        fullResponse: JSON.stringify(data).substring(0, 500),
       });
+      
+      // Mensagens mais amigáveis para diferentes códigos de erro
+      let errorMessage = data.error || data.message || "Erro ao gerar composição";
+      let errorDetails = data.details || `Status: ${backendResponse.status}`;
+      
+      if (backendResponse.status === 500) {
+        errorMessage = "Erro ao gerar composição";
+        errorDetails = "Erro interno do servidor. Tente novamente em alguns instantes.";
+      } else if (backendResponse.status === 503) {
+        errorMessage = "Erro ao gerar composição";
+        errorDetails = "Serviço temporariamente indisponível. Tente novamente em alguns instantes.";
+      } else if (backendResponse.status === 429 || data.error?.includes('RESOURCE_EXHAUSTED') || data.error?.includes('rate limit')) {
+        errorMessage = "Erro ao gerar composição";
+        errorDetails = "Muitas requisições. Aguarde alguns instantes e tente novamente.";
+      } else if (backendResponse.status === 400) {
+        errorMessage = "Erro ao gerar composição";
+        errorDetails = data.details || "Dados inválidos. Verifique se a foto e os produtos estão corretos.";
+      }
       
       return NextResponse.json(
         {
-          error: data.error || data.message || "Erro ao gerar remix",
-          details: data.details || `Status: ${backendResponse.status}`,
+          error: errorMessage,
+          details: errorDetails,
         },
         { status: backendResponse.status }
       );
@@ -352,25 +403,30 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
   } catch (error: any) {
     console.error("[remix] Erro inesperado:", error);
     console.error("[remix] Stack:", error?.stack);
+    console.error("[remix] Tipo do erro:", typeof error);
+    console.error("[remix] Propriedades do erro:", Object.keys(error || {}));
     
     const errorMessage = error instanceof Error ? error.message : String(error);
     const errorName = error?.name || "UnknownError";
     
-    let userFriendlyMessage = "Erro interno ao gerar remix";
-    let details = process.env.NODE_ENV === 'development' ? errorMessage : "Erro ao processar requisição.";
+    let userFriendlyMessage = "Erro ao gerar composição";
+    let details = "Erro ao processar requisição. Tente novamente em alguns instantes.";
     
-    if (errorName === "AbortError" || errorMessage?.includes("timeout")) {
-      userFriendlyMessage = "Timeout ao gerar remix. O processo está demorando mais que o esperado.";
-      details = "Tente novamente em alguns instantes.";
-    } else if (errorMessage?.includes("ECONNREFUSED") || errorMessage?.includes("fetch failed")) {
-      userFriendlyMessage = "Servidor backend não está disponível.";
-      details = `Verifique se o backend está rodando.`;
-    } else if (errorMessage?.includes("JSON")) {
-      userFriendlyMessage = "Erro ao processar resposta do servidor.";
-      details = "A resposta do backend não está em formato válido.";
-    } else if (errorMessage?.includes("429") || errorMessage?.includes("RESOURCE_EXHAUSTED")) {
-      userFriendlyMessage = "Limite de requisições atingido.";
-      details = "Por favor, aguarde alguns instantes e tente novamente.";
+    if (errorName === "AbortError" || errorMessage?.includes("timeout") || errorMessage?.includes("aborted")) {
+      userFriendlyMessage = "Erro ao gerar composição";
+      details = "O processo está demorando mais que o esperado. Tente novamente em alguns instantes.";
+    } else if (errorMessage?.includes("ECONNREFUSED") || errorMessage?.includes("fetch failed") || errorMessage?.includes("network")) {
+      userFriendlyMessage = "Erro ao gerar composição";
+      details = "Não foi possível conectar ao servidor. Verifique sua conexão com a internet.";
+    } else if (errorMessage?.includes("JSON") || errorMessage?.includes("parse")) {
+      userFriendlyMessage = "Erro ao gerar composição";
+      details = "Erro ao processar resposta do servidor. Tente novamente.";
+    } else if (errorMessage?.includes("429") || errorMessage?.includes("RESOURCE_EXHAUSTED") || errorMessage?.includes("rate limit")) {
+      userFriendlyMessage = "Erro ao gerar composição";
+      details = "Muitas requisições. Aguarde alguns instantes e tente novamente.";
+    } else if (errorMessage?.includes("400") || errorMessage?.includes("Bad Request")) {
+      userFriendlyMessage = "Erro ao gerar composição";
+      details = "Dados inválidos. Verifique se a foto e os produtos estão corretos.";
     }
     
     return NextResponse.json(

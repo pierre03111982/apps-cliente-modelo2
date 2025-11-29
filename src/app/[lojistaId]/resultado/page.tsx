@@ -1276,12 +1276,33 @@ export default function ResultadoPage() {
       }
 
       if (!response.ok) {
-        // Usar apenas a mensagem amigável do backend (já trata erro 429)
-        const errorMessage = responseData?.error || responseData?.details || `Erro ao gerar novo look (${response.status})`;
+        // Usar mensagem amigável do backend
+        let errorMessage = responseData?.error || responseData?.details || "Erro ao gerar composição";
+        const errorDetails = responseData?.details || "";
+        
+        // Mensagens mais amigáveis para diferentes códigos de erro
+        if (response.status === 500) {
+          errorMessage = "Erro ao gerar composição";
+        } else if (response.status === 503) {
+          errorMessage = "Erro ao gerar composição";
+        } else if (response.status === 504) {
+          errorMessage = "Erro ao gerar composição";
+        } else if (response.status === 429) {
+          errorMessage = "Erro ao gerar composição";
+        } else if (response.status === 400) {
+          errorMessage = "Erro ao gerar composição";
+        }
+        
+        // Combinar mensagem e detalhes se disponível
+        if (errorDetails && errorDetails !== errorMessage) {
+          errorMessage = `${errorMessage}. ${errorDetails}`;
+        }
+        
         console.error("[handleRegenerate] Erro do servidor:", {
           status: response.status,
           error: responseData?.error,
           details: responseData?.details,
+          fullResponse: responseData,
         });
         throw new Error(errorMessage);
       }
@@ -1371,11 +1392,18 @@ export default function ResultadoPage() {
       }
       
       // Mensagem de erro mais amigável
-      const errorMessage = error.message || "Erro ao remixar look. Tente novamente."
+      let errorMessage = error.message || "Erro ao gerar composição";
+      
+      // Garantir que a mensagem seja sempre "Erro ao gerar composição" para consistência
+      if (!errorMessage.includes("Erro ao gerar composição")) {
+        errorMessage = `Erro ao gerar composição. ${errorMessage}`;
+      }
+      
       console.error("[handleRegenerate] Erro completo:", {
         message: error.message,
         name: error.name,
         stack: error.stack,
+        originalError: error,
       });
       
       // Usar toast ou alert dependendo do que estiver disponível
