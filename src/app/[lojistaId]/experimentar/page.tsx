@@ -681,51 +681,55 @@ export default function ExperimentarPage() {
       return
     }
 
-    // Em modo refinamento (Trocar Produto), permitir apenas 1 produto (qualquer categoria)
-    if (isRefineMode) {
-      if (selectedProducts.length >= 1) {
-        toast.error("Para trocar o produto, desmarque o produto atual primeiro", {
-          duration: 3000,
-          icon: "⚠️",
-        })
-        setCategoryWarning(
-          "Para trocar o produto, desmarque o produto atual primeiro."
-        )
-        setTimeout(() => setCategoryWarning(null), 5000)
-        return
-      }
-    } else {
-      // Modo normal: verificar se já existe produto da mesma categoria
-      // EXCEÇÃO: Cosméticos e Joias podem ser selecionados juntos
-      const categoriaPermitidaMultipla = produto.categoria?.toLowerCase().includes("cosmético") || 
-                                         produto.categoria?.toLowerCase().includes("cosmetico") ||
-                                         produto.categoria?.toLowerCase().includes("joia") ||
-                                         produto.categoria?.toLowerCase().includes("joias")
-      
-      if (!categoriaPermitidaMultipla) {
+    // Função auxiliar para verificar se é categoria permitida múltipla (Cosméticos e Joias)
+    const isCategoriaPermitidaMultipla = (categoria: string | null | undefined) => {
+      const cat = categoria?.toLowerCase() || ""
+      return cat.includes("cosmético") || cat.includes("cosmetico") || cat.includes("joia") || cat.includes("joias")
+    }
+
+    // Função auxiliar para verificar se produtos são da mesma categoria
+    const isMesmaCategoria = (cat1: string | null | undefined, cat2: string | null | undefined) => {
+      const c1 = cat1?.toLowerCase() || ""
+      const c2 = cat2?.toLowerCase() || ""
+      return c1 === c2 && c1 !== ""
+    }
+
+    // Lógica única para modo normal e modo refinamento (Trocar Produto)
+    // Máximo de 2 produtos simultâneos
+    // Verificar se já tem 2 produtos selecionados
+    if (selectedProducts.length >= 2) {
+      // Já tem 2 produtos: verificar se pode substituir ou precisa desmarcar
+      if (!isCategoriaPermitidaMultipla(produto.categoria)) {
         const existingProductInCategory = selectedProducts.find(
-          (p) => {
-            const pCategoria = p.categoria?.toLowerCase() || ""
-            const produtoCategoria = produto.categoria?.toLowerCase() || ""
-            return pCategoria === produtoCategoria && pCategoria !== ""
-          }
+          (p) => isMesmaCategoria(p.categoria, produto.categoria)
         )
 
         if (existingProductInCategory) {
-          toast.error(`Você já selecionou um produto da categoria "${produto.categoria}". Selecione produtos de categorias diferentes.`, {
+          // Mesma categoria: permitir substituir automaticamente (remove o antigo e adiciona o novo)
+          const updated = selectedProducts.filter((p) => !isMesmaCategoria(p.categoria, produto.categoria))
+          updated.push(produto)
+          setSelectedProducts(updated)
+          sessionStorage.setItem(`products_${lojistaId}`, JSON.stringify(updated))
+          setCategoryWarning(null)
+          toast.success("Produto substituído com sucesso!", {
+            duration: 2000,
+            icon: "✅",
+          })
+          return
+        } else {
+          // Categoria diferente e já tem 2 produtos: avisar que precisa desmarcar
+          toast.error("Você já selecionou 2 produtos. Desmarque um produto antes de selecionar outro de uma categoria diferente.", {
             duration: 4000,
             icon: "⚠️",
           })
           setCategoryWarning(
-            `Você já selecionou um produto da categoria "${produto.categoria}". Selecione produtos de categorias diferentes.`
+            "Você já selecionou 2 produtos. Desmarque um produto antes de selecionar outro de uma categoria diferente."
           )
           setTimeout(() => setCategoryWarning(null), 5000)
           return
         }
-      }
-
-      // Limitar a 2 produtos - se já tem 2, pedir para desmarcar antes de selecionar outro
-      if (selectedProducts.length >= 2) {
+      } else {
+        // É categoria permitida múltipla (Cosméticos/Joias) mas já tem 2 produtos: avisar
         toast.error("Você já selecionou 2 produtos. Desmarque um produto antes de selecionar outro.", {
           duration: 4000,
           icon: "⚠️",
@@ -737,7 +741,32 @@ export default function ExperimentarPage() {
         return
       }
     }
+    
+    // Se há espaço disponível (menos de 2 produtos)
+    // Verificar se já existe produto da mesma categoria (exceto Cosméticos e Joias)
+    if (!isCategoriaPermitidaMultipla(produto.categoria)) {
+      const existingProductInCategory = selectedProducts.find(
+        (p) => isMesmaCategoria(p.categoria, produto.categoria)
+      )
 
+      if (existingProductInCategory) {
+        // Mesma categoria: permitir substituir automaticamente (remove o antigo e adiciona o novo)
+        const updated = selectedProducts.filter((p) => !isMesmaCategoria(p.categoria, produto.categoria))
+        updated.push(produto)
+        setSelectedProducts(updated)
+        sessionStorage.setItem(`products_${lojistaId}`, JSON.stringify(updated))
+        setCategoryWarning(null)
+        toast.success("Produto substituído com sucesso!", {
+          duration: 2000,
+          icon: "✅",
+        })
+        return
+      }
+    }
+    // Se não há produto da mesma categoria ou é categoria permitida múltipla, permitir adicionar
+    // (continua para adicionar o produto no final da função)
+
+    // Adicionar novo produto
     const updated = [...selectedProducts, produto]
     setSelectedProducts(updated)
     sessionStorage.setItem(`products_${lojistaId}`, JSON.stringify(updated))
@@ -897,12 +926,7 @@ export default function ExperimentarPage() {
   // Refinar look (adicionar acessórios)
   const handleRefine = async () => {
     if (!refineBaseImageUrl || selectedProducts.length === 0) {
-      toast.error("Selecione um produto para adicionar ao look")
-      return
-    }
-
-    if (selectedProducts.length > 1) {
-      toast.error("Em modo de refinamento, você pode selecionar apenas 1 produto.")
+      toast.error("Selecione pelo menos 1 produto para refinar o look")
       return
     }
 
@@ -1007,14 +1031,8 @@ export default function ExperimentarPage() {
     }
   }
 
-  // Gerar looks
+  // Gerar looks (modo normal e modo refine usam a MESMA lógica de geração)
   const handleVisualize = async () => {
-    // Se estiver em modo refinamento, usar handleRefine
-    if (isRefineMode) {
-      await handleRefine()
-      return
-    }
-
     if ((!userPhoto && !userPhotoUrl) || selectedProducts.length === 0) return
 
     try {
@@ -1114,7 +1132,9 @@ export default function ExperimentarPage() {
         customerId: clienteId,
         options: {
           quality: "high",
-          skipWatermark: false,
+          // IMPORTANTE: Desabilitar watermark para remover a caixa preta com informações do produto
+          // Quando skipWatermark = true, o orquestrador não aplica a sobreposição preta no canto da imagem
+          skipWatermark: true,
           lookType: "creative", // Sempre usar Look Criativo para multi-produto
         },
       }

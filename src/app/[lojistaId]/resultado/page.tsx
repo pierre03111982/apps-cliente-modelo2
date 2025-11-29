@@ -1563,7 +1563,7 @@ export default function ResultadoPage() {
             className="neon-border rounded-xl border-2 border-white/30 backdrop-blur-md px-3 sm:px-4 py-2 shadow-xl flex items-center justify-center gap-2 sm:gap-3 relative"
             style={{
               background:
-                "linear-gradient(to right, rgba(0,0,0,0.5), rgba(147,51,234,0.5), rgba(59,130,246,0.5), rgba(147,51,234,0.5), rgba(0,0,0,0.5))",
+                "linear-gradient(to right, rgba(0,0,0,0.75), rgba(147,51,234,0.75), rgba(59,130,246,0.75), rgba(147,51,234,0.75), rgba(0,0,0,0.75))",
               backdropFilter: "blur(12px)",
               WebkitBackdropFilter: "blur(12px)",
             }}
@@ -1716,7 +1716,7 @@ export default function ResultadoPage() {
                           handleLike()
                         }} 
                         disabled={isRemixing || hasVoted || loadingAction === "like"}
-                        className={`flex flex-1 items-center justify-center gap-2 rounded-full bg-green-600 px-6 py-2 text-white font-semibold shadow-lg transition ${
+                        className={`neon-border-green flex flex-1 items-center justify-center gap-2 rounded-full bg-green-600 px-6 py-2 text-white font-semibold shadow-lg transition ${
                           isRemixing || hasVoted || loadingAction === "like" ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700 active:scale-95'
                         }`}
                     >
@@ -1750,7 +1750,7 @@ export default function ResultadoPage() {
                         <button 
                             onClick={handleCheckout} 
                             disabled={isRemixing}
-                            className={`w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-bold text-white text-base transition relative overflow-hidden ${
+                            className={`neon-border-blue w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-bold text-white text-base transition relative overflow-hidden ${
                               isRemixing ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'
                             }`}
                             style={{ 
@@ -1763,7 +1763,7 @@ export default function ResultadoPage() {
                         <button 
                             onClick={handleCheckout} 
                             disabled={isRemixing}
-                            className={`w-full flex items-center justify-center gap-2 rounded-xl bg-white py-2 font-semibold text-gray-800 text-sm transition shadow-md ${
+                            className={`neon-border-white w-full flex items-center justify-center gap-2 rounded-xl bg-white py-2 font-semibold text-gray-800 text-sm transition shadow-md ${
                               isRemixing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'
                             }`}
                         >
@@ -1777,7 +1777,7 @@ export default function ResultadoPage() {
                         <button 
                             onClick={handleShare} 
                             disabled={isRemixing}
-                            className={`flex items-center justify-center rounded-xl bg-blue-600 py-3 font-semibold text-white text-sm transition shadow-md ${
+                            className={`neon-border-blue flex items-center justify-center rounded-xl bg-blue-600 py-3 font-semibold text-white text-sm transition shadow-md ${
                               isRemixing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
                             }`}
                         >
@@ -1786,7 +1786,7 @@ export default function ResultadoPage() {
                         <button 
                             onClick={handleWhatsApp} 
                             disabled={isRemixing || !hasWhatsApp}
-                            className={`flex items-center justify-center rounded-xl bg-green-600 py-3 font-semibold text-white text-sm transition shadow-md ${
+                            className={`neon-border-green flex items-center justify-center rounded-xl bg-green-600 py-3 font-semibold text-white text-sm transition shadow-md ${
                               isRemixing || !hasWhatsApp ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'
                             }`}
                             title={hasWhatsApp ? "Abrir WhatsApp da loja" : "WhatsApp não disponível"}
@@ -1807,7 +1807,7 @@ export default function ResultadoPage() {
                               setShowFavoritesModal(true)
                             }} 
                             disabled={isRemixing}
-                            className={`flex items-center justify-center rounded-xl bg-pink-600 py-3 font-semibold text-white text-sm transition shadow-md ${
+                            className={`neon-border-pink flex items-center justify-center rounded-xl bg-pink-600 py-3 font-semibold text-white text-sm transition shadow-md ${
                               isRemixing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-pink-700'
                             }`}
                         >
@@ -1816,7 +1816,7 @@ export default function ResultadoPage() {
                         <button 
                             onClick={handleDownload} 
                             disabled={isRemixing}
-                            className={`flex items-center justify-center rounded-xl bg-black py-3 font-semibold text-white text-sm transition shadow-md ${
+                            className={`neon-border-black flex items-center justify-center rounded-xl bg-black py-3 font-semibold text-white text-sm transition shadow-md ${
                               isRemixing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-900'
                             }`}
                         >
@@ -1830,9 +1830,12 @@ export default function ResultadoPage() {
                       <button 
                           onClick={handleAddAccessory} 
                           disabled={isRemixing}
-                          className={`w-full flex items-center justify-center gap-2 rounded-xl bg-purple-600 py-3 font-semibold text-white text-sm transition shadow-md ${
-                            isRemixing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-purple-700'
+                          className={`neon-border-purple w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold text-white text-sm transition-all duration-300 shadow-md ${
+                            isRemixing ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50 active:scale-100'
                           }`}
+                          style={{
+                            background: isRemixing ? "linear-gradient(to right, #6b21a8, #9333ea, #6b21a8)" : "linear-gradient(to right, #6b21a8, #9333ea, #6b21a8)",
+                          }}
                       >
                           <Sparkles className="h-4 w-4" /> Trocar Produto
                       </button>
@@ -1840,7 +1843,10 @@ export default function ResultadoPage() {
                         <button 
                           onClick={handleRegenerate} 
                           disabled={loadingAction === "remix"} 
-                          className="w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold text-white text-sm transition shadow-md bg-green-600 hover:bg-green-700 disabled:opacity-50"
+                          className="neon-border-green w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold text-white text-sm transition-all duration-300 shadow-md disabled:opacity-50 hover:scale-105 hover:shadow-lg hover:shadow-green-500/50 active:scale-100"
+                          style={{
+                            background: loadingAction === "remix" ? "linear-gradient(to right, #15803d, #22c55e, #15803d)" : "linear-gradient(to right, #15803d, #22c55e, #15803d)",
+                          }}
                         >
                           {loadingAction === "remix" ? (
                             <ClockAnimation size={20} />
@@ -1853,9 +1859,12 @@ export default function ResultadoPage() {
                       <button 
                           onClick={handleGoHome} 
                           disabled={isRemixing}
-                          className={`w-full flex items-center justify-center gap-2 rounded-xl bg-orange-600 py-3 font-semibold text-white text-sm transition shadow-md ${
-                            isRemixing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-orange-700'
+                          className={`neon-border-orange w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold text-white text-sm transition-all duration-300 shadow-md ${
+                            isRemixing ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 hover:shadow-lg hover:shadow-orange-500/50 active:scale-100'
                           }`}
+                          style={{
+                            background: isRemixing ? "linear-gradient(to right, #c2410c, #f97316, #c2410c)" : "linear-gradient(to right, #c2410c, #f97316, #c2410c)",
+                          }}
                       >
                           <Home className="h-4 w-4" /> Voltar as Compras
                       </button>
@@ -2038,7 +2047,7 @@ export default function ResultadoPage() {
                 <div className="mb-6 w-full">
                   <button
                     onClick={handleCheckout}
-                    className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-bold text-white text-base hover:opacity-90 transition relative overflow-hidden"
+                    className="neon-border-blue w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-bold text-white text-base hover:opacity-90 transition relative overflow-hidden"
                     style={{ 
                       background: "linear-gradient(to right, #1e3a8a, #3b82f6, #60a5fa, #3b82f6, #1e3a8a)",
                       animation: "pulse-glow-strong 1.5s ease-in-out infinite"
@@ -2118,36 +2127,179 @@ export default function ResultadoPage() {
                   </p>
                 </div>
 
-                {/* Botões */}
+                {/* Botões de Ação */}
                 <div className="space-y-3 w-full mt-auto">
+                  {/* Botão Adicionar ao Carrinho */}
+                  <button
+                    onClick={handleCheckout}
+                    className="neon-border-white w-full flex items-center justify-center gap-2 rounded-xl bg-white py-3 font-semibold text-black text-sm transition shadow-md hover:bg-gray-100"
+                  >
+                    <ShoppingCart className="h-5 w-5 text-black" /> Adicionar ao Carrinho
+                  </button>
 
-                  {/* Botões Selecionar e Voltar */}
-                  <div className="grid grid-cols-2 gap-3">
+                  {/* Botões de Ação Secundários - Todos na mesma linha com mesma largura */}
+                  <div className="grid grid-cols-4 gap-2 w-full">
                     <button
-                      onClick={() => {
-                        if (!selectedFavoriteDetail.imagemUrl) {
+                      onClick={async () => {
+                        if (!selectedFavoriteDetail?.imagemUrl) {
                           alert("Erro: Imagem do favorito não encontrada.")
                           return
                         }
-                        
-                        // REGRA: Ao selecionar favorito, substituir a foto original do upload
-                        // Salvar a foto do favorito como nova foto original (substitui a anterior)
-                        sessionStorage.setItem(`photo_${lojistaId}`, selectedFavoriteDetail.imagemUrl)
-                        sessionStorage.setItem(`original_photo_${lojistaId}`, selectedFavoriteDetail.imagemUrl)
-                        console.log("[ResultadoPage] Foto do favorito selecionada - substitui foto original:", selectedFavoriteDetail.imagemUrl.substring(0, 50))
-                        
-                        setSelectedFavoriteDetail(null)
-                        setShowFavoritesModal(false)
-                        // Redirecionar para a tela de experimentar
-                        window.location.href = `/${lojistaId}/experimentar`
+
+                        await registerAction("share")
+
+                        const shareUrl = `${window.location.origin}/${lojistaId}`
+                        const shareText = `Confira este look incrível da ${lojistaData?.nome || "loja"}! ${shareUrl}`
+
+                        if (navigator.share) {
+                          try {
+                            const shareData: any = {
+                              title: "Experimente AI - Look Favorito",
+                              text: shareText,
+                              url: shareUrl,
+                            }
+
+                            // Tentar incluir a imagem do favorito se possível
+                            if (selectedFavoriteDetail.imagemUrl) {
+                              try {
+                                const response = await fetch(selectedFavoriteDetail.imagemUrl)
+                                const blob = await response.blob()
+                                const file = new File([blob], "look.jpg", { type: blob.type })
+                                shareData.files = [file]
+                              } catch (error) {
+                                console.warn("Não foi possível incluir imagem no compartilhamento:", error)
+                              }
+                            }
+
+                            await navigator.share(shareData)
+                          } catch (error: any) {
+                            if (error.name !== "AbortError") {
+                              console.error("Erro ao compartilhar:", error)
+                              // Fallback: copiar link
+                              navigator.clipboard.writeText(shareUrl)
+                              alert("Link copiado para a área de transferência!")
+                            }
+                          }
+                        } else {
+                          // Fallback: copiar link
+                          navigator.clipboard.writeText(shareUrl)
+                          alert("Link copiado para a área de transferência!")
+                        }
                       }}
-                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-green-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-green-700"
+                      className="neon-border-blue flex items-center justify-center rounded-xl bg-blue-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-blue-700"
                     >
-                      <Check className="h-5 w-5" /> Selecionar
+                      <Share2 className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={handleWhatsApp}
+                      disabled={!hasWhatsApp}
+                      className={`neon-border-green flex items-center justify-center rounded-xl bg-green-600 py-3 font-semibold text-white text-sm transition shadow-md ${
+                        !hasWhatsApp ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'
+                      }`}
+                      title={hasWhatsApp ? "Abrir WhatsApp da loja" : "WhatsApp não disponível"}
+                    >
+                      <svg 
+                        className="h-5 w-5" 
+                        fill="currentColor" 
+                        viewBox="0 0 24 24" 
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                      </svg>
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!selectedFavoriteDetail?.imagemUrl) {
+                          console.error("[ResultadoPage] Imagem do favorito não encontrada para download")
+                          return
+                        }
+
+                        // Se não houver logo, fazer download direto
+                        if (!lojistaData?.logoUrl) {
+                          try {
+                            const link = document.createElement('a')
+                            link.href = selectedFavoriteDetail.imagemUrl
+                            link.download = `look-favorito-${selectedFavoriteDetail.id || Date.now()}.jpg`
+                            link.target = '_blank'
+                            link.rel = 'noopener noreferrer'
+                            document.body.appendChild(link)
+                            link.click()
+                            document.body.removeChild(link)
+                            return
+                          } catch (error) {
+                            console.error("[ResultadoPage] Erro ao baixar imagem do favorito:", error)
+                            return
+                          }
+                        }
+
+                        // Se houver logo, tentar usar backend para processar marca d'água
+                        try {
+                          console.log("[ResultadoPage] Processando marca d'água do favorito via backend...")
+                          
+                          const controller = new AbortController()
+                          const timeoutId = setTimeout(() => controller.abort(), 3000)
+                          
+                          try {
+                            const response = await fetch('/api/watermark', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ 
+                                imageUrl: selectedFavoriteDetail.imagemUrl, 
+                                logoUrl: lojistaData.logoUrl 
+                              }),
+                              signal: controller.signal
+                            })
+
+                            clearTimeout(timeoutId)
+
+                            if (response.ok) {
+                              const data = await response.json()
+                              
+                              if (data.watermarkedUrl && !data.fallback && data.watermarkedUrl !== selectedFavoriteDetail.imagemUrl) {
+                                console.log("[ResultadoPage] ✅ Marca d'água processada pelo backend")
+                                const link = document.createElement('a')
+                                link.href = data.watermarkedUrl
+                                link.download = `look-favorito-${selectedFavoriteDetail.id || Date.now()}.jpg`
+                                link.target = '_blank'
+                                link.rel = 'noopener noreferrer'
+                                document.body.appendChild(link)
+                                link.click()
+                                document.body.removeChild(link)
+                                return
+                              }
+                            }
+                          } catch (fetchError: any) {
+                            clearTimeout(timeoutId)
+                            if (fetchError.name !== 'AbortError') {
+                              console.warn("[ResultadoPage] Erro ao processar marca d'água:", fetchError)
+                            }
+                          }
+                        } catch (error) {
+                          console.warn("[ResultadoPage] Erro ao processar marca d'água:", error)
+                        }
+                        
+                        // Fallback: sempre fazer download direto da imagem original
+                        try {
+                          console.log("[ResultadoPage] Fazendo download direto da imagem do favorito...")
+                          const link = document.createElement('a')
+                          link.href = selectedFavoriteDetail.imagemUrl
+                          link.download = `look-favorito-${selectedFavoriteDetail.id || Date.now()}.jpg`
+                          link.target = '_blank'
+                          link.rel = 'noopener noreferrer'
+                          document.body.appendChild(link)
+                          link.click()
+                          document.body.removeChild(link)
+                        } catch (error) {
+                          console.error("[ResultadoPage] Erro ao baixar imagem do favorito:", error)
+                        }
+                      }}
+                      className="neon-border-black flex items-center justify-center rounded-xl bg-black py-3 font-semibold text-white text-sm transition shadow-md hover:bg-gray-900"
+                    >
+                      <Download className="h-5 w-5" />
                     </button>
                     <button
                       onClick={() => setSelectedFavoriteDetail(null)}
-                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-gray-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-gray-700"
+                      className="neon-border-gray flex items-center justify-center gap-2 rounded-xl bg-gray-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-gray-700"
                     >
                       <ArrowLeft className="h-5 w-5" /> Voltar
                     </button>
@@ -2220,7 +2372,7 @@ export default function ResultadoPage() {
                 <div className="mb-6 w-full">
                   <button
                     onClick={handleCheckout}
-                    className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-bold text-white text-base hover:opacity-90 transition relative overflow-hidden"
+                    className="neon-border-blue w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-bold text-white text-base hover:opacity-90 transition relative overflow-hidden"
                     style={{ 
                       background: "linear-gradient(to right, #1e3a8a, #3b82f6, #60a5fa, #3b82f6, #1e3a8a)",
                       animation: "pulse-glow-strong 1.5s ease-in-out infinite"
@@ -2294,14 +2446,14 @@ export default function ResultadoPage() {
               <div className="grid grid-cols-4 gap-3">
                 <button
                   onClick={handleShare}
-                  className="flex items-center justify-center rounded-xl bg-blue-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-blue-700"
+                  className="neon-border-blue flex items-center justify-center rounded-xl bg-blue-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-blue-700"
                 >
                   <Share2 className="h-6 w-6" />
                 </button>
                 <button
                   onClick={handleWhatsApp}
                   disabled={!hasWhatsApp}
-                  className={`flex items-center justify-center rounded-xl bg-green-600 py-3 font-semibold text-white text-sm transition shadow-md ${
+                  className={`neon-border-green flex items-center justify-center rounded-xl bg-green-600 py-3 font-semibold text-white text-sm transition shadow-md ${
                     !hasWhatsApp ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'
                   }`}
                 >
@@ -2314,13 +2466,13 @@ export default function ResultadoPage() {
                     setShowImageDetailModal(false)
                     setShowFavoritesModal(true)
                   }}
-                  className="flex items-center justify-center rounded-xl bg-pink-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-pink-700"
+                  className="neon-border-pink flex items-center justify-center rounded-xl bg-pink-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-pink-700"
                 >
                   <Heart className="h-6 w-6" />
                 </button>
                 <button
                   onClick={handleDownload}
-                  className="flex items-center justify-center rounded-xl bg-black py-3 font-semibold text-white text-sm transition shadow-md hover:bg-gray-900"
+                  className="neon-border-black flex items-center justify-center rounded-xl bg-black py-3 font-semibold text-white text-sm transition shadow-md hover:bg-gray-900"
                 >
                   <Download className="h-6 w-6 text-white" />
                 </button>
@@ -2329,7 +2481,7 @@ export default function ResultadoPage() {
                   {/* Botão Voltar */}
                   <button
                     onClick={() => setShowImageDetailModal(false)}
-                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-gray-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-gray-700"
+                    className="neon-border-gray w-full flex items-center justify-center gap-2 rounded-xl bg-gray-600 py-3 font-semibold text-white text-sm transition shadow-md hover:bg-gray-700"
                   >
                     <ArrowLeft className="h-5 w-5" /> Voltar
                   </button>

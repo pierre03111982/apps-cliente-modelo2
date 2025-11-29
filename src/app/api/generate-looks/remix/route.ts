@@ -173,9 +173,17 @@ export async function POST(request: NextRequest) {
           : "A stylish man")
       : "A stylish person";
 
-    // PHASE 11-B FIX: Construir prompt mais descritivo com TODOS os produtos
-    // Adicionar keywords de harmonização e variação para forçar mudanças visuais
-    const remixPrompt = `${subjectDescription} ${randomPose} wearing ${productPrompt}, harmonious outfit combination, ${randomScenario}. Photorealistic, 8k, highly detailed, professional fashion photography, distinct visual style.`;
+    // PHASE 14 FIX: Construir prompt mais descritivo e ENFÁTICO sobre mudanças de cenário e pose
+    // O prompt deve ser MUITO específico sobre mudanças dramáticas para forçar variação visual
+    const remixPrompt = `${subjectDescription} ${randomPose} wearing ${productPrompt}, harmonious outfit combination, ${randomScenario}. 
+    
+⚠️ CRITICAL REMIX INSTRUCTION: This is a REMIX generation. The scene MUST be DRAMATICALLY DIFFERENT from any previous generation. 
+- BACKGROUND: Completely change the background to ${randomScenario}. The environment must be visually distinct and different.
+- POSE: The person must be in a ${randomPose.toLowerCase()} position, which is DIFFERENT from the original photo's pose.
+- LIGHTING: Adapt lighting to match the new scene (${randomScenario}).
+- CAMERA ANGLE: Use a different camera angle or perspective to emphasize the new pose and scene.
+
+Photorealistic, 8k, highly detailed, professional fashion photography, distinct visual style. The final image must look like a COMPLETELY NEW PHOTOSHOOT in a DIFFERENT LOCATION with a DIFFERENT POSE, while maintaining the person's exact identity and the products' fidelity.`;
 
     console.log("[remix] Prompt gerado:", remixPrompt);
 

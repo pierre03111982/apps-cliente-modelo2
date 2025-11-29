@@ -705,26 +705,56 @@ export function ExperimentarView({
                 
                 <div className="flex flex-col gap-4 flex-1 justify-between min-h-0">
                   <div className="flex flex-col gap-3 shrink-0">
-                    {/* Passos com texto branco */}
+                    {/* Checklist de Etapas */}
+                    {/* Etapa 1: Carregue sua Foto */}
                     <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-500 dark:bg-teal-600 text-sm font-bold text-white shadow-lg">1</div>
+                      {userPhotoUrl ? (
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-500 dark:bg-green-600 text-white shadow-lg transition-all">
+                          <Check className="h-5 w-5" />
+                        </div>
+                      ) : (
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-300 dark:bg-gray-600 text-sm font-bold text-white shadow-lg">1</div>
+                      )}
                       <div className="flex flex-1 flex-col">
-                        <span className="text-xs md:text-sm font-semibold text-white">Carregue sua Foto</span>
-                        {userPhotoUrl && (<div className="mt-1 h-1 w-full rounded-full bg-green-500"></div>)}
+                        <span className={`text-xs md:text-sm font-semibold ${userPhotoUrl ? 'text-green-400 line-through' : 'text-white'}`}>
+                          Carregue sua Foto
+                        </span>
                       </div>
                     </div>
+                    
+                    {/* Etapa 2: Escolha um Produto */}
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-lg ${selectedProducts.length > 0 ? 'bg-teal-500 dark:bg-teal-600' : 'bg-gray-300 dark:bg-gray-600'}`}>2</div>
+                      {selectedProducts.length > 0 ? (
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-500 dark:bg-green-600 text-white shadow-lg transition-all">
+                          <Check className="h-5 w-5" />
+                        </div>
+                      ) : (
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-300 dark:bg-gray-600 text-sm font-bold text-white shadow-lg">2</div>
+                      )}
                       <div className="flex flex-1 flex-col">
-                        <span className="text-xs md:text-sm font-semibold text-gray-900 dark:text-white">Escolha um Produto</span>
-                        {selectedProducts.length > 0 && (<div className="mt-1 h-1 w-full rounded-full bg-green-500"></div>)}
+                        <span className={`text-xs md:text-sm font-semibold ${selectedProducts.length > 0 ? 'text-green-400 line-through' : 'text-white'}`}>
+                          Escolha até dois produtos
+                        </span>
                       </div>
                     </div>
+                    
+                    {/* Etapa 3: Crie o seu Look */}
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-lg ${userPhotoUrl && selectedProducts.length > 0 ? 'bg-teal-500 dark:bg-teal-600' : 'bg-gray-300 dark:bg-gray-600'}`}>3</div>
+                      {(isGenerating || isButtonExpanded) ? (
+                        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-500 dark:bg-teal-600 text-white shadow-lg transition-all animate-pulse-scale ${isGenerating || isButtonExpanded ? 'animate-pulse-scale' : ''}`}>
+                          <Wand2 className="h-5 w-5 animate-spin" />
+                        </div>
+                      ) : userPhotoUrl && selectedProducts.length > 0 ? (
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-500 dark:bg-teal-600 text-sm font-bold text-white shadow-lg transition-all hover:scale-110 cursor-pointer">
+                          3
+                        </div>
+                      ) : (
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-300 dark:bg-gray-600 text-sm font-bold text-white shadow-lg">3</div>
+                      )}
                       <div className="flex flex-1 flex-col">
-                        <span className="text-xs md:text-sm font-semibold text-gray-900 dark:text-white">Crie o seu Look</span>
-                        {userPhotoUrl && selectedProducts.length > 0 && (<div className="mt-1 h-1 w-full rounded-full bg-green-500"></div>)}
+                        <span className={`text-xs md:text-sm font-semibold ${(isGenerating || isButtonExpanded) ? 'text-teal-400 animate-pulse' : userPhotoUrl && selectedProducts.length > 0 ? 'text-white' : 'text-gray-400'}`}>
+                          Crie o seu Look
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -823,12 +853,12 @@ export function ExperimentarView({
               }}
             >
               {isRefineMode ? (
-                <p className="text-xs font-medium text-white text-center">
-                  ✨ <span className="font-bold">Trocar Produto:</span> Selecione <span className="font-bold">1 produto</span> para trocar no look.
+                <p className="text-sm sm:text-base font-semibold text-white text-center leading-relaxed px-2 py-1">
+                  ✨ <span className="font-bold text-yellow-300">Trocar Produto:</span> Selecione <span className="font-bold text-yellow-300">1 produto</span> para trocar no look.
                 </p>
               ) : (
-                <p className="text-xs font-medium text-white text-center">
-                  💡 Você pode selecionar até <span className="font-bold">2 produtos</span> de <span className="font-bold">categorias diferentes</span>
+                <p className="text-sm sm:text-base font-semibold text-white text-center leading-relaxed px-2 py-1">
+                  💡 Você pode selecionar até <span className="font-bold text-yellow-300">2 produtos</span> de <span className="font-bold text-yellow-300">categorias diferentes</span>
                 </p>
               )}
             </div>
@@ -843,8 +873,16 @@ export function ExperimentarView({
             }}
           >
             <div className="flex flex-col items-center gap-3 sm:gap-4 md:gap-5">
-              <div className="rounded-lg sm:rounded-md border-2 border-white/40 bg-red-700 px-3 sm:px-4 py-2 sm:py-2 md:py-2.5 w-full">
-                <p className="text-xs sm:text-sm md:text-base font-medium text-white text-center leading-tight">Siga, Curta ou Compartilhe !!!<br/>Aplique o seu Desconto agora!</p>
+              <div className={`rounded-lg sm:rounded-md border-2 px-3 sm:px-4 py-2 sm:py-2 md:py-2.5 w-full ${
+                descontoAplicado 
+                  ? 'bg-blue-900 border-blue-400' 
+                  : 'bg-red-700 border-white/40'
+              }`}>
+                {descontoAplicado ? (
+                  <p className="text-xs sm:text-sm md:text-base font-medium text-white text-center leading-tight">SIGA CURTA OU COMPARTILHE!!!</p>
+                ) : (
+                  <p className="text-xs sm:text-sm md:text-base font-medium text-white text-center leading-tight">Siga, Curta ou Compartilhe !!!<br/>Aplique o seu Desconto agora!</p>
+                )}
               </div>
               <div className="flex items-center justify-center gap-3 sm:gap-4 flex-wrap">
                 {lojistaData?.redesSociais?.instagram ? (<button onClick={() => handleSocialClick(lojistaData.redesSociais.instagram!.startsWith('http') ? lojistaData.redesSociais.instagram! : `https://instagram.com/${lojistaData.redesSociais.instagram!.replace('@', '')}`)} disabled={isGenerating || isButtonExpanded} className={`flex items-center justify-center w-11 h-11 sm:w-10 sm:h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white transition hover:scale-110 ${isGenerating || isButtonExpanded ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}><Instagram className="h-5 w-5" /></button>) : (<div className="flex items-center justify-center w-11 h-11 sm:w-10 sm:h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white opacity-50"><Instagram className="h-5 w-5" /></div>)}
@@ -852,7 +890,7 @@ export function ExperimentarView({
                 {lojistaData?.redesSociais?.tiktok ? (<button onClick={() => handleSocialClick(lojistaData.redesSociais.tiktok!.startsWith('http') ? lojistaData.redesSociais.tiktok! : `https://tiktok.com/@${lojistaData.redesSociais.tiktok!.replace('@', '')}`)} disabled={isGenerating || isButtonExpanded} className={`flex items-center justify-center w-11 h-11 sm:w-10 sm:h-10 rounded-full bg-black text-white transition hover:scale-110 ${isGenerating || isButtonExpanded ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}><Music2 className="h-5 w-5" /></button>) : (<div className="flex items-center justify-center w-11 h-11 sm:w-10 sm:h-10 rounded-full bg-black text-white opacity-50"><Music2 className="h-5 w-5" /></div>)}
                 <button onClick={handleShareApp} disabled={isGenerating || isButtonExpanded} className={`flex items-center justify-center w-11 h-11 sm:w-10 sm:h-10 rounded-full bg-blue-500 text-white transition hover:scale-110 ${isGenerating || isButtonExpanded ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`} title="Compartilhar aplicativo"><Share2 className="h-5 w-5" /></button>
               </div>
-              {redesDiscount > 0 && (
+              {redesDiscount > 0 && !descontoAplicado && (
                 <>
                   <p className="text-base font-semibold text-white text-center flex items-center justify-center gap-1.5">
                     <span className="font-bold text-yellow-400 text-base">GANHE</span>
@@ -863,12 +901,12 @@ export function ExperimentarView({
                   <p className="text-[11px] text-white text-center max-w-md">
                     Esse bônus soma com o <span className="font-semibold text-pink-200">Desconto Especial</span> de cada produto.
                   </p>
-                  {descontoAplicado && (
-                    <p className="text-xs font-semibold text-green-400 text-center animate-pulse">
-                      ✓ Desconto aplicado! Os preços já consideram {redesDiscount}% + descontos especiais.
-                    </p>
-                  )}
                 </>
+              )}
+              {descontoAplicado && (
+                <p className="text-xs font-semibold text-green-400 text-center animate-pulse">
+                  DESCONTO APLICADO
+                </p>
               )}
             </div>
           </div>
@@ -1022,14 +1060,18 @@ export function ExperimentarView({
             disabled={isGenerating}
             variant="primary"
             size="lg"
-            className="rounded-full shadow-2xl animate-pulse-glow hover:scale-105 gap-2 sm:gap-3 px-5 sm:px-7 py-3.5 sm:py-4.5 md:py-5 text-sm sm:text-base md:text-lg font-bold border-4 border-white"
+            className="rounded-full hover:scale-105 gap-2 sm:gap-3 px-5 sm:px-7 py-3.5 sm:py-4.5 md:py-5 text-sm sm:text-base md:text-lg font-extrabold border-4 border-white"
             style={{
               background: 'linear-gradient(45deg, rgba(37,99,235,1), rgba(147,51,234,1), rgba(249,115,22,1), rgba(34,197,94,1))',
+              color: '#ffffff',
+              textShadow: '2px 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.5)',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.5), 0 0 20px rgba(0,0,0,0.3)',
+              animation: 'pulse-scale 2s ease-in-out infinite',
             }}
           >
-            <Wand2 className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7" />
-            <span className="hidden sm:inline">CRIAR LOOK</span>
-            <span className="sm:hidden">CRIAR</span>
+            <Wand2 className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-white drop-shadow-lg" style={{ color: '#ffffff' }} />
+            <span className="hidden sm:inline font-extrabold" style={{ color: '#ffffff' }}>CRIAR LOOK</span>
+            <span className="sm:hidden font-extrabold" style={{ color: '#ffffff' }}>CRIAR</span>
           </Button>
         </div>
       )}
@@ -1124,7 +1166,7 @@ export function ExperimentarView({
                           className={`px-6 py-3 rounded-lg text-base font-medium transition ${
                             selectedSize === tamanho
                               ? 'bg-blue-600 text-white border-2 border-blue-500 shadow-lg'
-                              : 'bg-white/10 text-white border-2 border-white/30 hover:bg-white/20'
+                              : 'bg-black/40 text-white border-2 border-white/30 hover:bg-black/50'
                           }`}
                         >
                           {tamanho}
@@ -1134,7 +1176,7 @@ export function ExperimentarView({
                   ) : (
                     <div className="flex flex-wrap gap-2 justify-center">
                       {selectedProductDetail.tamanhos.map((tamanho, index) => (
-                        <span key={index} className="px-5 py-2 bg-white/10 text-white border border-white/30 rounded-full text-base font-medium">
+                        <span key={index} className="px-5 py-2 bg-black/40 text-white border border-white/30 rounded-full text-base font-medium">
                           {tamanho}
                         </span>
                       ))}
@@ -1146,7 +1188,7 @@ export function ExperimentarView({
               {/* Cores */}
               {selectedProductDetail.cores && selectedProductDetail.cores.length > 0 && (
                 <div className="text-center">
-                  <p className="text-base font-semibold text-white/80 mb-2">Cores disponíveis:</p>
+                  <p className="text-base font-semibold text-white/80 mb-2">Cor do Produto:</p>
                   <div className="flex flex-wrap gap-2 justify-center">
                     {selectedProductDetail.cores.map((cor, index) => {
                       const corStyle = getCorStyle(cor)
