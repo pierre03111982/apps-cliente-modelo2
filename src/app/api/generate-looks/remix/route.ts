@@ -293,7 +293,12 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
         }
       );
       clearTimeout(timeoutId);
-      console.log("[remix] Resposta recebida do backend:", backendResponse.status);
+      console.log("[remix] Resposta recebida do backend:", {
+        status: backendResponse.status,
+        statusText: backendResponse.statusText,
+        contentType: backendResponse.headers.get('content-type'),
+        contentLength: backendResponse.headers.get('content-length'),
+      });
     } catch (fetchError: any) {
       clearTimeout(timeoutId);
       console.error("[remix] Erro ao conectar com backend:", {
@@ -335,29 +340,92 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
     let data: any;
     try {
       const text = await backendResponse.text();
-      if (!text) {
-        console.error("[remix] Resposta vazia do backend");
+      if (!text || text.trim() === '') {
+        console.error("[remix] Resposta vazia do backend:", {
+          status: backendResponse.status,
+          statusText: backendResponse.statusText,
+          headers: Object.fromEntries(backendResponse.headers.entries()),
+        });
         return NextResponse.json(
           {
-            error: "Resposta vazia do servidor",
-            details: "O backend não retornou dados válidos.",
+            error: "Erro ao gerar composição",
+            details: "O servidor não retornou dados. Tente novamente em alguns instantes.",
           },
           { status: 500 }
         );
       }
-      data = JSON.parse(text);
-    } catch (parseError) {
-      console.error("[remix] Erro ao parsear resposta:", parseError);
+      
+      // Log do conteúdo da resposta para debug (primeiros 500 caracteres)
+      console.log("[remix] Resposta do backend (primeiros 500 chars):", text.substring(0, 500));
+      
+      try {
+        data = JSON.parse(text);
+      } catch (jsonError: any) {
+        console.error("[remix] Erro ao fazer parse JSON:", {
+          error: jsonError.message,
+          responsePreview: text.substring(0, 200),
+          responseLength: text.length,
+          contentType: backendResponse.headers.get('content-type'),
+        });
+        
+        // Se a resposta não for JSON, pode ser HTML de erro ou texto simples
+        if (text.trim().startsWith('<') || text.includes('<!DOCTYPE')) {
+          return NextResponse.json(
+            {
+              error: "Erro ao gerar composição",
+              details: "O servidor retornou uma resposta inválida. Tente novamente em alguns instantes.",
+            },
+            { status: 500 }
+          );
+        }
+        
+        // Se for texto simples, tentar extrair mensagem de erro
+        const errorMatch = text.match(/error["\s:]+([^"}\n]+)/i) || text.match(/message["\s:]+([^"}\n]+)/i);
+        const errorMessage = errorMatch ? errorMatch[1].trim() : "Resposta do servidor em formato inválido";
+        
+        return NextResponse.json(
+          {
+            error: "Erro ao gerar composição",
+            details: errorMessage.substring(0, 200),
+          },
+          { status: 500 }
+        );
+      }
+    } catch (parseError: any) {
+      console.error("[remix] Erro inesperado ao processar resposta:", {
+        error: parseError.message,
+        name: parseError.name,
+        stack: parseError.stack,
+      });
       return NextResponse.json(
         {
-          error: "Erro ao processar resposta do servidor",
-          details: "A resposta do backend não está em formato válido.",
+          error: "Erro ao gerar composição",
+          details: "Erro ao processar resposta do servidor. Tente novamente em alguns instantes.",
         },
         { status: 500 }
       );
     }
 
     if (!backendResponse.ok) {
+      // Se data não foi parseado corretamente ou não é um objeto, tratar como erro genérico
+      if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        console.error("[remix] Erro do backend - resposta não é JSON válido:", {
+          status: backendResponse.status,
+          statusText: backendResponse.statusText,
+          dataType: typeof data,
+          isArray: Array.isArray(data),
+          dataPreview: String(data).substring(0, 200),
+        });
+        
+        return NextResponse.json(
+          {
+            error: "Erro ao gerar composição",
+            details: `Erro do servidor (${backendResponse.status}). Tente novamente em alguns instantes.`,
+          },
+          { status: backendResponse.status >= 500 ? 500 : backendResponse.status }
+        );
+      }
+      
       console.error("[remix] Erro do backend:", {
         status: backendResponse.status,
         error: data.error,
@@ -376,7 +444,7 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
       } else if (backendResponse.status === 503) {
         errorMessage = "Erro ao gerar composição";
         errorDetails = "Serviço temporariamente indisponível. Tente novamente em alguns instantes.";
-      } else if (backendResponse.status === 429 || data.error?.includes('RESOURCE_EXHAUSTED') || data.error?.includes('rate limit')) {
+      } else if (backendResponse.status === 429 || (data.error && (data.error.includes('RESOURCE_EXHAUSTED') || data.error.includes('rate limit')))) {
         errorMessage = "Erro ao gerar composição";
         errorDetails = "Muitas requisições. Aguarde alguns instantes e tente novamente.";
       } else if (backendResponse.status === 400) {
@@ -389,7 +457,7 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
           error: errorMessage,
           details: errorDetails,
         },
-        { status: backendResponse.status }
+        { status: backendResponse.status >= 500 ? 500 : backendResponse.status }
       );
     }
 
