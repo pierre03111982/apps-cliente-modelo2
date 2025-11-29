@@ -1039,17 +1039,21 @@ export function ExperimentarView({
               {/* Preço */}
               <div className="p-4 bg-blue-900 rounded-lg">
                 {hasDiscountApplied(selectedProductDetail) && selectedProductDetail.preco ? (
-                  <div className="space-y-1">
-                    <p className="text-lg text-purple-300 line-through">{formatPrice(selectedProductDetail.preco)}</p>
-                    <p className="text-2xl font-bold text-amber-300">
-                      {formatPrice(selectedProductDetail.preco * (1 - getTotalDiscount(selectedProductDetail) / 100))}
-                    </p>
-                    <p className="text-xs font-semibold text-green-400 whitespace-nowrap">
-                      {getTotalDiscount(selectedProductDetail).toFixed(1).replace(".0", "")}% OFF liberado
-                    </p>
+                  <div className="space-y-2">
+                    {/* Preço cheio riscado */}
+                    <p className="text-lg text-gray-400 line-through">{formatPrice(selectedProductDetail.preco)}</p>
+                    {/* Preço com desconto destacado */}
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-3xl font-bold text-green-400">
+                        {formatPrice(selectedProductDetail.preco * (1 - getTotalDiscount(selectedProductDetail) / 100))}
+                      </p>
+                      <span className="px-2 py-1 bg-green-500/20 border border-green-400 rounded text-sm font-bold text-green-300">
+                        -{getTotalDiscount(selectedProductDetail).toFixed(1).replace(".0", "")}%
+                      </span>
+                    </div>
                     {getSpecialDiscount(selectedProductDetail) > 0 && (
-                      <p className="text-[11px] font-semibold text-pink-200">
-                        Redescanais {redesDiscount}% + Especial {getSpecialDiscount(selectedProductDetail)}%
+                      <p className="text-xs font-semibold text-green-300">
+                        Desconto: Redes Sociais {redesDiscount}% + Especial {getSpecialDiscount(selectedProductDetail)}%
                       </p>
                     )}
                   </div>
