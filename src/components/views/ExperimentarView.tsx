@@ -1006,10 +1006,10 @@ export function ExperimentarView({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-zinc-800">Detalhes do Produto</h2>
+              <h2 className="text-2xl font-bold text-white">Detalhes do Produto</h2>
               <button
                 onClick={() => setSelectedProductDetail(null)}
-                className="rounded-full p-2 text-zinc-600 hover:bg-zinc-200 transition"
+                className="text-white/70 hover:text-white transition"
               >
                 <X className="h-6 w-6" />
               </button>
@@ -1018,7 +1018,7 @@ export function ExperimentarView({
             <div className="space-y-4">
               {/* Imagem do Produto */}
               {getProdutoImagem(selectedProductDetail) && (
-                <div className="relative w-full min-h-96 rounded-lg overflow-hidden border-2 border-purple-500 bg-white flex items-center justify-center" style={{ position: 'relative' }}>
+                <div className="neon-border relative w-full min-h-96 rounded-lg overflow-hidden bg-white flex items-center justify-center" style={{ position: 'relative' }}>
                   <SafeImage
                     src={getProdutoImagem(selectedProductDetail)!}
                     alt={selectedProductDetail.nome}
@@ -1030,7 +1030,7 @@ export function ExperimentarView({
 
               {/* Nome */}
               <div>
-                <h3 className="text-xl font-bold text-zinc-800 mb-2">{selectedProductDetail.nome}</h3>
+                <h3 className="text-xl font-bold text-white mb-2">{selectedProductDetail.nome}</h3>
               </div>
 
               {/* Preço */}
@@ -1060,15 +1060,15 @@ export function ExperimentarView({
               {/* Categoria */}
               {selectedProductDetail.categoria && (
                 <div>
-                  <p className="text-sm font-semibold text-zinc-600 mb-1">Categoria:</p>
-                  <p className="text-base text-zinc-800">{selectedProductDetail.categoria}</p>
+                  <p className="text-sm font-semibold text-white/80 mb-1">Categoria:</p>
+                  <p className="text-base text-white">{selectedProductDetail.categoria}</p>
                 </div>
               )}
 
               {/* Tamanhos */}
               {selectedProductDetail.tamanhos && selectedProductDetail.tamanhos.length > 0 && (
                 <div>
-                  <p className="text-sm font-semibold text-zinc-600 mb-2">Tamanhos disponíveis:</p>
+                  <p className="text-sm font-semibold text-white/80 mb-2">Tamanhos disponíveis:</p>
                   {selectedProductDetail.tamanhos.length > 1 ? (
                     <div className="flex flex-wrap gap-2">
                       {selectedProductDetail.tamanhos.map((tamanho, index) => (
@@ -1077,8 +1077,8 @@ export function ExperimentarView({
                           onClick={() => setSelectedSize(selectedSize === tamanho ? null : tamanho)}
                           className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
                             selectedSize === tamanho
-                              ? 'bg-purple-600 text-white border-2 border-purple-700 shadow-lg'
-                              : 'bg-purple-100 text-purple-800 border-2 border-purple-300 hover:bg-purple-200'
+                              ? 'bg-blue-600 text-white border-2 border-blue-500 shadow-lg'
+                              : 'bg-white/10 text-white border-2 border-white/30 hover:bg-white/20'
                           }`}
                         >
                           {tamanho}
@@ -1088,7 +1088,7 @@ export function ExperimentarView({
                   ) : (
                     <div className="flex flex-wrap gap-2">
                       {selectedProductDetail.tamanhos.map((tamanho, index) => (
-                        <span key={index} className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+                        <span key={index} className="px-3 py-1 bg-white/10 text-white border border-white/30 rounded-full text-sm font-medium">
                           {tamanho}
                         </span>
                       ))}
@@ -1100,10 +1100,10 @@ export function ExperimentarView({
               {/* Cores */}
               {selectedProductDetail.cores && selectedProductDetail.cores.length > 0 && (
                 <div>
-                  <p className="text-sm font-semibold text-zinc-600 mb-1">Cores disponíveis:</p>
+                  <p className="text-sm font-semibold text-white/80 mb-1">Cores disponíveis:</p>
                   <div className="flex flex-wrap gap-2">
                     {selectedProductDetail.cores.map((cor, index) => (
-                      <span key={index} className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+                      <span key={index} className="px-3 py-1 bg-white/10 text-white border border-white/30 rounded-full text-sm font-medium">
                         {cor}
                       </span>
                     ))}
@@ -1114,16 +1114,16 @@ export function ExperimentarView({
               {/* Medidas */}
               {selectedProductDetail.medidas && (
                 <div>
-                  <p className="text-sm font-semibold text-zinc-600 mb-1">Medidas:</p>
-                  <p className="text-base text-zinc-800">{selectedProductDetail.medidas}</p>
+                  <p className="text-sm font-semibold text-white/80 mb-1">Medidas:</p>
+                  <p className="text-base text-white">{selectedProductDetail.medidas}</p>
                 </div>
               )}
 
               {/* Estoque */}
               {selectedProductDetail.estoque !== null && selectedProductDetail.estoque !== undefined && (
                 <div>
-                  <p className="text-sm font-semibold text-zinc-600 mb-1">Estoque:</p>
-                  <p className={`text-base font-medium ${selectedProductDetail.estoque > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <p className="text-sm font-semibold text-white/80 mb-1">Estoque:</p>
+                  <p className={`text-base font-medium ${selectedProductDetail.estoque > 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {selectedProductDetail.estoque > 0 ? `${selectedProductDetail.estoque} unidades disponíveis` : 'Fora de estoque'}
                   </p>
                 </div>
@@ -1132,8 +1132,8 @@ export function ExperimentarView({
               {/* Observações */}
               {selectedProductDetail.obs && (
                 <div>
-                  <p className="text-sm font-semibold text-zinc-600 mb-1">Observações:</p>
-                  <p className="text-base text-zinc-800 whitespace-pre-wrap">{selectedProductDetail.obs}</p>
+                  <p className="text-sm font-semibold text-white/80 mb-1">Observações:</p>
+                  <p className="text-base text-white whitespace-pre-wrap">{selectedProductDetail.obs}</p>
                 </div>
               )}
 
