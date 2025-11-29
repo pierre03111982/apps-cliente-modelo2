@@ -49,24 +49,10 @@ export async function generateMetadata({
                      `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 
                      'https://experimente.ai';
       
-      // Imagem Open Graph (usar logo da loja ou gerar dinamicamente)
-      // Garantir que a URL seja absoluta e acessível
-      let ogImage: string;
-      if (logoUrl) {
-        // Se a logoUrl já é uma URL completa (http/https), usar diretamente
-        if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) {
-          ogImage = logoUrl;
-          console.log("[Layout] Usando logoUrl completa:", ogImage);
-        } else {
-          // Se for um caminho relativo, construir URL completa
-          ogImage = logoUrl.startsWith('/') ? `${baseUrl}${logoUrl}` : `${baseUrl}/${logoUrl}`;
-          console.log("[Layout] Construindo URL completa:", ogImage);
-        }
-      } else {
-        // Fallback: gerar imagem Open Graph dinamicamente com nome da loja
-        ogImage = `${baseUrl}/api/og-image/${lojistaId}`;
-        console.log("[Layout] Logo não encontrada, usando imagem gerada:", ogImage);
-      }
+      // Imagem Open Graph - SEMPRE usar a rota de geração dinâmica
+      // Isso garante que a imagem tenha o tamanho correto (1200x630px) e inclua a logo
+      const ogImage = `${baseUrl}/api/og-image/${lojistaId}`;
+      console.log("[Layout] Usando imagem Open Graph gerada dinamicamente:", ogImage);
       
       const themeColor = lojaData?.themeColor || '#000000';
       

@@ -17,14 +17,27 @@ export async function GET(
     const { lojistaId } = await params;
     
     // Buscar dados da loja
+    // PRIORIDADE 1: Buscar em perfil/dados (onde salvamos os dados)
     const db = getFirestoreAdmin();
-    const lojaDoc = await db.collection("lojas").doc(lojistaId).get();
+    const perfilDadosDoc = await db.collection("lojas").doc(lojistaId).collection("perfil").doc("dados").get();
     
-    if (!lojaDoc.exists) {
+    let lojaData: any = null;
+    if (perfilDadosDoc.exists) {
+      lojaData = perfilDadosDoc.data();
+      console.log("[OG Image] Perfil encontrado em perfil/dados:", lojaData?.nome || "sem nome");
+    } else {
+      // PRIORIDADE 2: Tentar buscar dados diretamente do documento da loja
+      const lojaDoc = await db.collection("lojas").doc(lojistaId).get();
+      if (lojaDoc.exists) {
+        lojaData = lojaDoc.data();
+        console.log("[OG Image] Perfil encontrado no documento da loja:", lojaData?.nome || "sem nome");
+      }
+    }
+    
+    if (!lojaData) {
       return new Response('Loja não encontrada', { status: 404 });
     }
     
-    const lojaData = lojaDoc.data();
     const nome = lojaData?.nome || "Loja";
     const logoUrl = lojaData?.logoUrl || null;
     
@@ -35,9 +48,16 @@ export async function GET(
                    'https://experimente.ai';
     
     // Construir URL da logo (garantir URL absoluta)
-    let logoImageUrl = logoUrl;
-    if (logoUrl && !logoUrl.startsWith('http://') && !logoUrl.startsWith('https://')) {
-      logoImageUrl = logoUrl.startsWith('/') ? `${baseUrl}${logoUrl}` : `${baseUrl}/${logoUrl}`;
+    let logoImageUrl: string | null = null;
+    if (logoUrl) {
+      if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) {
+        logoImageUrl = logoUrl;
+      } else {
+        logoImageUrl = logoUrl.startsWith('/') ? `${baseUrl}${logoUrl}` : `${baseUrl}/${logoUrl}`;
+      }
+      console.log("[OG Image] Logo URL:", logoImageUrl);
+    } else {
+      console.log("[OG Image] Logo não encontrada, gerando imagem sem logo");
     }
     
     // Gerar imagem Open Graph
