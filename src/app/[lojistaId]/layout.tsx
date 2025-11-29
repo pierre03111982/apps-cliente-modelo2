@@ -13,9 +13,9 @@ export const dynamicParams = true
 export async function generateMetadata({
   params,
 }: {
-  params: { lojistaId: string }
+  params: Promise<{ lojistaId: string }>
 }): Promise<Metadata> {
-  const { lojistaId } = params;
+  const { lojistaId } = await params;
   
   try {
     // Buscar dados da loja do Firestore
@@ -78,11 +78,20 @@ export async function generateMetadata({
   };
 }
 
-export default function LojistaLayout({
+export default async function LojistaLayout({
   children,
+  params,
 }: {
   children: React.ReactNode;
+  params: Promise<{ lojistaId: string }>;
 }) {
-  return <>{children}</>;
+  const { lojistaId } = await params;
+  
+  return (
+    <>
+      <link rel="manifest" href={`/${lojistaId}/manifest.json`} />
+      {children}
+    </>
+  );
 }
 
