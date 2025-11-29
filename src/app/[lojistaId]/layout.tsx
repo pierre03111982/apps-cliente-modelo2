@@ -76,10 +76,17 @@ export async function generateMetadata({
         other: {
           'theme-color': themeColor,
           'msapplication-navbutton-color': themeColor,
+          // Open Graph tags explícitas para garantir que o Facebook detecte
+          'og:image': ogImage,
+          'og:image:width': '1200',
+          'og:image:height': '630',
+          'og:image:alt': `${nome} - Provador Virtual`,
+          'og:url': `${baseUrl}/${lojistaId}/login`,
         },
         openGraph: {
           title: `${nome} | Provador Virtual com IA`,
           description: `Experimente as roupas da ${nome} sem sair de casa. Tecnologia de Provador Virtual Inteligente.`,
+          url: `${baseUrl}/${lojistaId}/login`,
           images: [
             {
               url: ogImage,
@@ -104,16 +111,36 @@ export async function generateMetadata({
   }
   
   // Fallback metadata
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+                 process.env.NEXT_PUBLIC_VERCEL_URL ? 
+                 `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 
+                 'https://experimente.ai';
+  const fallbackOgImage = `${baseUrl}/api/og-image/${lojistaId}`;
+  
   return {
     title: "Provador Virtual com IA | Experimente.ai",
     description: "Experimente roupas sem sair de casa. Tecnologia de Provador Virtual Inteligente.",
     other: {
       'theme-color': '#000000',
       'msapplication-navbutton-color': '#000000',
+      // Open Graph tags explícitas no fallback também
+      'og:image': fallbackOgImage,
+      'og:image:width': '1200',
+      'og:image:height': '630',
+      'og:url': `${baseUrl}/${lojistaId}/login`,
     },
     openGraph: {
       title: "Provador Virtual com IA | Experimente.ai",
       description: "Experimente roupas sem sair de casa. Tecnologia de Provador Virtual Inteligente.",
+      url: `${baseUrl}/${lojistaId}/login`,
+      images: [
+        {
+          url: fallbackOgImage,
+          width: 1200,
+          height: 630,
+          alt: "Provador Virtual com IA",
+        },
+      ],
       type: 'website',
     },
   };
@@ -128,9 +155,38 @@ export default async function LojistaLayout({
 }) {
   const { lojistaId } = await params;
   
+  // Buscar logo para favicon
+  let faviconUrl: string | null = null;
+  try {
+    const db = getFirestoreAdmin();
+    const perfilDadosDoc = await db.collection("lojas").doc(lojistaId).collection("perfil").doc("dados").get();
+    
+    if (perfilDadosDoc.exists) {
+      const lojaData = perfilDadosDoc.data();
+      faviconUrl = lojaData?.logoUrl || lojaData?.app_icon_url || null;
+    } else {
+      const lojaDoc = await db.collection("lojas").doc(lojistaId).get();
+      if (lojaDoc.exists) {
+        const lojaData = lojaDoc.data();
+        faviconUrl = lojaData?.logoUrl || lojaData?.app_icon_url || null;
+      }
+    }
+  } catch (error) {
+    console.error("[Layout] Erro ao buscar favicon:", error);
+  }
+  
   return (
     <>
       <link rel="manifest" href={`/${lojistaId}/manifest.json`} />
+      {/* Favicon dinâmico usando logo da loja */}
+      {faviconUrl ? (
+        <>
+          <link rel="icon" type="image/png" sizes="32x32" href={faviconUrl} />
+          <link rel="icon" type="image/png" sizes="16x16" href={faviconUrl} />
+          <link rel="apple-touch-icon" sizes="180x180" href={faviconUrl} />
+          <link rel="shortcut icon" href={faviconUrl} />
+        </>
+      ) : null}
       {children}
     </>
   );
