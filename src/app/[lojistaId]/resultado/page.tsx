@@ -2110,14 +2110,20 @@ export default function ResultadoPage() {
               {/* Coluna Esquerda: Imagem */}
               <div className="flex-shrink-0 lg:w-1/2">
                 {selectedFavoriteDetail.imagemUrl && (
-                  <div className="neon-border relative rounded-xl overflow-hidden p-2">
+                  <div className="neon-border relative rounded-xl overflow-hidden">
                     <div className="relative w-full rounded-lg overflow-hidden">
                       {selectedFavoriteDetail.imagemUrl ? (
                         <SafeImage
                           src={selectedFavoriteDetail.imagemUrl}
                           alt={selectedFavoriteDetail.productName || "Look favorito"}
-                          className="w-full h-auto object-contain rounded-lg"
+                          className="w-full h-auto rounded-lg"
                           containerClassName="w-full"
+                          style={{
+                            display: 'block',
+                            width: '100%',
+                            height: 'auto',
+                            objectFit: 'contain',
+                          }}
                           onError={(e) => {
                             console.error("[ResultadoPage] Erro ao carregar imagem do favorito:", selectedFavoriteDetail.imagemUrl, e)
                           }}

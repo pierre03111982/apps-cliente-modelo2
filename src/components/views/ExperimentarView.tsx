@@ -552,8 +552,8 @@ export function ExperimentarView({
       {/* 1. Vídeo de Fundo (estático se conectado ao display, animado se não conectado) */}
       <VideoBackground videoSrc="/video2tela2.mp4" />
 
-      {/* 2. Conteúdo Principal */}
-      <div className="relative z-10 min-h-screen p-3 sm:p-4 md:p-6 pb-24">
+      {/* 2. Conteúdo Principal - Embaçado quando carregando */}
+      <div className={`relative z-10 min-h-screen p-3 sm:p-4 md:p-6 pb-24 transition-all duration-300 ${isGenerating ? 'blur-md pointer-events-none' : ''}`}>
         <div className="mx-auto max-w-6xl space-y-3 sm:space-y-4 md:space-y-6">
           {/* Caixa com Logo e Nome da Loja - Mobile Otimizado */}
           <div>
