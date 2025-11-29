@@ -923,10 +923,19 @@ export default function ExperimentarPage() {
     }
   }
 
-  // Refinar look (adicionar acessórios)
+  // Refinar look (trocar produto) - Usa a mesma lógica de geração normal, mas com foto original
   const handleRefine = async () => {
-    if (!refineBaseImageUrl || selectedProducts.length === 0) {
-      toast.error("Selecione pelo menos 1 produto para refinar o look")
+    if (selectedProducts.length === 0) {
+      toast.error("Selecione pelo menos 1 produto para trocar no look")
+      return
+    }
+
+    // IMPORTANTE: No modo refine, sempre usar a foto ORIGINAL do upload (não a imagem gerada)
+    // Isso garante que a geração seja feita do zero com os novos produtos selecionados
+    const originalPhotoUrl = sessionStorage.getItem(`original_photo_${lojistaId}`)
+    
+    if (!originalPhotoUrl) {
+      toast.error("Foto original não encontrada. Por favor, faça upload novamente.")
       return
     }
 
@@ -939,56 +948,93 @@ export default function ExperimentarPage() {
       const clienteData = stored ? JSON.parse(stored) : null
       const clienteId = clienteData?.clienteId || null
 
-      // Preparar URLs dos produtos novos
-      const newProductUrls = selectedProducts
-        .map((p) => p.imagemUrl)
-        .filter(Boolean) as string[]
-
-      if (newProductUrls.length === 0) {
-        throw new Error("Nenhuma imagem de produto válida encontrada")
+      // Preparar foto original para envio
+      let personImageUrl: string
+      
+      if (originalPhotoUrl.startsWith('blob:') || originalPhotoUrl.startsWith('data:')) {
+        // Se for blob ou data URL, converter para File e fazer upload
+        try {
+          const response = await fetch(originalPhotoUrl)
+          const blob = await response.blob()
+          const fileName = `original-${Date.now()}.${blob.type.split('/')[1] || 'png'}`
+          const file = new File([blob], fileName, { type: blob.type || 'image/png' })
+          personImageUrl = await uploadPersonPhoto(file)
+          console.log("[handleRefine] ✅ Foto original (blob/data) convertida e enviada:", personImageUrl?.substring(0, 50) + "...")
+        } catch (blobError) {
+          console.error("[handleRefine] Erro ao converter blob/data original para File:", blobError)
+          // Tentar usar diretamente se for HTTP
+          if (originalPhotoUrl.startsWith('http')) {
+            personImageUrl = originalPhotoUrl
+          } else {
+            throw new Error("Erro ao processar foto original. Tente fazer upload novamente.")
+          }
+        }
+      } else {
+        // URL HTTP/HTTPS (já foi enviada anteriormente)
+        personImageUrl = originalPhotoUrl
+        console.log("[handleRefine] ✅ Usando foto original (HTTP):", personImageUrl?.substring(0, 50) + "...")
       }
 
-      // Chamar API de refinamento
-      const response = await fetch("/api/refine-tryon", {
+      // Preparar dados para geração (mesma lógica do handleVisualize)
+      const productIds = selectedProducts.map((p) => p.id).filter(Boolean)
+
+      if (productIds.length === 0) {
+        throw new Error("Nenhum produto válido selecionado")
+      }
+
+      // Preparar payload para API de geração normal
+      const payload = {
+        personImageUrl: personImageUrl,
+        productIds: productIds,
+        lojistaId: lojistaId,
+        customerId: clienteId,
+        original_photo_url: personImageUrl, // PHASE 13: Sempre usar foto original
+        options: {
+          skipWatermark: true,
+          lookType: "creative", // Sempre usar Look Criativo para multi-produto
+        },
+      }
+
+      console.log("[handleRefine] PHASE 13: Enviando para /api/generate-looks com foto ORIGINAL:", {
+        hasOriginalPhoto: !!personImageUrl,
+        originalPhotoUrl: personImageUrl?.substring(0, 50) + "...",
+        totalProducts: productIds.length,
+        productIds,
+      })
+
+      // Adicionar timeout e melhor tratamento de erros
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 120000) // 2 minutos de timeout
+
+      const response = await fetch("/api/generate-looks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          baseImageUrl: refineBaseImageUrl,
-          newProductUrls,
-          lojistaId,
-          customerId: clienteId,
-          compositionId: refineCompositionId,
-        }),
+        body: JSON.stringify(payload),
+        signal: controller.signal,
       })
+
+      clearTimeout(timeoutId)
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || `Erro ao refinar look: ${response.status}`)
+        throw new Error(errorData.error || `Erro ao gerar look: ${response.status}`)
       }
 
       const responseData = await response.json()
 
-      if (responseData.refinedImageUrl) {
-        // Criar um novo look com a imagem refinada
-        // Usar o novo compositionId retornado pela API (se disponível) ou o original
-        const newCompositionId = responseData.compositionId || refineCompositionId || null;
-        const refinedLook: GeneratedLook = {
-          id: `refined-${Date.now()}`,
-          titulo: "Look Refinado",
-          imagemUrl: responseData.refinedImageUrl,
-          produtoNome: selectedProducts.map(p => p.nome).join(" + "),
-          produtoPreco: selectedProducts.reduce((sum, p) => sum + (p.preco || 0), 0),
-          compositionId: newCompositionId, // Usar novo ID se disponível
-        }
-
-        // Salvar o look refinado
-        sessionStorage.setItem(`looks_${lojistaId}`, JSON.stringify([refinedLook]))
-        // Manter a última foto gerada (refinada) na tela de adicionar acessório
-        // Não substituir a foto original do upload
-        sessionStorage.setItem(`refined_photo_${lojistaId}`, responseData.refinedImageUrl)
-        // Manter a foto base para possível refinamento futuro
-        sessionStorage.setItem(`photo_${lojistaId}`, refineBaseImageUrl)
+      if (responseData.looks && Array.isArray(responseData.looks) && responseData.looks.length > 0) {
+        // Salvar looks gerados
+        sessionStorage.setItem(`looks_${lojistaId}`, JSON.stringify(responseData.looks))
+        
+        // Salvar produtos selecionados
         sessionStorage.setItem(`products_${lojistaId}`, JSON.stringify(selectedProducts))
+        
+        // IMPORTANTE: Preservar a foto original (não substituir pela gerada)
+        // A foto original deve permanecer para futuras trocas de produto
+        if (originalPhotoUrl) {
+          sessionStorage.setItem(`original_photo_${lojistaId}`, originalPhotoUrl)
+          console.log("[handleRefine] ✅ Foto original preservada para futuras trocas")
+        }
 
         // Limpar modo de refinamento
         sessionStorage.removeItem(`refine_mode_${lojistaId}`)
@@ -996,7 +1042,6 @@ export default function ExperimentarPage() {
         sessionStorage.removeItem(`refine_compositionId_${lojistaId}`)
 
         // IMPORTANTE: Preservar conexão com display ao navegar para resultado
-        // Garantir que target_display e connected_store_id sejam mantidos
         const currentTargetDisplay = sessionStorage.getItem("target_display")
         const currentConnectedStoreId = sessionStorage.getItem("connected_store_id")
         
@@ -1005,27 +1050,26 @@ export default function ExperimentarPage() {
             targetDisplay: currentTargetDisplay,
             connectedStoreId: currentConnectedStoreId,
           })
-          // Os valores já estão no sessionStorage, não precisamos fazer nada
-          // Apenas garantir que não serão limpos
         }
 
         // Marcar que uma nova imagem foi gerada (para resetar hasVoted na tela de resultado)
         sessionStorage.setItem(`new_looks_generated_${lojistaId}`, "true")
         
-        console.log("[handleRefine] Navegando para resultado com look refinado:", {
-          compositionId: newCompositionId,
-          imageUrl: responseData.refinedImageUrl.substring(0, 50) + "...",
+        console.log("[handleRefine] ✅ Look gerado com sucesso, navegando para resultado:", {
+          looksCount: responseData.looks.length,
           targetDisplay: currentTargetDisplay,
         })
         
         // Navegar para resultado
         router.push(`/${lojistaId}/resultado`)
       } else {
-        throw new Error("Imagem refinada não foi retornada")
+        throw new Error("Nenhum look foi gerado")
       }
     } catch (error: any) {
       console.error("[handleRefine] Erro:", error)
-      setGenerationError(error.message || "Erro ao refinar look. Tente novamente.")
+      const errorMessage = error.message || "Erro ao gerar look refinado. Tente novamente."
+      setGenerationError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setIsGenerating(false)
     }
