@@ -1591,7 +1591,9 @@ export default function ResultadoPage() {
                   }}
                   style={{
                     // PHASE 14 FIX: Ocultar qualquer elemento filho que possa estar sendo renderizado incorretamente
-                    overflow: 'hidden'
+                    overflow: 'hidden',
+                    // Ocultar qualquer elemento absoluto que possa estar sendo renderizado sobre a imagem
+                    position: 'relative'
                   }}
                 >
                     {currentLook.imagemUrl ? (
