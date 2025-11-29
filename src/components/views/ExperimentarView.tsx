@@ -334,8 +334,12 @@ export function ExperimentarView({
       }
     }, 2500) // Aumentado de 1500ms para 2500ms (mais devagar)
     
-    // Chamar função original
-    handleVisualize()
+    // Chamar função correta baseado no modo
+    if (isRefineMode && handleRefine) {
+      handleRefine()
+    } else {
+      handleVisualize()
+    }
   }
 
   const stopScanner = useCallback(() => {
