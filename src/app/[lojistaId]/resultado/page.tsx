@@ -1954,8 +1954,8 @@ export default function ResultadoPage() {
               {/* Coluna Esquerda: Imagem */}
               <div className="flex-shrink-0 lg:w-1/2">
                 {selectedFavoriteDetail.imagemUrl && (
-                  <div className="relative rounded-xl overflow-hidden">
-                    <div className="relative w-full">
+                  <div className="neon-border relative rounded-xl overflow-hidden p-2">
+                    <div className="relative w-full rounded-lg overflow-hidden">
                       {selectedFavoriteDetail.imagemUrl ? (
                         <SafeImage
                           src={selectedFavoriteDetail.imagemUrl}
@@ -2102,8 +2102,8 @@ export default function ResultadoPage() {
               {/* Coluna Esquerda: Imagem */}
               <div className="flex-shrink-0 lg:w-1/2">
                 {currentLook.imagemUrl && (
-                  <div className="relative rounded-xl overflow-hidden">
-                    <div className="relative w-full">
+                  <div className="neon-border relative rounded-xl overflow-hidden p-2">
+                    <div className="relative w-full rounded-lg overflow-hidden">
                       {currentLook.imagemUrl ? (
                         <SafeImage
                           src={currentLook.imagemUrl}
