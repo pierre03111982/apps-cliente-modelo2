@@ -60,6 +60,18 @@ export async function generateMetadata({
                      `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 
                      'https://experimente.ai';
       
+      // Favicon URL (priorizar app_icon_url, depois logoUrl) - PHASE 25: Para aparecer na barra de navegação
+      const faviconForMetadata = lojaData?.app_icon_url || lojaData?.logoUrl || null;
+      let faviconUrlAbsolute: string | undefined = undefined;
+      if (faviconForMetadata) {
+        if (faviconForMetadata.startsWith('http://') || faviconForMetadata.startsWith('https://')) {
+          faviconUrlAbsolute = faviconForMetadata;
+        } else {
+          faviconUrlAbsolute = faviconForMetadata.startsWith('/') ? `${baseUrl}${faviconForMetadata}` : `${baseUrl}/${faviconForMetadata}`;
+        }
+        console.log("[Layout] PHASE 25: Favicon URL para metadata:", faviconUrlAbsolute);
+      }
+      
       // Imagem Open Graph
       // Se temos logo, usar diretamente (mais rápido e confiável)
       // Se não temos logo, usar rota dinâmica que gera imagem com nome da loja
@@ -83,6 +95,12 @@ export async function generateMetadata({
       return {
         title: `${nome} | Provador Virtual com IA`,
         description: `Experimente as roupas da ${nome} sem sair de casa. ${descricao}. Tecnologia de Provador Virtual Inteligente.`,
+        // PHASE 25: Adicionar favicon no metadata para garantir que apareça na barra de navegação
+        icons: faviconUrlAbsolute ? {
+          icon: faviconUrlAbsolute,
+          apple: faviconUrlAbsolute,
+          shortcut: faviconUrlAbsolute,
+        } : undefined,
         other: {
           'theme-color': themeColor,
           'msapplication-navbutton-color': themeColor,
@@ -177,13 +195,14 @@ export default async function LojistaLayout({
     
     if (perfilDadosDoc.exists) {
       const lojaData = perfilDadosDoc.data();
-      faviconUrl = lojaData?.logoUrl || lojaData?.app_icon_url || null;
+      // PHASE 25: Priorizar app_icon_url (mais adequado para favicon), depois logoUrl
+      faviconUrl = lojaData?.app_icon_url || lojaData?.logoUrl || null;
       console.log("[Layout] Favicon encontrado em perfil/dados:", faviconUrl ? "sim" : "não");
     } else {
       const lojaDoc = await db.collection("lojas").doc(lojistaId).get();
       if (lojaDoc.exists) {
         const lojaData = lojaDoc.data();
-        faviconUrl = lojaData?.logoUrl || lojaData?.app_icon_url || null;
+        faviconUrl = lojaData?.app_icon_url || lojaData?.logoUrl || null;
         console.log("[Layout] Favicon encontrado no documento da loja:", faviconUrl ? "sim" : "não");
       } else {
         console.log("[Layout] Loja não encontrada para favicon");
@@ -193,20 +212,48 @@ export default async function LojistaLayout({
     console.error("[Layout] Erro ao buscar favicon:", error);
   }
   
+  // URL base para garantir URLs absolutas
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+                 process.env.NEXT_PUBLIC_VERCEL_URL ? 
+                 `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 
+                 'https://experimente.ai';
+  
+  // Garantir URL absoluta para o favicon
+  let faviconUrlAbsolute: string | null = null;
+  if (faviconUrl) {
+    if (faviconUrl.startsWith('http://') || faviconUrl.startsWith('https://')) {
+      faviconUrlAbsolute = faviconUrl;
+    } else {
+      faviconUrlAbsolute = faviconUrl.startsWith('/') ? `${baseUrl}${faviconUrl}` : `${baseUrl}/${faviconUrl}`;
+    }
+    console.log("[Layout] Favicon URL final:", faviconUrlAbsolute);
+  }
+  
   return (
     <>
       {/* PHASE 25: Link do manifest - Next.js pode não detectar automaticamente em rotas dinâmicas
           Adicionar manualmente para garantir que o manifest seja carregado */}
       <link rel="manifest" href={`/${lojistaId}/manifest.json`} />
-      {/* Favicon dinâmico usando logo da loja */}
-      {faviconUrl ? (
+      {/* Favicon dinâmico usando logo da loja - PHASE 25: Melhorado para garantir que apareça na barra de navegação */}
+      {faviconUrlAbsolute ? (
         <>
-          <link rel="icon" type="image/png" sizes="32x32" href={faviconUrl} />
-          <link rel="icon" type="image/png" sizes="16x16" href={faviconUrl} />
-          <link rel="apple-touch-icon" sizes="180x180" href={faviconUrl} />
-          <link rel="shortcut icon" href={faviconUrl} />
+          {/* Favicon padrão (mais compatível) */}
+          <link rel="icon" type="image/png" href={faviconUrlAbsolute} />
+          <link rel="icon" type="image/png" sizes="32x32" href={faviconUrlAbsolute} />
+          <link rel="icon" type="image/png" sizes="16x16" href={faviconUrlAbsolute} />
+          {/* Apple Touch Icon (iOS) */}
+          <link rel="apple-touch-icon" sizes="180x180" href={faviconUrlAbsolute} />
+          {/* Shortcut icon (IE/Edge) */}
+          <link rel="shortcut icon" href={faviconUrlAbsolute} />
+          {/* Favicon ICO (fallback para navegadores antigos) */}
+          <link rel="icon" type="image/x-icon" href={faviconUrlAbsolute} />
         </>
-      ) : null}
+      ) : (
+        /* Fallback: Favicon padrão se não houver logo */
+        <>
+          <link rel="icon" type="image/png" href="/favicon.ico" />
+        </>
+      )}
       {children}
     </>
   );
