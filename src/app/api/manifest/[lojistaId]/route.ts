@@ -79,23 +79,52 @@ export async function GET(
     const nome = lojaData?.nome || "Loja";
     const descricao = lojaData?.descricao || "Experimente as roupas sem sair de casa";
     
-    // PHASE 25-B: Priorizar app_icon_url, depois logoUrl, depois fallback
-    const iconUrl = lojaData?.app_icon_url || lojaData?.logoUrl || `${baseUrl}/icons/default-icon.png`;
+    // PHASE 25-C: Debug - Log dos dados encontrados no Firestore
+    console.log("[Manifest API] PHASE 25-C: Dados do Firestore:", {
+      lojistaId,
+      nome,
+      app_icon_url: lojaData?.app_icon_url ? (lojaData.app_icon_url.length > 100 ? lojaData.app_icon_url.substring(0, 100) + "..." : lojaData.app_icon_url) : "AUSENTE",
+      logoUrl: lojaData?.logoUrl ? (lojaData.logoUrl.length > 100 ? lojaData.logoUrl.substring(0, 100) + "..." : lojaData.logoUrl) : "AUSENTE",
+      hasAppIconUrl: !!lojaData?.app_icon_url,
+      hasLogoUrl: !!lojaData?.logoUrl,
+    });
+    
+    // PHASE 25-C: Priorizar app_icon_url, depois logoUrl, depois fallback
+    const iconUrl = lojaData?.app_icon_url || lojaData?.logoUrl || null;
     const themeColor = lojaData?.themeColor || '#000000';
     const backgroundColor = lojaData?.backgroundColor || '#000000';
     
-    // Garantir URL absoluta para o ícone
-    let iconUrlAbsolute = iconUrl.startsWith('http') ? iconUrl : 
-                           iconUrl.startsWith('/') ? `${baseUrl}${iconUrl}` : 
-                           `${baseUrl}/${iconUrl}`;
+    // PHASE 25-C: Garantir URL absoluta HTTPS (PWA manifest exige URLs absolutas)
+    let iconUrlAbsolute: string;
     
-    // PHASE 25-B: Se for Firebase Storage, usar proxy para garantir acesso
-    if (iconUrlAbsolute.includes('storage.googleapis.com') || iconUrlAbsolute.includes('firebasestorage.googleapis.com')) {
-      iconUrlAbsolute = `${baseUrl}/api/proxy-image?url=${encodeURIComponent(iconUrlAbsolute)}`;
-      console.log("[Manifest API] PHASE 25-B: Usando proxy para ícone do Firebase Storage");
+    if (!iconUrl) {
+      // Fallback: usar ícone padrão
+      iconUrlAbsolute = `${baseUrl}/icons/default-icon.png`;
+      console.log("[Manifest API] PHASE 25-C: Nenhum ícone encontrado, usando fallback:", iconUrlAbsolute);
+    } else {
+      // PHASE 25-C: Forçar URL absoluta HTTPS
+      if (iconUrl.startsWith('http://') || iconUrl.startsWith('https://')) {
+        // Já é absoluta, garantir HTTPS
+        iconUrlAbsolute = iconUrl.startsWith('http://') ? iconUrl.replace('http://', 'https://') : iconUrl;
+      } else if (iconUrl.startsWith('/')) {
+        // Relativa começando com /, adicionar baseUrl
+        iconUrlAbsolute = `${baseUrl}${iconUrl}`;
+      } else {
+        // Relativa sem /, adicionar baseUrl com /
+        iconUrlAbsolute = `${baseUrl}/${iconUrl}`;
+      }
+      
+      console.log("[Manifest API] PHASE 25-C: URL original:", iconUrl);
+      console.log("[Manifest API] PHASE 25-C: URL absoluta gerada:", iconUrlAbsolute);
+      
+      // PHASE 25-C: Se for Firebase Storage, usar proxy para garantir acesso
+      if (iconUrlAbsolute.includes('storage.googleapis.com') || iconUrlAbsolute.includes('firebasestorage.googleapis.com')) {
+        iconUrlAbsolute = `${baseUrl}/api/proxy-image?url=${encodeURIComponent(iconUrlAbsolute)}`;
+        console.log("[Manifest API] PHASE 25-C: Usando proxy para ícone do Firebase Storage");
+      }
     }
     
-    // PHASE 25-B: Verificar se o ícone é acessível
+    // PHASE 25-C: Verificar se o ícone é acessível
     let iconUrlFinal = iconUrlAbsolute;
     try {
       const iconResponse = await fetch(iconUrlAbsolute, { 
@@ -103,24 +132,38 @@ export async function GET(
         signal: AbortSignal.timeout(5000) // 5 segundos timeout
       });
       if (!iconResponse.ok) {
-        console.warn("[Manifest API] PHASE 25-B: Ícone não acessível (status:", iconResponse.status, "), usando fallback");
+        console.warn("[Manifest API] PHASE 25-C: Ícone não acessível (status:", iconResponse.status, "), usando fallback");
         iconUrlFinal = `${baseUrl}/icons/default-icon.png`;
       } else {
-        console.log("[Manifest API] PHASE 25-B: Ícone verificado e acessível:", iconUrlAbsolute);
+        const contentType = iconResponse.headers.get('content-type');
+        console.log("[Manifest API] PHASE 25-C: Ícone verificado e acessível:", {
+          url: iconUrlAbsolute,
+          status: iconResponse.status,
+          contentType: contentType,
+        });
       }
-    } catch (fetchError) {
-      console.warn("[Manifest API] PHASE 25-B: Erro ao verificar ícone (pode ser CORS ou timeout):", fetchError);
+    } catch (fetchError: any) {
+      console.warn("[Manifest API] PHASE 25-C: Erro ao verificar ícone:", fetchError.message);
       // Se não conseguir verificar e for Firebase Storage, usar fallback
-      if (iconUrl.includes('storage.googleapis.com') || iconUrl.includes('firebasestorage.googleapis.com')) {
-        console.warn("[Manifest API] PHASE 25-B: Erro ao acessar ícone do Firebase Storage, usando fallback");
+      if (iconUrl && (iconUrl.includes('storage.googleapis.com') || iconUrl.includes('firebasestorage.googleapis.com'))) {
+        console.warn("[Manifest API] PHASE 25-C: Erro ao acessar ícone do Firebase Storage, usando fallback");
         iconUrlFinal = `${baseUrl}/icons/default-icon.png`;
       }
     }
     
-    console.log("[Manifest API] PHASE 25-B: Manifest gerado para lojista:", {
+    // PHASE 25-C: Garantir que a URL final seja HTTPS absoluta
+    if (!iconUrlFinal.startsWith('https://') && !iconUrlFinal.startsWith('http://')) {
+      iconUrlFinal = `${baseUrl}${iconUrlFinal.startsWith('/') ? iconUrlFinal : `/${iconUrlFinal}`}`;
+    }
+    if (iconUrlFinal.startsWith('http://')) {
+      iconUrlFinal = iconUrlFinal.replace('http://', 'https://');
+    }
+    
+    console.log("[Manifest API] PHASE 25-C: URL FINAL do ícone (garantida HTTPS absoluta):", iconUrlFinal);
+    console.log("[Manifest API] PHASE 25-C: Manifest gerado para lojista:", {
       lojistaId,
       nome,
-      iconUrlOriginal: iconUrl,
+      iconUrlOriginal: iconUrl || "fallback",
       iconUrlFinal: iconUrlFinal,
       themeColor,
       backgroundColor,
@@ -128,7 +171,8 @@ export async function GET(
       hasLogoUrl: !!lojaData?.logoUrl,
     });
     
-    // PHASE 25-B: Estrutura do manifest conforme especificação
+    // PHASE 25-C: Estrutura do manifest conforme especificação
+    // Garantir que todos os ícones tenham type: 'image/png' e URLs absolutas HTTPS
     const manifest = {
       name: nome,
       short_name: nome.length > 12 ? nome.slice(0, 12) : nome,
@@ -141,25 +185,17 @@ export async function GET(
         {
           src: iconUrlFinal,
           sizes: '512x512',
-          type: 'image/png',
+          type: 'image/png', // PHASE 25-C: Sempre PNG
         },
         {
           src: iconUrlFinal,
           sizes: '192x192',
-          type: 'image/png',
-        },
-        {
-          src: iconUrlFinal,
-          sizes: '144x144',
-          type: 'image/png',
-        },
-        {
-          src: iconUrlFinal,
-          sizes: '96x96',
-          type: 'image/png',
+          type: 'image/png', // PHASE 25-C: Sempre PNG
         },
       ],
     };
+    
+    console.log("[Manifest API] PHASE 25-C: Manifest JSON final:", JSON.stringify(manifest, null, 2));
     
     return NextResponse.json(manifest, {
       headers: {
