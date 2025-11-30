@@ -14,8 +14,10 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ lojistaId: string }> }
 ) {
+  // PHASE 25-B FIX: Extrair lojistaId antes do try para estar disponível no catch
+  const { lojistaId } = await params;
+  
   try {
-    const { lojistaId } = await params;
     
     // Buscar dados da loja do Firestore
     // PRIORIDADE 1: Buscar em perfil/dados (onde salvamos os dados)
@@ -170,6 +172,7 @@ export async function GET(
     console.error("[Manifest API] PHASE 25-B: Stack:", error.stack);
     
     // Retornar manifest padrão em caso de erro
+    // PHASE 25-B FIX: lojistaId já está disponível no escopo externo
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
                    process.env.NEXT_PUBLIC_VERCEL_URL ? 
                    `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 
