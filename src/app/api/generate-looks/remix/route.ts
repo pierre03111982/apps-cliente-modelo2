@@ -130,20 +130,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // PHASE 14: Scenario/Pose Shuffler - Mudança Drástica (Prompt Mestre v2.1)
-    // Cenários mais distintos e variados para forçar mudanças visuais dramáticas
-    const scenarios = [
-      "at a vibrant sunny beach during golden hour, ocean waves in background, sand, palm trees, tropical paradise, sunset colors, warm natural lighting",
-      "inside a luxury 5-star hotel lobby with marble floors, crystal chandeliers, elegant modern furniture, warm ambient lighting, sophisticated upscale atmosphere",
-      "on a bustling modern city street at night with neon signs, bokeh lights, urban architecture, dynamic street photography style, vibrant nightlife",
-      "in a minimalist high-end photography studio with concrete walls, dramatic shadows, professional lighting setup, clean modern aesthetic, fashion editorial style",
-      "at an exclusive rooftop bar overlooking city skyline at sunset, modern outdoor furniture, warm evening atmosphere, sophisticated urban setting",
-      "in a cozy Scandinavian-style living room with natural wood, plants, large windows, warm soft lighting, comfortable minimalist furniture, homey atmosphere",
-      "at a luxury resort poolside during day, infinity pool, tropical plants, blue sky, bright natural sunlight, vacation paradise setting",
-      "in a contemporary art gallery with white walls, high ceilings, modern art installations, gallery track lighting, cultural sophisticated atmosphere",
-      "on a European cobblestone street in historic district, old architecture, charming cafes, golden hour lighting, romantic old-world atmosphere",
-      "at a modern fitness center with glass walls, natural light, sleek equipment, active lifestyle setting, energetic atmosphere"
-    ];
+    // PHASE 21 FIX: NÃO gerar cenário no frontend - deixar o backend usar getSmartScenario
+    // O backend tem acesso aos dados completos dos produtos e aplica a lógica correta
+    // Remover geração de cenário aqui para garantir coerência total
+    console.log("[remix] PHASE 21 FIX: Remix - NÃO gerando cenário no frontend, deixando backend usar getSmartScenario");
 
     // PHASE 20: Pose Variation - Mudança Drástica mantendo identidade facial (BANIDAS poses sentadas)
     const poses = [
@@ -159,15 +149,13 @@ export async function POST(request: NextRequest) {
       "Standing with hands on hips, powerful confident pose, strong presence, fashion editorial style"
     ];
 
-    // PHASE 11-B: Selecionar aleatoriamente um cenário e uma pose
-    const randomScenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+    // PHASE 21 FIX: Selecionar apenas uma pose (cenário será determinado pelo backend usando getSmartScenario)
     const randomPose = poses[Math.floor(Math.random() * poses.length)];
     
     // PHASE 11-B: Gerar random seed para forçar variação na IA
     const randomSeed = Math.floor(Math.random() * 999999);
 
-    console.log("[remix] PHASE 11-B Scenario/Pose/Seed selecionados:", {
-      scenario: randomScenario,
+    console.log("[remix] PHASE 21 FIX: Pose/Seed selecionados (cenário será determinado pelo backend):", {
       pose: randomPose,
       randomSeed,
     });
@@ -201,14 +189,25 @@ export async function POST(request: NextRequest) {
           : "A stylish man")
       : "A stylish person";
 
-    // PHASE 14 FIX: Construir prompt mais descritivo e ENFÁTICO sobre mudanças de cenário e pose
-    // O prompt deve ser MUITO específico sobre mudanças dramáticas para forçar variação visual
-    const remixPrompt = `${subjectDescription} ${randomPose} wearing ${productPrompt}, harmonious outfit combination, ${randomScenario}. 
+    // PHASE 21 FIX: Detectar produtos para regra de calçados (chinelo ou sem calçado para roupas de banho)
+    const allText = products.map(p => `${p?.categoria || ""} ${p?.nome || ""}`).join(" ").toLowerCase();
+    const hasBeach = allText.match(/biqu|bikini|maiô|maio|sunga|praia|beachwear|saída de praia|swimwear|moda praia|banho|nado|piscina|swim|beach/i);
+    const hasShoesInProducts = allText.match(/calçado|calcado|sapato|tênis|tenis|sneaker|shoe|footwear|bota|boot/i);
+    
+    // PHASE 21 FIX: Adicionar regra de calçados para roupas de banho
+    let beachFootwearPrompt = "";
+    if (hasBeach && !hasShoesInProducts) {
+      beachFootwearPrompt = " barefoot or wearing simple flip-flops/sandals, NO boots, NO sneakers, NO closed shoes";
+      console.log("[remix] PHASE 21 FIX: Roupas de banho sem calçados - Forçando chinelo ou pés descalços");
+    }
+    
+    // PHASE 21 FIX: NÃO incluir cenário no prompt - deixar backend determinar baseado nos produtos
+    // O backend usará getSmartScenario que aplica a Bikini Law corretamente
+    const remixPrompt = `${subjectDescription} ${randomPose} wearing ${productPrompt}${beachFootwearPrompt}, harmonious outfit combination. 
     
 ⚠️ CRITICAL REMIX INSTRUCTION: This is a REMIX generation. The scene MUST be DRAMATICALLY DIFFERENT from any previous generation. 
-- BACKGROUND: Completely change the background to ${randomScenario}. The environment must be visually distinct and different.
-- POSE: The person must be in a ${randomPose.toLowerCase()} position, which is DIFFERENT from the original photo's pose.
-- LIGHTING: Adapt lighting to match the new scene (${randomScenario}).
+- POSE: The person must be in a ${randomPose.toLowerCase()} position, which is DIFFERENT from the original photo's pose. ⚠️ CRITICAL: The person MUST face the camera or at MOST slightly to the side (3/4 view). NEVER from behind (back view). The face and frontal body MUST be visible.
+- LIGHTING: Adapt lighting to match the new scene context.
 - CAMERA ANGLE: Use a different camera angle or perspective to emphasize the new pose and scene.
 
 Photorealistic, 8k, highly detailed, professional fashion photography, distinct visual style. The final image must look like a COMPLETELY NEW PHOTOSHOOT in a DIFFERENT LOCATION with a DIFFERENT POSE, while maintaining the person's exact identity and the products' fidelity.`;
@@ -241,7 +240,8 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
       lojistaId: body.lojistaId,
       customerId: body.customerId || null,
       customerName: body.customerName || null, // Adicionar customerName para o Radar funcionar
-      scenePrompts: [remixPrompt], // PHASE 14: Prompt descritivo de remix com cenário e pose variados
+      // PHASE 21 FIX: NÃO passar scenePrompts - deixar backend usar getSmartScenario para determinar cenário correto
+      // scenePrompts: [remixPrompt], // REMOVIDO - backend usará getSmartScenario
       options: {
         quality: body.options?.quality || "high",
         skipWatermark: body.options?.skipWatermark !== false, // Default: true
@@ -462,19 +462,17 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
       );
     }
 
-    console.log("[remix] PHASE 11-B Remix gerado com sucesso:", {
+    console.log("[remix] PHASE 21 FIX: Remix gerado com sucesso (cenário determinado pelo backend):", {
       composicaoId: data.composicaoId,
       looksCount: data.looks?.length || 0,
-      scenario: randomScenario,
       pose: randomPose,
       randomSeed,
     });
 
-    // PHASE 11-B: Retornar dados com informações do remix (incluindo seed)
+    // PHASE 21 FIX: Retornar dados com informações do remix (cenário foi determinado pelo backend)
     return NextResponse.json({
       ...data,
       remixInfo: {
-        scenario: randomScenario,
         pose: randomPose,
         prompt: remixPrompt,
         randomSeed, // PHASE 11-B: Incluir seed na resposta
