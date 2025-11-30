@@ -220,9 +220,8 @@ export default async function LojistaLayout({
   
   return (
     <>
-      {/* PHASE 25: Link do manifest - Next.js pode não detectar automaticamente em rotas dinâmicas
-          Adicionar manualmente para garantir que o manifest seja carregado */}
-      <link rel="manifest" href={`/${lojistaId}/manifest.json`} />
+      {/* PHASE 25-B: Link do manifest via API Route explícita - Mais confiável que manifest.ts */}
+      <link rel="manifest" href={`/api/manifest/${lojistaId}`} />
       {/* Favicon dinâmico usando logo da loja - PHASE 25: Melhorado para garantir que apareça na barra de navegação */}
       {faviconUrlAbsolute ? (
         <>
