@@ -85,9 +85,15 @@ export async function GET(
     const backgroundColor = lojaData?.backgroundColor || '#000000';
     
     // Garantir URL absoluta para o ícone
-    const iconUrlAbsolute = iconUrl.startsWith('http') ? iconUrl : 
+    let iconUrlAbsolute = iconUrl.startsWith('http') ? iconUrl : 
                            iconUrl.startsWith('/') ? `${baseUrl}${iconUrl}` : 
                            `${baseUrl}/${iconUrl}`;
+    
+    // PHASE 25 FIX: Se for Firebase Storage, usar proxy para garantir acesso
+    if (iconUrlAbsolute.includes('storage.googleapis.com') || iconUrlAbsolute.includes('firebasestorage.googleapis.com')) {
+      iconUrlAbsolute = `${baseUrl}/api/proxy-image?url=${encodeURIComponent(iconUrlAbsolute)}`;
+      console.log("[Manifest] PHASE 25: Usando proxy para ícone do Firebase Storage");
+    }
     
     // PHASE 25 FIX: Verificar se o ícone é acessível
     let iconUrlFinal = iconUrlAbsolute;
@@ -104,7 +110,12 @@ export async function GET(
       }
     } catch (fetchError) {
       console.warn("[Manifest] PHASE 25: Erro ao verificar ícone (pode ser CORS ou timeout):", fetchError);
-      // Continuar com a URL original - pode funcionar mesmo assim
+      // Se não conseguir verificar, usar a URL original (pode funcionar mesmo assim)
+      // Mas se for Firebase Storage e deu erro, usar fallback
+      if (iconUrl.includes('storage.googleapis.com') || iconUrl.includes('firebasestorage.googleapis.com')) {
+        console.warn("[Manifest] PHASE 25: Erro ao acessar ícone do Firebase Storage, usando fallback");
+        iconUrlFinal = `${baseUrl}/icons/default-icon.png`;
+      }
     }
     
     console.log("[Manifest] PHASE 25: Manifest gerado para lojista:", {
@@ -131,10 +142,22 @@ export async function GET(
           src: iconUrlFinal,
           sizes: '192x192',
           type: 'image/png',
+          purpose: 'any maskable',
         },
         {
           src: iconUrlFinal,
           sizes: '512x512',
+          type: 'image/png',
+          purpose: 'any maskable',
+        },
+        {
+          src: iconUrlFinal,
+          sizes: '144x144',
+          type: 'image/png',
+        },
+        {
+          src: iconUrlFinal,
+          sizes: '96x96',
           type: 'image/png',
         },
       ],
