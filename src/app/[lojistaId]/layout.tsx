@@ -73,22 +73,11 @@ export async function generateMetadata({
       }
       
       // Imagem Open Graph
-      // Se temos logo, usar diretamente (mais rápido e confiável)
-      // Se não temos logo, usar rota dinâmica que gera imagem com nome da loja
-      let ogImage: string;
-      if (logoUrl) {
-        // Usar logo diretamente - Facebook aceita qualquer tamanho, mas ideal é 1200x630px
-        if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) {
-          ogImage = logoUrl;
-        } else {
-          ogImage = logoUrl.startsWith('/') ? `${baseUrl}${logoUrl}` : `${baseUrl}/${logoUrl}`;
-        }
-        console.log("[Layout] PHASE 25: Usando logoUrl diretamente como og:image:", ogImage);
-      } else {
-        // Fallback: gerar imagem Open Graph dinamicamente
-        ogImage = `${baseUrl}/api/og-image/${lojistaId}`;
-        console.log("[Layout] PHASE 25: Logo não encontrada, usando imagem gerada dinamicamente:", ogImage);
-      }
+      // PHASE 25 FIX CRÍTICO: Sempre usar rota dinâmica que baixa e processa a logo corretamente
+      // O Facebook/WhatsApp não consegue acessar imagens do Firebase Storage diretamente
+      // A rota /api/og-image baixa a logo no servidor e a incorpora na imagem gerada
+      const ogImage = `${baseUrl}/api/og-image/${lojistaId}`;
+      console.log("[Layout] PHASE 25: Sempre usando rota dinâmica OG Image:", ogImage);
       
       const themeColor = lojaData?.themeColor || '#000000';
       

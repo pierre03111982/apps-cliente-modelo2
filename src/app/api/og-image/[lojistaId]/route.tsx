@@ -61,22 +61,42 @@ export async function GET(
     
     // Construir URL da logo (garantir URL absoluta)
     // Priorizar logoUrl, depois app_icon_url
-    let logoImageUrl: string | null = null;
+    let logoImageData: string | null = null;
     const logoToUse = logoUrl || appIconUrl;
     
     if (logoToUse) {
+      let logoImageUrl: string;
       if (logoToUse.startsWith('http://') || logoToUse.startsWith('https://')) {
-        // PHASE 25 FIX: Se for Firebase Storage, usar proxy para garantir acesso
-        if (logoToUse.includes('storage.googleapis.com') || logoToUse.includes('firebasestorage.googleapis.com')) {
-          logoImageUrl = `${baseUrl}/api/proxy-image?url=${encodeURIComponent(logoToUse)}`;
-          console.log("[OG Image] PHASE 25: Usando proxy para logo do Firebase Storage");
-        } else {
-          logoImageUrl = logoToUse;
-        }
+        logoImageUrl = logoToUse;
       } else {
         logoImageUrl = logoToUse.startsWith('/') ? `${baseUrl}${logoToUse}` : `${baseUrl}/${logoToUse}`;
       }
-      console.log("[OG Image] PHASE 25: Logo URL final (absoluta):", logoImageUrl);
+      
+      console.log("[OG Image] PHASE 25: Tentando baixar logo:", logoImageUrl);
+      
+      // PHASE 25 FIX CRÍTICO: ImageResponse não carrega imagens externas diretamente
+      // Precisamos baixar a imagem no servidor e converter para base64
+      try {
+        const imageResponse = await fetch(logoImageUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; ExperimenteAI/1.0)',
+          },
+          signal: AbortSignal.timeout(10000), // 10 segundos timeout
+        });
+        
+        if (imageResponse.ok) {
+          const imageBuffer = await imageResponse.arrayBuffer();
+          const imageBase64 = Buffer.from(imageBuffer).toString('base64');
+          const contentType = imageResponse.headers.get('content-type') || 'image/png';
+          logoImageData = `data:${contentType};base64,${imageBase64}`;
+          console.log("[OG Image] PHASE 25: Logo baixada e convertida para base64 com sucesso");
+        } else {
+          console.warn("[OG Image] PHASE 25: Erro ao baixar logo (status:", imageResponse.status, ")");
+        }
+      } catch (fetchError: any) {
+        console.error("[OG Image] PHASE 25: Erro ao baixar logo:", fetchError.message);
+        // Continuar sem logo
+      }
     } else {
       console.log("[OG Image] PHASE 25: Nenhuma logo encontrada, gerando imagem sem logo");
     }
@@ -99,9 +119,9 @@ export async function GET(
           }}
         >
           {/* Logo da Loja */}
-          {logoImageUrl ? (
+          {logoImageData ? (
             <img
-              src={logoImageUrl}
+              src={logoImageData}
               alt={nome}
               width={200}
               height={200}
