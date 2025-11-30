@@ -86,7 +86,10 @@ export async function GET(
         
         if (imageResponse.ok) {
           const imageBuffer = await imageResponse.arrayBuffer();
-          const imageBase64 = Buffer.from(imageBuffer).toString('base64');
+          // Converter ArrayBuffer para base64 (compatível com Node.js e Edge)
+          const imageBase64 = btoa(
+            String.fromCharCode(...new Uint8Array(imageBuffer))
+          );
           const contentType = imageResponse.headers.get('content-type') || 'image/png';
           logoImageData = `data:${contentType};base64,${imageBase64}`;
           console.log("[OG Image] PHASE 25: Logo baixada e convertida para base64 com sucesso");
