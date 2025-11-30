@@ -24,15 +24,18 @@ export async function generateMetadata({
     const perfilDadosDoc = await db.collection("lojas").doc(lojistaId).collection("perfil").doc("dados").get();
     
     let lojaData: any = null;
+    let dataSource = "nenhum";
     if (perfilDadosDoc.exists) {
       lojaData = perfilDadosDoc.data();
-      console.log("[Layout] Perfil encontrado em perfil/dados:", lojaData?.nome || "sem nome");
+      dataSource = "perfil/dados";
+      console.log("[Layout] PHASE 25: Perfil encontrado em perfil/dados:", lojaData?.nome || "sem nome");
     } else {
       // PRIORIDADE 2: Tentar buscar dados diretamente do documento da loja
       const lojaDoc = await db.collection("lojas").doc(lojistaId).get();
       if (lojaDoc.exists) {
         lojaData = lojaDoc.data();
-        console.log("[Layout] Perfil encontrado no documento da loja:", lojaData?.nome || "sem nome");
+        dataSource = "lojas/{id}";
+        console.log("[Layout] PHASE 25: Perfil encontrado no documento da loja:", lojaData?.nome || "sem nome");
       }
     }
     
@@ -41,11 +44,14 @@ export async function generateMetadata({
       const descricao = lojaData?.descricao || "Experimente as roupas sem sair de casa";
       const logoUrl = lojaData?.logoUrl || null;
       
-      console.log("[Layout] Dados da loja:", { 
+      console.log("[Layout] PHASE 25: Dados da loja para metadata (Open Graph):", { 
         lojistaId, 
         nome, 
         logoUrl: logoUrl ? (logoUrl.length > 50 ? logoUrl.substring(0, 50) + "..." : logoUrl) : "ausente",
-        app_icon_url: lojaData?.app_icon_url ? "presente" : "ausente"
+        app_icon_url: lojaData?.app_icon_url ? (lojaData.app_icon_url.length > 50 ? lojaData.app_icon_url.substring(0, 50) + "..." : lojaData.app_icon_url) : "ausente",
+        hasLogoUrl: !!logoUrl,
+        hasAppIconUrl: !!lojaData?.app_icon_url,
+        source: dataSource
       });
       
       // URL base do site
@@ -65,11 +71,11 @@ export async function generateMetadata({
         } else {
           ogImage = logoUrl.startsWith('/') ? `${baseUrl}${logoUrl}` : `${baseUrl}/${logoUrl}`;
         }
-        console.log("[Layout] Usando logoUrl diretamente como og:image:", ogImage);
+        console.log("[Layout] PHASE 25: Usando logoUrl diretamente como og:image:", ogImage);
       } else {
         // Fallback: gerar imagem Open Graph dinamicamente
         ogImage = `${baseUrl}/api/og-image/${lojistaId}`;
-        console.log("[Layout] Logo não encontrada, usando imagem gerada:", ogImage);
+        console.log("[Layout] PHASE 25: Logo não encontrada, usando imagem gerada dinamicamente:", ogImage);
       }
       
       const themeColor = lojaData?.themeColor || '#000000';
@@ -185,6 +191,8 @@ export default async function LojistaLayout({
   
   return (
     <>
+      {/* PHASE 25: Link do manifest - Next.js pode não detectar automaticamente em rotas dinâmicas
+          Adicionar manualmente para garantir que o manifest seja carregado */}
       <link rel="manifest" href={`/${lojistaId}/manifest.json`} />
       {/* Favicon dinâmico usando logo da loja */}
       {faviconUrl ? (

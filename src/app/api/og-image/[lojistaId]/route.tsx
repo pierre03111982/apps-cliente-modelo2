@@ -44,10 +44,13 @@ export async function GET(
     const logoUrl = lojaData?.logoUrl || null;
     const appIconUrl = lojaData?.app_icon_url || null;
     
-    console.log("[OG Image] Dados encontrados:", {
+    console.log("[OG Image] PHASE 25: Dados encontrados:", {
+      lojistaId,
       nome,
-      logoUrl: logoUrl ? "presente" : "ausente",
-      appIconUrl: appIconUrl ? "presente" : "ausente"
+      logoUrl: logoUrl ? (logoUrl.length > 50 ? logoUrl.substring(0, 50) + "..." : logoUrl) : "ausente",
+      appIconUrl: appIconUrl ? (appIconUrl.length > 50 ? appIconUrl.substring(0, 50) + "..." : appIconUrl) : "ausente",
+      hasLogoUrl: !!logoUrl,
+      hasAppIconUrl: !!appIconUrl
     });
     
     // URL base
@@ -67,9 +70,9 @@ export async function GET(
       } else {
         logoImageUrl = logoToUse.startsWith('/') ? `${baseUrl}${logoToUse}` : `${baseUrl}/${logoToUse}`;
       }
-      console.log("[OG Image] Logo URL final:", logoImageUrl);
+      console.log("[OG Image] PHASE 25: Logo URL final (absoluta):", logoImageUrl);
     } else {
-      console.log("[OG Image] Nenhuma logo encontrada, gerando imagem sem logo");
+      console.log("[OG Image] PHASE 25: Nenhuma logo encontrada, gerando imagem sem logo");
     }
     
     // Gerar imagem Open Graph
