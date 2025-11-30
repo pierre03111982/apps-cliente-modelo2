@@ -145,18 +145,18 @@ export async function POST(request: NextRequest) {
       "at a modern fitness center with glass walls, natural light, sleek equipment, active lifestyle setting, energetic atmosphere"
     ];
 
-    // PHASE 14: Pose Variation - Mudança Drástica mantendo identidade facial
+    // PHASE 20: Pose Variation - Mudança Drástica mantendo identidade facial (BANIDAS poses sentadas)
     const poses = [
       "Walking confidently towards camera with dynamic movement, natural stride, engaging expression, fashion model walk",
       "Leaning against wall casually with relaxed posture, hands visible, one leg crossed, confident casual stance",
-      "Sitting elegantly on modern furniture with composed pose, professional stance, hands resting naturally, sophisticated positioning",
       "Standing with hands in pockets, relaxed body language, natural positioning, casual confident expression",
       "Looking over shoulder with engaging expression, dynamic angle, direct eye contact, fashion editorial pose",
       "Standing with one hand on hip, confident powerful pose, fashion model stance, strong presence",
-      "Sitting cross-legged on floor or surface, casual relaxed pose, comfortable positioning, natural body language",
       "Standing with arms crossed, confident assertive pose, strong body language, professional demeanor",
       "Walking away from camera then turning back, dynamic movement, cinematic pose, engaging presence",
-      "Sitting on edge of furniture with legs crossed, elegant composed pose, sophisticated positioning"
+      "Standing with weight on one leg, relaxed confident pose, natural body language, fashion model stance",
+      "Walking with slight turn, dynamic movement, engaging expression, professional photography style",
+      "Standing with hands on hips, powerful confident pose, strong presence, fashion editorial style"
     ];
 
     // PHASE 11-B: Selecionar aleatoriamente um cenário e uma pose
