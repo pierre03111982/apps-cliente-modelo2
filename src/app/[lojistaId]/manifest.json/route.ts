@@ -89,12 +89,33 @@ export async function GET(
                            iconUrl.startsWith('/') ? `${baseUrl}${iconUrl}` : 
                            `${baseUrl}/${iconUrl}`;
     
+    // PHASE 25 FIX: Verificar se o ícone é acessível
+    let iconUrlFinal = iconUrlAbsolute;
+    try {
+      const iconResponse = await fetch(iconUrlAbsolute, { 
+        method: 'HEAD',
+        signal: AbortSignal.timeout(5000) // 5 segundos timeout
+      });
+      if (!iconResponse.ok) {
+        console.warn("[Manifest] PHASE 25: Ícone não acessível (status:", iconResponse.status, "), usando fallback");
+        iconUrlFinal = `${baseUrl}/icons/default-icon.png`;
+      } else {
+        console.log("[Manifest] PHASE 25: Ícone verificado e acessível:", iconUrlAbsolute);
+      }
+    } catch (fetchError) {
+      console.warn("[Manifest] PHASE 25: Erro ao verificar ícone (pode ser CORS ou timeout):", fetchError);
+      // Continuar com a URL original - pode funcionar mesmo assim
+    }
+    
     console.log("[Manifest] PHASE 25: Manifest gerado para lojista:", {
       lojistaId,
       nome,
-      iconUrl: iconUrlAbsolute,
+      iconUrlOriginal: iconUrl,
+      iconUrlFinal: iconUrlFinal,
       themeColor,
       backgroundColor,
+      hasAppIconUrl: !!lojaData?.app_icon_url,
+      hasLogoUrl: !!lojaData?.logoUrl,
     });
     
     const manifest = {
@@ -107,12 +128,12 @@ export async function GET(
       theme_color: themeColor,
       icons: [
         {
-          src: iconUrlAbsolute,
+          src: iconUrlFinal,
           sizes: '192x192',
           type: 'image/png',
         },
         {
-          src: iconUrlAbsolute,
+          src: iconUrlFinal,
           sizes: '512x512',
           type: 'image/png',
         },

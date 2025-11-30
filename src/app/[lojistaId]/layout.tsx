@@ -92,6 +92,8 @@ export async function generateMetadata({
           'og:image:height': '630',
           'og:image:alt': `${nome} - Provador Virtual`,
           'og:url': `${baseUrl}/${lojistaId}/login`,
+          // PHASE 25: Adicionar fb:app_id (opcional mas recomendado para evitar warnings)
+          'fb:app_id': process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '',
         },
         openGraph: {
           title: `${nome} | Provador Virtual com IA`,
@@ -138,6 +140,8 @@ export async function generateMetadata({
       'og:image:width': '1200',
       'og:image:height': '630',
       'og:url': `${baseUrl}/${lojistaId}/login`,
+      // PHASE 25: Adicionar fb:app_id no fallback também
+      'fb:app_id': process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '',
     },
     openGraph: {
       title: "Provador Virtual com IA | Experimente.ai",

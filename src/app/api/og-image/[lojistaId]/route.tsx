@@ -66,7 +66,13 @@ export async function GET(
     
     if (logoToUse) {
       if (logoToUse.startsWith('http://') || logoToUse.startsWith('https://')) {
-        logoImageUrl = logoToUse;
+        // PHASE 25 FIX: Se for Firebase Storage, usar proxy para garantir acesso
+        if (logoToUse.includes('storage.googleapis.com') || logoToUse.includes('firebasestorage.googleapis.com')) {
+          logoImageUrl = `${baseUrl}/api/proxy-image?url=${encodeURIComponent(logoToUse)}`;
+          console.log("[OG Image] PHASE 25: Usando proxy para logo do Firebase Storage");
+        } else {
+          logoImageUrl = logoToUse;
+        }
       } else {
         logoImageUrl = logoToUse.startsWith('/') ? `${baseUrl}${logoToUse}` : `${baseUrl}/${logoToUse}`;
       }
@@ -93,7 +99,7 @@ export async function GET(
           }}
         >
           {/* Logo da Loja */}
-          {logoImageUrl && (
+          {logoImageUrl ? (
             <img
               src={logoImageUrl}
               alt={nome}
@@ -107,7 +113,7 @@ export async function GET(
                 padding: '20px',
               }}
             />
-          )}
+          ) : null}
           
           {/* Nome da Loja */}
           <div
