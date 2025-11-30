@@ -149,6 +149,13 @@ export async function GET(
     );
   } catch (error: any) {
     console.error('[OG Image] Erro ao gerar imagem:', error);
+    console.error('[OG Image] Stack:', error.stack);
+    console.error('[OG Image] Variáveis de ambiente:', {
+      hasFirebaseProjectId: !!process.env.FIREBASE_PROJECT_ID,
+      hasFirebaseClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
+      hasFirebasePrivateKey: !!process.env.FIREBASE_PRIVATE_KEY,
+      baseUrl: process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_VERCEL_URL || 'não configurado',
+    });
     
     // Retornar imagem de fallback simples
     return new ImageResponse(
