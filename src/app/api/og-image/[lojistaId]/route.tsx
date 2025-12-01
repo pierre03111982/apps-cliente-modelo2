@@ -50,7 +50,8 @@ export async function GET(
       logoUrl: logoUrl ? (logoUrl.length > 50 ? logoUrl.substring(0, 50) + "..." : logoUrl) : "ausente",
       appIconUrl: appIconUrl ? (appIconUrl.length > 50 ? appIconUrl.substring(0, 50) + "..." : appIconUrl) : "ausente",
       hasLogoUrl: !!logoUrl,
-      hasAppIconUrl: !!appIconUrl
+      hasAppIconUrl: !!appIconUrl,
+      logoToUse: (logoUrl || appIconUrl) ? "encontrado" : "ausente"
     });
     
     // URL base - PHASE 25 FIX: Sempre usar URL de produção para garantir que Facebook/WhatsApp acessem corretamente
@@ -62,6 +63,12 @@ export async function GET(
     // Priorizar logoUrl, depois app_icon_url
     let logoImageData: string | null = null;
     const logoToUse = logoUrl || appIconUrl;
+    
+    console.log("[OG Image] PHASE 25: Logo para usar:", {
+      hasLogoUrl: !!logoUrl,
+      hasAppIconUrl: !!appIconUrl,
+      logoToUse: logoToUse ? (logoToUse.length > 100 ? logoToUse.substring(0, 100) + "..." : logoToUse) : "null"
+    });
     
     if (logoToUse) {
       let logoImageUrl: string;
@@ -105,13 +112,15 @@ export async function GET(
             const imageBase64 = Buffer.from(imageBuffer).toString('base64');
             const contentType = imageResponse.headers.get('content-type') || 'image/png';
             logoImageData = `data:${contentType};base64,${imageBase64}`;
-            console.log("[OG Image] PHASE 25: ✅ Logo baixada e convertida para base64 com sucesso, tamanho:", imageBuffer.byteLength, "bytes, tipo:", contentType);
+            console.log("[OG Image] PHASE 25: ✅ Logo baixada e convertida para base64 com sucesso, tamanho:", imageBuffer.byteLength, "bytes, tipo:", contentType, "base64 length:", imageBase64.length);
           } else {
             console.warn("[OG Image] PHASE 25: ⚠️ Logo baixada mas está vazia (0 bytes)");
+            logoImageData = null;
           }
         } else {
           const errorText = await imageResponse.text().catch(() => '');
           console.warn("[OG Image] PHASE 25: ❌ Erro ao baixar logo (status:", imageResponse.status, "), resposta:", errorText.substring(0, 200));
+          logoImageData = null;
         }
       } catch (fetchError: any) {
         console.error("[OG Image] PHASE 25: ❌ Erro ao baixar logo:", {
@@ -120,11 +129,18 @@ export async function GET(
           cause: fetchError.cause,
           url: logoImageUrl.substring(0, 150) + "...",
         });
-        // Continuar sem logo
+        logoImageData = null;
       }
     } else {
       console.log("[OG Image] PHASE 25: Nenhuma logo encontrada, gerando imagem sem logo");
     }
+    
+    // Log final do status da logo
+    console.log("[OG Image] PHASE 25: Status final da logo:", {
+      hasLogoImageData: !!logoImageData,
+      logoImageDataLength: logoImageData ? logoImageData.length : 0,
+      willShowLogo: !!logoImageData
+    });
     
     // Gerar imagem Open Graph
     return new ImageResponse(
@@ -145,22 +161,32 @@ export async function GET(
         >
           {/* Logo da Loja - Aumentar tamanho e visibilidade */}
           {logoImageData ? (
-            <img
-              src={logoImageData}
-              alt={nome}
-              width={300}
-              height={300}
+            <div
               style={{
-                objectFit: 'contain',
+                width: '300px',
+                height: '300px',
                 marginBottom: '30px',
                 borderRadius: '24px',
                 backgroundColor: 'rgba(255, 255, 255, 0.95)',
                 padding: '24px',
                 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
-                maxWidth: '300px',
-                maxHeight: '300px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
-            />
+            >
+              <img
+                src={logoImageData}
+                alt={nome}
+                width={252}
+                height={252}
+                style={{
+                  objectFit: 'contain',
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                }}
+              />
+            </div>
           ) : (
             // Fallback: Mostrar inicial do nome se não houver logo
             <div
