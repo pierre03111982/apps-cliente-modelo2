@@ -18,9 +18,9 @@ export async function POST(request: NextRequest) {
 
     console.log("[upload-photo] Iniciando upload para backend:", backendUrl);
 
-    // Criar AbortController para timeout
+    // PHASE 25: Aumentar timeout para mobile (upload pode ser mais lento)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 segundos para mobile
 
     try {
       const paineladmResponse = await fetch(
@@ -87,10 +87,22 @@ export async function POST(request: NextRequest) {
         );
       }
       
-      if (fetchError.message?.includes('fetch failed') || fetchError.message?.includes('Failed to fetch')) {
+      // PHASE 25: Melhor tratamento de erros de rede no mobile
+      if (fetchError.message?.includes('fetch failed') || 
+          fetchError.message?.includes('Failed to fetch') ||
+          fetchError.message?.includes('NetworkError') ||
+          fetchError.message?.includes('Network request failed')) {
         console.error("[upload-photo] Erro de conexão:", fetchError);
         return NextResponse.json(
-          { error: "Não foi possível conectar com o servidor. Verifique sua conexão e tente novamente." },
+          { error: "Erro de conexão. Verifique sua internet e tente novamente." },
+          { status: 503 }
+        );
+      }
+      
+      if (fetchError.message?.includes('ECONNREFUSED') || fetchError.message?.includes('ERR_CONNECTION_REFUSED')) {
+        console.error("[upload-photo] Servidor não está respondendo:", fetchError);
+        return NextResponse.json(
+          { error: "Servidor não está respondendo. Tente novamente em alguns instantes." },
           { status: 503 }
         );
       }
