@@ -318,21 +318,27 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
         );
       }
       
-      if (fetchError.message?.includes('ECONNREFUSED') || fetchError.message?.includes('fetch failed') || fetchError.message?.includes('network')) {
+      // PHASE 25: Melhor tratamento de erros de rede no mobile
+      if (fetchError.message?.includes('ECONNREFUSED') || 
+          fetchError.message?.includes('fetch failed') || 
+          fetchError.message?.includes('Failed to fetch') ||
+          fetchError.message?.includes('NetworkError') ||
+          fetchError.message?.includes('Network request failed') ||
+          fetchError.message?.includes('network')) {
         return NextResponse.json(
           {
             error: "Erro ao gerar composição",
-            details: "Não foi possível conectar ao servidor. Verifique sua conexão com a internet.",
+            details: "Erro de conexão. Verifique sua internet e tente novamente.",
           },
           { status: 503 }
         );
       }
       
-      // Erro genérico de rede
+      // PHASE 25: Erro genérico de rede com mensagem mais amigável
       return NextResponse.json(
         {
           error: "Erro ao gerar composição",
-          details: "Erro de conexão. Tente novamente em alguns instantes.",
+          details: fetchError.message || "Erro de conexão. Tente novamente em alguns instantes.",
         },
         { status: 500 }
       );
