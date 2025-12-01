@@ -1593,16 +1593,16 @@ export default function ResultadoPage() {
         }
         
         // PHASE 25: Mensagens mais amigáveis para diferentes códigos de erro
-        let errorMessage = errorData.error || errorData.message || `Erro ao gerar composição (${response.status})`;
+        let errorMessage = errorData.error || errorData.message || responseData?.error || responseData?.details || `Erro ao gerar composição (${response.status})`;
         
         if (response.status === 500) {
           errorMessage = "Erro interno do servidor. Tente novamente em alguns instantes.";
         } else if (response.status === 503) {
-          errorMessage = "Serviço temporariamente indisponível. Tente novamente em alguns instantes.";
+          errorMessage = errorData.details || responseData?.details || "Serviço temporariamente indisponível. Tente novamente em alguns instantes.";
         } else if (response.status === 429) {
           errorMessage = "Muitas requisições. Aguarde alguns instantes antes de tentar novamente.";
         } else if (response.status === 400) {
-          errorMessage = errorData.error || errorData.message || "Dados inválidos. Verifique se selecionou uma foto e produtos.";
+          errorMessage = errorData.error || errorData.message || responseData?.error || responseData?.details || "Dados inválidos. Verifique se selecionou uma foto e produtos.";
         } else if (response.status === 413) {
           errorMessage = "Foto muito grande. Tente usar uma foto menor ou comprimir a imagem.";
         } else if (response.status === 408) {
