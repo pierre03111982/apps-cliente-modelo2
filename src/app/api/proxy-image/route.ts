@@ -30,23 +30,50 @@ export async function GET(request: NextRequest) {
     }
     
     // Buscar a imagem
+    console.log('[Proxy Image] Buscando imagem do Firebase Storage:', imageUrl.substring(0, 100) + "...");
     const imageResponse = await fetch(imageUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; ExperimenteAI/1.0)',
+        'Accept': 'image/*',
       },
-      signal: AbortSignal.timeout(10000), // 10 segundos timeout
+      signal: AbortSignal.timeout(15000), // 15 segundos timeout
+    });
+    
+    console.log('[Proxy Image] Resposta do Firebase Storage:', {
+      status: imageResponse.status,
+      statusText: imageResponse.statusText,
+      contentType: imageResponse.headers.get('content-type'),
+      contentLength: imageResponse.headers.get('content-length'),
     });
     
     if (!imageResponse.ok) {
-      console.error('[Proxy Image] Erro ao buscar imagem:', imageResponse.status, imageUrl);
+      const errorText = await imageResponse.text().catch(() => '');
+      console.error('[Proxy Image] ❌ Erro ao buscar imagem:', {
+        status: imageResponse.status,
+        statusText: imageResponse.statusText,
+        error: errorText.substring(0, 200),
+        url: imageUrl.substring(0, 100) + "...",
+      });
       return NextResponse.json(
-        { error: 'Imagem não encontrada' },
+        { error: `Imagem não encontrada: ${imageResponse.status} ${imageResponse.statusText}` },
         { status: imageResponse.status }
       );
     }
     
     const imageBuffer = await imageResponse.arrayBuffer();
+    if (imageBuffer.byteLength === 0) {
+      console.error('[Proxy Image] ❌ Imagem baixada mas está vazia (0 bytes)');
+      return NextResponse.json(
+        { error: 'Imagem vazia' },
+        { status: 500 }
+      );
+    }
+    
     const contentType = imageResponse.headers.get('content-type') || 'image/png';
+    console.log('[Proxy Image] ✅ Imagem baixada com sucesso:', {
+      size: imageBuffer.byteLength,
+      contentType,
+    });
     
     // Retornar a imagem com headers apropriados
     return new NextResponse(imageBuffer, {
@@ -65,4 +92,7 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+
+
 

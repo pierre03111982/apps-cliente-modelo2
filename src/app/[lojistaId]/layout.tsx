@@ -54,11 +54,10 @@ export async function generateMetadata({
         source: dataSource
       });
       
-      // URL base do site
+      // URL base do site - PHASE 25 FIX: Sempre usar URL de produção
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-                     process.env.NEXT_PUBLIC_VERCEL_URL ? 
-                     `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 
-                     'https://experimente.ai';
+                     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+                     'https://app2.experimenteai.com.br';
       
       // Favicon URL (priorizar app_icon_url, depois logoUrl) - PHASE 25: Para aparecer na barra de navegação
       const faviconForMetadata = lojaData?.app_icon_url || lojaData?.logoUrl || null;
@@ -129,11 +128,10 @@ export async function generateMetadata({
     console.error("[Layout] Erro ao buscar dados da loja para metadata:", error);
   }
   
-  // Fallback metadata
+  // Fallback metadata - PHASE 25 FIX: Sempre usar URL de produção
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-                 process.env.NEXT_PUBLIC_VERCEL_URL ? 
-                 `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 
-                 'https://experimente.ai';
+                 (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+                 'https://app2.experimenteai.com.br';
   const fallbackOgImage = `${baseUrl}/api/og-image/${lojistaId}`;
   
   return {
@@ -201,11 +199,10 @@ export default async function LojistaLayout({
     console.error("[Layout] Erro ao buscar favicon:", error);
   }
   
-  // URL base para garantir URLs absolutas
+  // URL base para garantir URLs absolutas - PHASE 25 FIX: Sempre usar URL de produção
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-                 process.env.NEXT_PUBLIC_VERCEL_URL ? 
-                 `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 
-                 'https://experimente.ai';
+                 (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+                 'https://app2.experimenteai.com.br';
   
   // Garantir URL absoluta para o favicon
   let faviconUrlAbsolute: string | null = null;

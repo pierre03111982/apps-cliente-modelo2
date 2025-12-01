@@ -53,11 +53,10 @@ export async function GET(
       hasAppIconUrl: !!appIconUrl
     });
     
-    // URL base
+    // URL base - PHASE 25 FIX: Sempre usar URL de produção para garantir que Facebook/WhatsApp acessem corretamente
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-                   process.env.NEXT_PUBLIC_VERCEL_URL ? 
-                   `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 
-                   'https://experimente.ai';
+                   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+                   'https://app2.experimenteai.com.br';
     
     // Construir URL da logo (garantir URL absoluta)
     // Priorizar logoUrl, depois app_icon_url
@@ -75,10 +74,10 @@ export async function GET(
       // PHASE 25 FIX: Se for Firebase Storage, usar proxy para garantir acesso
       if (logoImageUrl.includes('storage.googleapis.com') || logoImageUrl.includes('firebasestorage.googleapis.com')) {
         logoImageUrl = `${baseUrl}/api/proxy-image?url=${encodeURIComponent(logoImageUrl)}`;
-        console.log("[OG Image] PHASE 25: Usando proxy para logo do Firebase Storage");
+        console.log("[OG Image] PHASE 25: Usando proxy para logo do Firebase Storage:", logoImageUrl.substring(0, 100) + "...");
       }
       
-      console.log("[OG Image] PHASE 25: Tentando baixar logo:", logoImageUrl);
+      console.log("[OG Image] PHASE 25: Tentando baixar logo:", logoImageUrl.substring(0, 150) + (logoImageUrl.length > 150 ? "..." : ""));
       
       // PHASE 25 FIX CRÍTICO: ImageResponse não carrega imagens externas diretamente
       // Precisamos baixar a imagem no servidor e converter para base64
@@ -88,22 +87,39 @@ export async function GET(
             'User-Agent': 'Mozilla/5.0 (compatible; ExperimenteAI/1.0)',
             'Accept': 'image/*',
           },
-          signal: AbortSignal.timeout(15000), // 15 segundos timeout (aumentado)
+          signal: AbortSignal.timeout(20000), // 20 segundos timeout (aumentado ainda mais)
+        });
+        
+        console.log("[OG Image] PHASE 25: Resposta do fetch:", {
+          status: imageResponse.status,
+          statusText: imageResponse.statusText,
+          contentType: imageResponse.headers.get('content-type'),
+          contentLength: imageResponse.headers.get('content-length'),
         });
         
         if (imageResponse.ok) {
           const imageBuffer = await imageResponse.arrayBuffer();
-          // Converter ArrayBuffer para base64 (compatível com Node.js)
-          // Usar Buffer no Node.js runtime (já configurado como nodejs)
-          const imageBase64 = Buffer.from(imageBuffer).toString('base64');
-          const contentType = imageResponse.headers.get('content-type') || 'image/png';
-          logoImageData = `data:${contentType};base64,${imageBase64}`;
-          console.log("[OG Image] PHASE 25: Logo baixada e convertida para base64 com sucesso, tamanho:", imageBuffer.byteLength, "bytes");
+          if (imageBuffer.byteLength > 0) {
+            // Converter ArrayBuffer para base64 (compatível com Node.js)
+            // Usar Buffer no Node.js runtime (já configurado como nodejs)
+            const imageBase64 = Buffer.from(imageBuffer).toString('base64');
+            const contentType = imageResponse.headers.get('content-type') || 'image/png';
+            logoImageData = `data:${contentType};base64,${imageBase64}`;
+            console.log("[OG Image] PHASE 25: ✅ Logo baixada e convertida para base64 com sucesso, tamanho:", imageBuffer.byteLength, "bytes, tipo:", contentType);
+          } else {
+            console.warn("[OG Image] PHASE 25: ⚠️ Logo baixada mas está vazia (0 bytes)");
+          }
         } else {
-          console.warn("[OG Image] PHASE 25: Erro ao baixar logo (status:", imageResponse.status, "), URL:", logoImageUrl);
+          const errorText = await imageResponse.text().catch(() => '');
+          console.warn("[OG Image] PHASE 25: ❌ Erro ao baixar logo (status:", imageResponse.status, "), resposta:", errorText.substring(0, 200));
         }
       } catch (fetchError: any) {
-        console.error("[OG Image] PHASE 25: Erro ao baixar logo:", fetchError.message, "URL:", logoImageUrl);
+        console.error("[OG Image] PHASE 25: ❌ Erro ao baixar logo:", {
+          message: fetchError.message,
+          name: fetchError.name,
+          cause: fetchError.cause,
+          url: logoImageUrl.substring(0, 150) + "...",
+        });
         // Continuar sem logo
       }
     } else {
@@ -206,7 +222,8 @@ export async function GET(
       hasFirebaseProjectId: !!process.env.FIREBASE_PROJECT_ID,
       hasFirebaseClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
       hasFirebasePrivateKey: !!process.env.FIREBASE_PRIVATE_KEY,
-      baseUrl: process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_VERCEL_URL || 'não configurado',
+      baseUrl: process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL || 'não configurado',
+      vercelUrl: process.env.VERCEL_URL || 'não configurado',
     });
     
     // Retornar imagem de fallback simples
