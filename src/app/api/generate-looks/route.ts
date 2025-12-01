@@ -117,6 +117,8 @@ export async function POST(request: NextRequest) {
         // PHASE 13: Remover qualquer referência a imagens geradas anteriormente
         previous_image: undefined,
         generated_image: undefined,
+        // PHASE 25: Adicionar instrução para evitar cenários noturnos se não foi fornecida
+        sceneInstructions: body.sceneInstructions || "IMPORTANT: The scene must be during DAYTIME with bright natural lighting. NEVER use night scenes, dark backgrounds, evening, sunset, dusk, or any nighttime setting. Always use well-lit daytime environments with natural sunlight.",
       };
       
       console.log("[modelo-2/api/generate-looks] PHASE 13: Enviando requisição para backend:", {

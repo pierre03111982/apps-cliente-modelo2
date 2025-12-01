@@ -1082,6 +1082,8 @@ export default function ExperimentarPage() {
           skipWatermark: true,
           lookType: "creative", // Sempre usar Look Criativo para multi-produto
         },
+        // PHASE 25: Instrução explícita para evitar cenários noturnos
+        sceneInstructions: "IMPORTANT: The scene must be during DAYTIME with bright natural lighting. NEVER use night scenes, dark backgrounds, evening, sunset, dusk, or any nighttime setting. Always use well-lit daytime environments with natural sunlight.",
       }
 
       console.log("[handleRefine] PHASE 13: Enviando para /api/generate-looks com foto ORIGINAL:", {
@@ -1380,6 +1382,8 @@ export default function ExperimentarPage() {
           skipWatermark: true,
           lookType: "creative", // Sempre usar Look Criativo para multi-produto
         },
+        // PHASE 25: Instrução explícita para evitar cenários noturnos
+        sceneInstructions: "IMPORTANT: The scene must be during DAYTIME with bright natural lighting. NEVER use night scenes, dark backgrounds, evening, sunset, dusk, or any nighttime setting. Always use well-lit daytime environments with natural sunlight.",
       }
 
       console.log("[handleVisualize] PHASE 13: Enviando para /api/generate-looks com foto ORIGINAL:", {

@@ -253,6 +253,8 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
         // PHASE 14: Flag "GERAR NOVO LOOK" para ativar mudança de pose (Regra de Postura Condicional)
         gerarNovoLook: true, // CRÍTICO: Sempre ativar no remix para permitir mudança de pose
       },
+      // PHASE 25: Instrução explícita para evitar cenários noturnos
+      sceneInstructions: "IMPORTANT: The scene must be during DAYTIME with bright natural lighting. NEVER use night scenes, dark backgrounds, evening, sunset, dusk, or any nighttime setting. Always use well-lit daytime environments with natural sunlight.",
     };
     
     console.log("[remix] PHASE 14: Flag 'GERAR NOVO LOOK' ativada no payload:", {
