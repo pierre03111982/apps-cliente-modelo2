@@ -136,22 +136,22 @@ export function ShoppingCartModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/70 px-4 py-8 sm:items-center">
-      <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
-        <div className="flex items-center justify-between">
+    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/70 px-4 py-4 sm:items-center sm:py-8">
+      <div className="w-full max-w-2xl max-h-[90vh] sm:max-h-[85vh] rounded-3xl bg-white p-6 shadow-2xl flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between flex-shrink-0 mb-4">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-blue-600">Carrinho</p>
             <h2 className="text-2xl font-semibold text-slate-900">Finalizar compra</h2>
           </div>
           <button
             onClick={onClose}
-            className="rounded-full bg-slate-100 p-2 text-slate-500 hover:bg-slate-200"
+            className="rounded-full bg-slate-100 p-2 text-slate-500 hover:bg-slate-200 flex-shrink-0"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="mt-4 space-y-4">
+        <div className="flex-1 overflow-y-auto pr-2 -mr-2 space-y-4">
           {items.map((item) => (
             <div
               key={item.id}
@@ -175,9 +175,8 @@ export function ShoppingCartModal({
               </p>
             </div>
           ))}
-        </div>
 
-        <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
           <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
             <Truck className="h-4 w-4 text-blue-500" />
             CEP de destino
@@ -227,28 +226,29 @@ export function ShoppingCartModal({
               ))}
             </div>
           )}
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-2 text-sm text-slate-600">
+            <div className="flex items-center justify-between">
+              <span>Produtos</span>
+              <span className="font-semibold text-slate-900">{formatBRL(subtotal)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Frete</span>
+              <span className="font-semibold text-slate-900">{formatBRL(shippingPrice)}</span>
+            </div>
+            <div className="flex items-center justify-between border-t border-slate-200 pt-2 text-base font-bold text-slate-900">
+              <span>Total</span>
+              <span>{formatBRL(total)}</span>
+            </div>
+          </div>
+
+          {feedback && (
+            <p className="mt-2 text-center text-sm text-blue-600">{feedback}</p>
+          )}
         </div>
 
-        <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-2 text-sm text-slate-600">
-          <div className="flex items-center justify-between">
-            <span>Produtos</span>
-            <span className="font-semibold text-slate-900">{formatBRL(subtotal)}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span>Frete</span>
-            <span className="font-semibold text-slate-900">{formatBRL(shippingPrice)}</span>
-          </div>
-          <div className="flex items-center justify-between border-t border-slate-200 pt-2 text-base font-bold text-slate-900">
-            <span>Total</span>
-            <span>{formatBRL(total)}</span>
-          </div>
-        </div>
-
-        {feedback && (
-          <p className="mt-2 text-center text-sm text-blue-600">{feedback}</p>
-        )}
-
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row flex-shrink-0 pt-4 border-t border-slate-200">
           <Button
             type="button"
             variant="ghost"
