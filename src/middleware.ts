@@ -4,6 +4,7 @@ import type { NextRequest } from 'next/server'
 /**
  * Middleware para roteamento por subdomínio (Fase 11)
  * 
+ * experimenteai.com.br -> redireciona para app2.experimenteai.com.br (301)
  * display.experimenteai.com.br/[lojistaId] -> /[lojistaId]/experimentar?display=1
  * app2.experimenteai.com.br/[lojistaId] -> /[lojistaId]/experimentar (normal)
  */
@@ -14,6 +15,14 @@ export function middleware(request: NextRequest) {
   // Obter domínio de display das variáveis de ambiente
   const displayDomain = process.env.NEXT_PUBLIC_DISPLAY_DOMAIN || 'display.experimenteai.com.br'
   const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN || 'app2.experimenteai.com.br'
+  const rootDomain = 'experimenteai.com.br'
+
+  // Redirecionar domínio raiz para app2
+  if (hostname === rootDomain || hostname === `www.${rootDomain}`) {
+    const protocol = request.nextUrl.protocol
+    const newUrl = new URL(`${protocol}//${appDomain}${pathname}${request.nextUrl.search}`)
+    return NextResponse.redirect(newUrl, 301) // 301 = permanente
+  }
 
   // Verificar se está acessando pelo subdomínio de display
   if (hostname.includes(displayDomain) || hostname === displayDomain) {
@@ -73,6 +82,7 @@ export const config = {
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 }
+
 
 
 
