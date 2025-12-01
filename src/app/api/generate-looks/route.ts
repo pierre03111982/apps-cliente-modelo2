@@ -103,8 +103,9 @@ export async function POST(request: NextRequest) {
       hasOptions: !!body.options,
     });
 
+    // PHASE 25: Aumentar timeout para mobile (pode ter conexão mais lenta)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minutos de timeout
+    const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutos de timeout
 
     let paineladmResponse: Response;
     try {
@@ -158,17 +159,29 @@ export async function POST(request: NextRequest) {
         );
       }
       
-      if (fetchError.message?.includes('ECONNREFUSED') || fetchError.message?.includes('fetch failed')) {
+      // PHASE 25: Melhor tratamento de erros de rede no mobile
+      if (fetchError.message?.includes('ECONNREFUSED') || 
+          fetchError.message?.includes('fetch failed') ||
+          fetchError.message?.includes('Failed to fetch') ||
+          fetchError.message?.includes('NetworkError') ||
+          fetchError.message?.includes('Network request failed')) {
         return NextResponse.json(
           {
-            error: "Servidor backend não está disponível.",
-            details: `Verifique se o backend está rodando em ${backendUrl}`,
+            error: "Erro de conexão. Verifique sua internet e tente novamente.",
+            details: "Não foi possível conectar com o servidor de processamento.",
           },
           { status: 503 }
         );
       }
       
-      throw fetchError;
+      // PHASE 25: Re-throw com mensagem mais amigável
+      return NextResponse.json(
+        {
+          error: "Erro ao processar foto",
+          details: fetchError.message || "Erro desconhecido ao conectar com o servidor.",
+        },
+        { status: 500 }
+      );
     }
 
     let data: any;

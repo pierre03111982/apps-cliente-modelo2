@@ -37,11 +37,10 @@ export async function GET(
       }
     }
     
-    // URL base
+    // URL base - PHASE 25: Sempre usar URL de produção para garantir que funcione corretamente
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-                   process.env.NEXT_PUBLIC_VERCEL_URL ? 
-                   `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 
-                   'https://experimente.ai';
+                   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+                   'https://app2.experimenteai.com.br';
     
     if (!lojaData) {
       // Retornar manifest padrão se loja não existir
@@ -270,10 +269,10 @@ export async function GET(
     
     // Retornar manifest padrão em caso de erro
     // PHASE 25-B FIX: lojistaId já está disponível no escopo externo
+    // PHASE 25: Sempre usar URL de produção
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-                   process.env.NEXT_PUBLIC_VERCEL_URL ? 
-                   `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 
-                   'https://experimente.ai';
+                   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+                   'https://app2.experimenteai.com.br';
     
     const defaultManifest = {
       name: "Provador Virtual",
