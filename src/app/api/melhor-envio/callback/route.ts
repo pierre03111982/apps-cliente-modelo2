@@ -63,16 +63,18 @@ export async function GET(request: NextRequest) {
     
     const redirectUri = `${baseUrl}/api/melhor-envio/callback`
 
+    // Melhor Envio requer autenticação básica (Basic Auth) com client_id:client_secret
+    const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64")
+    
     const tokenResponse = await fetch("https://sandbox.melhorenvio.com.br/oauth/token", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
+        Authorization: `Basic ${basicAuth}`,
       },
       body: JSON.stringify({
         grant_type: "authorization_code",
-        client_id: clientId,
-        client_secret: clientSecret,
         redirect_uri: redirectUri,
         code: code,
       }),
