@@ -128,12 +128,16 @@ export default function ExperimentarPage() {
           })
         }
         if (produtosDb.length > 0) {
-          setCatalog(produtosDb.sort((a, b) => {
+          const sortedProducts = produtosDb.sort((a, b) => {
             const catA = (a.categoria || "").toLowerCase()
             const catB = (b.categoria || "").toLowerCase()
             if (catA !== catB) return catA.localeCompare(catB, "pt-BR")
             return (a.nome || "").toLowerCase().localeCompare((b.nome || "").toLowerCase(), "pt-BR")
-          }))
+          })
+          console.log("[ExperimentarPage] Produtos carregados:", sortedProducts.length)
+          setCatalog(sortedProducts)
+        } else {
+          console.warn("[ExperimentarPage] Nenhum produto encontrado para lojistaId:", lojistaId)
         }
       } catch (error) {
         console.error("[ExperimentarPage] Erro ao carregar dados:", error)
@@ -432,9 +436,11 @@ export default function ExperimentarPage() {
 
   // Produtos filtrados por categoria
   const filteredCatalog = useMemo(() => {
+    console.log("[ExperimentarPage] Filtrando produtos - catalog:", catalog.length, "activeCategory:", activeCategory)
     let filtered = activeCategory === "Todos"
       ? catalog
       : catalog.filter((item) => item.categoria === activeCategory)
+    console.log("[ExperimentarPage] Produtos filtrados:", filtered.length)
 
     return [...filtered].sort((a, b) => {
       const categoriaA = (a.categoria || "").toLowerCase()
