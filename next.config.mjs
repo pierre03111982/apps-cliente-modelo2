@@ -41,6 +41,10 @@ const nextConfig = {
     unoptimized: false,
     formats: ['image/avif', 'image/webp'], // Formatos modernos
     minimumCacheTTL: 60, // Cache de 60 segundos
+    // Permitir imagens locais sem otimização
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   
   webpack: (config, { isServer }) => {

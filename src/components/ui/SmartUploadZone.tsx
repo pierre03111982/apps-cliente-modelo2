@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useRef, useState, useEffect } from "react"
-import Image from "next/image"
 import { Camera, UploadCloud, AlertTriangle, ChevronRight, ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/Button"
 
@@ -102,21 +101,16 @@ export function SmartUploadZone({ onFileSelect, isLoading }: SmartUploadZoneProp
               </div>
             </div>
           ) : (
-            <div className="relative h-full w-full">
-              <Image
-                src={GUIDE_SLIDES[currentSlide].image}
-                alt={GUIDE_SLIDES[currentSlide].title}
-                fill
-                className="object-contain opacity-95 md:object-cover transition-opacity duration-500"
-                onError={() => {
-                  console.error("[SmartUploadZone] Erro ao carregar imagem:", GUIDE_SLIDES[currentSlide].image)
-                  setImageError(currentSlide)
-                }}
-                priority={currentSlide === 0}
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                unoptimized={false}
-              />
-            </div>
+            <img
+              src={GUIDE_SLIDES[currentSlide].image}
+              alt={GUIDE_SLIDES[currentSlide].title}
+              className="h-full w-full object-contain opacity-95 md:object-cover transition-opacity duration-500"
+              onError={(e) => {
+                console.error("[SmartUploadZone] Erro ao carregar imagem:", GUIDE_SLIDES[currentSlide].image, e)
+                setImageError(currentSlide)
+              }}
+              loading={currentSlide === 0 ? "eager" : "lazy"}
+            />
           )}
           <div className="absolute inset-x-0 bottom-0 pt-10 text-center">
             <div className="bg-gradient-to-t from-black/90 via-black/60 to-transparent p-3">
