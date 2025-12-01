@@ -16,6 +16,7 @@ import { fetchLojistaData } from "@/lib/firebaseQueries"
 import type { LojistaData, GeneratedLook, DislikeReason } from "@/lib/types"
 import { normalizeSalesConfig } from "@/lib/utils"
 import { DislikeFeedbackModal } from "@/components/modals/DislikeFeedbackModal"
+import { ShoppingCartModal, CartItem } from "@/components/modals/ShoppingCartModal"
 
 // Resolver backend URL
 const getBackendUrl = () => {
@@ -52,6 +53,7 @@ export default function ResultadoPage() {
   const [selectedFavoriteDetail, setSelectedFavoriteDetail] = useState<any | null>(null)
   const [showImageDetailModal, setShowImageDetailModal] = useState(false)
   const [isDislikeModalOpen, setIsDislikeModalOpen] = useState(false)
+  const [cartModalOpen, setCartModalOpen] = useState(false)
   const preferredWhatsappLink = useMemo(() => {
     return (
       lojistaData?.redesSociais?.whatsapp ||
@@ -1070,13 +1072,38 @@ export default function ResultadoPage() {
     }
   }, [currentLookIndex, looks, lojistaId, lojistaData, registerAction])
 
-  // Handle checkout
+  // Converter selectedProducts para CartItem
+  const cartItems: CartItem[] = useMemo(() => {
+    if (!selectedProducts || selectedProducts.length === 0) {
+      return []
+    }
+    return selectedProducts.map((produto: any) => ({
+      id: produto.id || produto.productId || String(Date.now() + Math.random()),
+      name: produto.nome || produto.name || "Produto sem nome",
+      price: produto.preco || produto.price || 0,
+      quantity: 1,
+      imageUrl: produto.imagemUrl || produto.imageUrl || null,
+    }))
+  }, [selectedProducts])
+
+  // Handle checkout - Abrir modal do carrinho
   const handleCheckout = useCallback(async () => {
     await registerAction("checkout")
-    if (derivedCheckoutLink) {
+    
+    // Se não houver produtos selecionados e houver um link de checkout estático, usar ele
+    if (cartItems.length === 0 && derivedCheckoutLink) {
       window.open(derivedCheckoutLink, "_blank", "noopener,noreferrer")
+      return
     }
-  }, [registerAction, derivedCheckoutLink])
+    
+    // Se houver produtos, abrir modal do carrinho
+    if (cartItems.length > 0) {
+      setCartModalOpen(true)
+    } else {
+      // Se não houver produtos e não houver link, mostrar mensagem
+      alert("Selecione produtos antes de comprar.")
+    }
+  }, [registerAction, derivedCheckoutLink, cartItems])
 
   // Handle WhatsApp
   const handleWhatsApp = useCallback(() => {
@@ -2800,6 +2827,13 @@ export default function ResultadoPage() {
         isSubmitting={loadingAction === "dislike"}
         onSelect={(reason) => submitDislike(reason)}
         onSkip={() => submitDislike()}
+      />
+      <ShoppingCartModal
+        open={cartModalOpen}
+        onClose={() => setCartModalOpen(false)}
+        items={cartItems}
+        lojistaId={lojistaId}
+        salesConfig={lojistaData?.salesConfig ? normalizeSalesConfig(lojistaData.salesConfig) : undefined}
       />
     </div>
   )
