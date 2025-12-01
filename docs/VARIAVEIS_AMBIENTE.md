@@ -36,6 +36,17 @@ NEXT_PUBLIC_CLIENT_APP_URL=https://app-cliente.vercel.app
 NEXT_PUBLIC_CLIENT_APP_DEV_URL=https://app-cliente.vercel.app
 ```
 
+## 📱 Variáveis Opcionais
+
+### Facebook App ID (Opcional)
+```env
+# Opcional: Remove o aviso "fb:app_id ausente" no Facebook Sharing Debugger
+# Para obter: https://developers.facebook.com/apps/
+NEXT_PUBLIC_FACEBOOK_APP_ID=seu_app_id_aqui
+```
+
+**Nota:** Esta variável é opcional. Se não for configurada, o compartilhamento no Facebook/WhatsApp ainda funcionará, mas o Facebook mostrará um aviso sobre a propriedade `fb:app_id` ausente. Para remover o aviso, crie um app no Facebook Developers e adicione o App ID aqui.
+
 ## ✅ Checklist de Verificação
 
 ### Antes do Deploy
@@ -91,6 +102,9 @@ NEXT_PUBLIC_PAINELADM_URL=http://localhost:3000
 NEXT_PUBLIC_CLIENT_APP_URL=http://localhost:3005
 NEXT_PUBLIC_CLIENT_APP_DEV_URL=http://localhost:3005
 ```
+
+
+
 
 
 
