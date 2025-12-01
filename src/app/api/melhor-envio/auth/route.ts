@@ -34,8 +34,8 @@ export async function GET(request: NextRequest) {
     }
 
     const salesConfig = perfilDoc.data()?.salesConfig
-    const clientId = salesConfig?.integrations?.melhor_envio_client_id
-    const clientSecret = salesConfig?.integrations?.melhor_envio_client_secret
+    const clientId = salesConfig?.integrations?.melhor_envio_client_id?.trim()
+    const clientSecret = salesConfig?.integrations?.melhor_envio_client_secret?.trim()
 
     if (!clientId || !clientSecret) {
       return NextResponse.json(
@@ -45,11 +45,19 @@ export async function GET(request: NextRequest) {
     }
 
     // Construir URL de autorização OAuth
+    // IMPORTANTE: O redirect_uri DEVE ser exatamente igual ao registrado no app do Melhor Envio
     const baseUrl = process.env.NEXT_PUBLIC_CLIENT_APP_URL || 
                    process.env.NEXT_PUBLIC_APP_URL ||
                    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3005")
     
     const redirectUri = `${baseUrl}/api/melhor-envio/callback`
+    
+    console.log("[melhor-envio/auth] Iniciando OAuth:", {
+      lojistaId,
+      clientId,
+      redirectUri,
+      baseUrl,
+    })
     
     // Scopes necessários para calcular frete e gerenciar etiquetas
     const scopes = [
@@ -66,12 +74,17 @@ export async function GET(request: NextRequest) {
     authUrl.searchParams.set("scope", scopes)
     authUrl.searchParams.set("state", lojistaId) // Passar lojistaId no state para recuperar depois
 
+    console.log("[melhor-envio/auth] URL de autorização:", authUrl.toString())
+
     // Redirecionar para página de autorização do Melhor Envio
     return NextResponse.redirect(authUrl.toString())
   } catch (error) {
     console.error("[melhor-envio/auth] Erro:", error)
     return NextResponse.json(
-      { error: "Erro ao iniciar autenticação" },
+      { 
+        error: "Erro ao iniciar autenticação",
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     )
   }
