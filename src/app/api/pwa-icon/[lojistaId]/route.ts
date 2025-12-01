@@ -35,10 +35,8 @@ export async function GET(
     // Priorizar app_icon_url, depois logoUrl
     const iconUrl = lojaData?.app_icon_url || lojaData?.logoUrl || null;
     
-    // Construir URL absoluta
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-                   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
-                   'https://app2.experimenteai.com.br';
+    // PHASE 25: SEMPRE usar URL de produção (forçar produção)
+    const baseUrl = 'https://app2.experimenteai.com.br';
     
     // Se não houver ícone, buscar ícone padrão
     if (!iconUrl) {
