@@ -54,18 +54,26 @@ export async function GET(
         display: 'standalone',
         background_color: '#000000',
         theme_color: '#000000',
-        icons: [
-          {
-            src: `${baseUrl}/icons/default-icon.png`,
-            sizes: '192x192',
-            type: 'image/png',
-          },
-          {
-            src: `${baseUrl}/icons/default-icon.png`,
-            sizes: '512x512',
-            type: 'image/png',
-          },
-        ],
+      icons: [
+        {
+          src: `${baseUrl}/icons/default-icon.png`,
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'any',
+        },
+        {
+          src: `${baseUrl}/icons/default-icon.png`,
+          sizes: '192x192',
+          type: 'image/png',
+          purpose: 'any',
+        },
+        {
+          src: `${baseUrl}/icons/default-icon.png`,
+          sizes: '180x180',
+          type: 'image/png',
+          purpose: 'any',
+        },
+      ],
       };
       
       return NextResponse.json(defaultManifest, {
@@ -173,24 +181,58 @@ export async function GET(
     
     // PHASE 25-C: Estrutura do manifest conforme especificação
     // Garantir que todos os ícones tenham type: 'image/png' e URLs absolutas HTTPS
+    // Incluir múltiplos tamanhos para melhor compatibilidade com PWA
     const manifest = {
-      name: nome,
+      name: `${nome} | Provador Virtual com IA`,
       short_name: nome.length > 12 ? nome.slice(0, 12) : nome,
       description: descricao || `Aplicativo da ${nome} - Provador Virtual com IA`,
       start_url: `/${lojistaId}/experimentar`,
       display: 'standalone',
+      orientation: 'portrait',
       background_color: backgroundColor,
       theme_color: themeColor,
       icons: [
         {
           src: iconUrlFinal,
           sizes: '512x512',
-          type: 'image/png', // PHASE 25-C: Sempre PNG
+          type: 'image/png',
+          purpose: 'any maskable', // Suporta ícones maskable para Android
+        },
+        {
+          src: iconUrlFinal,
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'any', // Ícone padrão
         },
         {
           src: iconUrlFinal,
           sizes: '192x192',
-          type: 'image/png', // PHASE 25-C: Sempre PNG
+          type: 'image/png',
+          purpose: 'any',
+        },
+        {
+          src: iconUrlFinal,
+          sizes: '180x180',
+          type: 'image/png',
+          purpose: 'any', // Apple Touch Icon
+        },
+        {
+          src: iconUrlFinal,
+          sizes: '144x144',
+          type: 'image/png',
+          purpose: 'any',
+        },
+        {
+          src: iconUrlFinal,
+          sizes: '96x96',
+          type: 'image/png',
+          purpose: 'any',
+        },
+        {
+          src: iconUrlFinal,
+          sizes: '72x72',
+          type: 'image/png',
+          purpose: 'any',
         },
       ],
     };
@@ -201,6 +243,7 @@ export async function GET(
       headers: {
         'Content-Type': 'application/manifest+json',
         'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+        'Access-Control-Allow-Origin': '*',
       },
     });
   } catch (error: any) {
@@ -225,13 +268,21 @@ export async function GET(
       icons: [
         {
           src: `${baseUrl}/icons/default-icon.png`,
-          sizes: '192x192',
+          sizes: '512x512',
           type: 'image/png',
+          purpose: 'any',
         },
         {
           src: `${baseUrl}/icons/default-icon.png`,
-          sizes: '512x512',
+          sizes: '192x192',
           type: 'image/png',
+          purpose: 'any',
+        },
+        {
+          src: `${baseUrl}/icons/default-icon.png`,
+          sizes: '180x180',
+          type: 'image/png',
+          purpose: 'any',
         },
       ],
     };

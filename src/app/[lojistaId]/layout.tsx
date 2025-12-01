@@ -220,17 +220,20 @@ export default async function LojistaLayout({
   
   return (
     <>
-      {/* PHASE 25-C: Link do manifest via API Route com cache busting (?v=3) */}
-      <link rel="manifest" href={`/api/manifest/${lojistaId}?v=3`} />
-      {/* Favicon dinâmico usando logo da loja - PHASE 25: Melhorado para garantir que apareça na barra de navegação */}
+      {/* PHASE 25-C: Link do manifest via API Route com cache busting (?v=4) */}
+      <link rel="manifest" href={`/api/manifest/${lojistaId}?v=4`} />
+      {/* Favicon dinâmico usando logo da loja - PHASE 25: Melhorado para garantir que apareça na barra de navegação e no modal de instalação */}
       {faviconUrlAbsolute ? (
         <>
           {/* Favicon padrão (mais compatível) */}
           <link rel="icon" type="image/png" href={faviconUrlAbsolute} />
+          <link rel="icon" type="image/png" sizes="512x512" href={faviconUrlAbsolute} />
+          <link rel="icon" type="image/png" sizes="192x192" href={faviconUrlAbsolute} />
           <link rel="icon" type="image/png" sizes="32x32" href={faviconUrlAbsolute} />
           <link rel="icon" type="image/png" sizes="16x16" href={faviconUrlAbsolute} />
-          {/* Apple Touch Icon (iOS) */}
+          {/* Apple Touch Icon (iOS) - Essencial para aparecer no modal de instalação */}
           <link rel="apple-touch-icon" sizes="180x180" href={faviconUrlAbsolute} />
+          <link rel="apple-touch-icon" sizes="512x512" href={faviconUrlAbsolute} />
           {/* Shortcut icon (IE/Edge) */}
           <link rel="shortcut icon" href={faviconUrlAbsolute} />
           {/* Favicon ICO (fallback para navegadores antigos) */}
@@ -240,6 +243,7 @@ export default async function LojistaLayout({
         /* Fallback: Favicon padrão se não houver logo */
         <>
           <link rel="icon" type="image/png" href="/favicon.ico" />
+          <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico" />
         </>
       )}
       {children}
