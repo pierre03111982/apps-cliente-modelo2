@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useRef, useState, useEffect } from "react"
+import Image from "next/image"
 import { Camera, UploadCloud, AlertTriangle, ChevronRight, ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/Button"
 
@@ -41,6 +42,7 @@ export function SmartUploadZone({ onFileSelect, isLoading }: SmartUploadZoneProp
   const [dragActive, setDragActive] = useState(false)
   const [currentSlide, setCurrentSlide] = useState(0)
   const [qualityWarning, setQualityWarning] = useState<string | null>(null)
+  const [imageError, setImageError] = useState<number | null>(null)
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -48,6 +50,11 @@ export function SmartUploadZone({ onFileSelect, isLoading }: SmartUploadZoneProp
     }, 5000)
     return () => clearInterval(timer)
   }, [])
+
+  // Resetar erro de imagem quando o slide mudar
+  useEffect(() => {
+    setImageError(null)
+  }, [currentSlide])
 
   const nextSlide = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -87,11 +94,27 @@ export function SmartUploadZone({ onFileSelect, isLoading }: SmartUploadZoneProp
     <div className="w-full space-y-4 select-none">
       <div className="relative w-full overflow-hidden rounded-xl border border-gray-200 bg-gray-100 shadow-sm">
         <div className="relative aspect-[16/9] bg-gray-200 transition-opacity duration-500 md:aspect-[2.5/1]">
-          <img
-            src={GUIDE_SLIDES[currentSlide].image}
-            alt={GUIDE_SLIDES[currentSlide].title}
-            className="h-full w-full object-contain opacity-95 md:object-cover"
-          />
+          {imageError === currentSlide ? (
+            <div className="flex h-full w-full items-center justify-center bg-gray-300">
+              <div className="text-center text-gray-500">
+                <UploadCloud className="mx-auto h-12 w-12 mb-2" />
+                <p className="text-sm">Imagem não disponível</p>
+              </div>
+            </div>
+          ) : (
+            <Image
+              src={GUIDE_SLIDES[currentSlide].image}
+              alt={GUIDE_SLIDES[currentSlide].title}
+              fill
+              className="object-contain opacity-95 md:object-cover transition-opacity duration-500"
+              onError={() => {
+                console.error("[SmartUploadZone] Erro ao carregar imagem:", GUIDE_SLIDES[currentSlide].image)
+                setImageError(currentSlide)
+              }}
+              priority={currentSlide === 0}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            />
+          )}
           <div className="absolute inset-x-0 bottom-0 pt-10 text-center">
             <div className="bg-gradient-to-t from-black/90 via-black/60 to-transparent p-3">
               <h3 className="text-sm font-bold text-white drop-shadow-md md:text-base">
