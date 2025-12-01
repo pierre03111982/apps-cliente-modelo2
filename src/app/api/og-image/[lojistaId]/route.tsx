@@ -72,6 +72,12 @@ export async function GET(
         logoImageUrl = logoToUse.startsWith('/') ? `${baseUrl}${logoToUse}` : `${baseUrl}/${logoToUse}`;
       }
       
+      // PHASE 25 FIX: Se for Firebase Storage, usar proxy para garantir acesso
+      if (logoImageUrl.includes('storage.googleapis.com') || logoImageUrl.includes('firebasestorage.googleapis.com')) {
+        logoImageUrl = `${baseUrl}/api/proxy-image?url=${encodeURIComponent(logoImageUrl)}`;
+        console.log("[OG Image] PHASE 25: Usando proxy para logo do Firebase Storage");
+      }
+      
       console.log("[OG Image] PHASE 25: Tentando baixar logo:", logoImageUrl);
       
       // PHASE 25 FIX CRÍTICO: ImageResponse não carrega imagens externas diretamente
@@ -80,8 +86,9 @@ export async function GET(
         const imageResponse = await fetch(logoImageUrl, {
           headers: {
             'User-Agent': 'Mozilla/5.0 (compatible; ExperimenteAI/1.0)',
+            'Accept': 'image/*',
           },
-          signal: AbortSignal.timeout(10000), // 10 segundos timeout
+          signal: AbortSignal.timeout(15000), // 15 segundos timeout (aumentado)
         });
         
         if (imageResponse.ok) {
@@ -91,12 +98,12 @@ export async function GET(
           const imageBase64 = Buffer.from(imageBuffer).toString('base64');
           const contentType = imageResponse.headers.get('content-type') || 'image/png';
           logoImageData = `data:${contentType};base64,${imageBase64}`;
-          console.log("[OG Image] PHASE 25: Logo baixada e convertida para base64 com sucesso");
+          console.log("[OG Image] PHASE 25: Logo baixada e convertida para base64 com sucesso, tamanho:", imageBuffer.byteLength, "bytes");
         } else {
-          console.warn("[OG Image] PHASE 25: Erro ao baixar logo (status:", imageResponse.status, ")");
+          console.warn("[OG Image] PHASE 25: Erro ao baixar logo (status:", imageResponse.status, "), URL:", logoImageUrl);
         }
       } catch (fetchError: any) {
-        console.error("[OG Image] PHASE 25: Erro ao baixar logo:", fetchError.message);
+        console.error("[OG Image] PHASE 25: Erro ao baixar logo:", fetchError.message, "URL:", logoImageUrl);
         // Continuar sem logo
       }
     } else {
@@ -120,22 +127,45 @@ export async function GET(
             fontFamily: 'Inter, system-ui, sans-serif',
           }}
         >
-          {/* Logo da Loja */}
+          {/* Logo da Loja - Aumentar tamanho e visibilidade */}
           {logoImageData ? (
             <img
               src={logoImageData}
               alt={nome}
-              width={200}
-              height={200}
+              width={300}
+              height={300}
               style={{
                 objectFit: 'contain',
-                marginBottom: '40px',
-                borderRadius: '20px',
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                padding: '20px',
+                marginBottom: '30px',
+                borderRadius: '24px',
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                padding: '24px',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+                maxWidth: '300px',
+                maxHeight: '300px',
               }}
             />
-          ) : null}
+          ) : (
+            // Fallback: Mostrar inicial do nome se não houver logo
+            <div
+              style={{
+                width: '200',
+                height: '200',
+                borderRadius: '20px',
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '80px',
+                fontWeight: 'bold',
+                color: '#FFFFFF',
+                marginBottom: '40px',
+                textShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+              }}
+            >
+              {nome.charAt(0).toUpperCase()}
+            </div>
+          )}
           
           {/* Nome da Loja */}
           <div
