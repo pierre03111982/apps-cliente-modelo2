@@ -125,36 +125,44 @@ export async function GET(
       console.log("[Manifest API] PHASE 25-C: URL original:", iconUrl);
       console.log("[Manifest API] PHASE 25-C: URL absoluta gerada:", iconUrlAbsolute);
       
-      // PHASE 25-C: Se for Firebase Storage, usar proxy para garantir acesso
-      if (iconUrlAbsolute.includes('storage.googleapis.com') || iconUrlAbsolute.includes('firebasestorage.googleapis.com')) {
-        iconUrlAbsolute = `${baseUrl}/api/proxy-image?url=${encodeURIComponent(iconUrlAbsolute)}`;
-        console.log("[Manifest API] PHASE 25-C: Usando proxy para ícone do Firebase Storage");
+      // PHASE 25: Para PWA, tentar usar URL direta primeiro (Chrome prefere URLs diretas)
+      // Se falhar, o Chrome tentará o proxy automaticamente
+      // Mas vamos garantir que o proxy funcione corretamente
+      const isFirebaseStorage = iconUrlAbsolute.includes('storage.googleapis.com') || iconUrlAbsolute.includes('firebasestorage.googleapis.com');
+      
+      if (isFirebaseStorage) {
+        // PHASE 25: Tentar URL direta primeiro (Firebase Storage permite CORS se configurado)
+        // Se não funcionar, o manifest terá fallback
+        console.log("[Manifest API] PHASE 25: Ícone do Firebase Storage - tentando URL direta:", iconUrlAbsolute);
+        // Não usar proxy inicialmente - deixar Chrome tentar direto
+        // Se não funcionar, podemos criar uma rota específica para ícones PWA
       }
     }
     
-    // PHASE 25-C: Verificar se o ícone é acessível
+    // PHASE 25: Para PWA, criar rota específica de ícone que sempre funciona
+    // Chrome precisa de ícones acessíveis e com Content-Type correto
     let iconUrlFinal = iconUrlAbsolute;
-    try {
-      const iconResponse = await fetch(iconUrlAbsolute, { 
-        method: 'HEAD',
-        signal: AbortSignal.timeout(5000) // 5 segundos timeout
-      });
-      if (!iconResponse.ok) {
-        console.warn("[Manifest API] PHASE 25-C: Ícone não acessível (status:", iconResponse.status, "), usando fallback");
-        iconUrlFinal = `${baseUrl}/icons/default-icon.png`;
-      } else {
-        const contentType = iconResponse.headers.get('content-type');
-        console.log("[Manifest API] PHASE 25-C: Ícone verificado e acessível:", {
-          url: iconUrlAbsolute,
-          status: iconResponse.status,
-          contentType: contentType,
+    
+    // Se for Firebase Storage, usar rota específica de ícone PWA
+    if (isFirebaseStorage) {
+      // PHASE 25: Criar rota específica para ícone PWA que garante acesso
+      iconUrlFinal = `${baseUrl}/api/pwa-icon/${lojistaId}`;
+      console.log("[Manifest API] PHASE 25: Usando rota específica de ícone PWA:", iconUrlFinal);
+    } else {
+      // Para outras URLs, verificar se são acessíveis
+      try {
+        const iconResponse = await fetch(iconUrlAbsolute, { 
+          method: 'HEAD',
+          signal: AbortSignal.timeout(5000)
         });
-      }
-    } catch (fetchError: any) {
-      console.warn("[Manifest API] PHASE 25-C: Erro ao verificar ícone:", fetchError.message);
-      // Se não conseguir verificar e for Firebase Storage, usar fallback
-      if (iconUrl && (iconUrl.includes('storage.googleapis.com') || iconUrl.includes('firebasestorage.googleapis.com'))) {
-        console.warn("[Manifest API] PHASE 25-C: Erro ao acessar ícone do Firebase Storage, usando fallback");
+        if (!iconResponse.ok) {
+          console.warn("[Manifest API] PHASE 25: Ícone não acessível (status:", iconResponse.status, "), usando fallback");
+          iconUrlFinal = `${baseUrl}/icons/default-icon.png`;
+        } else {
+          console.log("[Manifest API] PHASE 25: Ícone verificado e acessível:", iconUrlAbsolute);
+        }
+      } catch (fetchError: any) {
+        console.warn("[Manifest API] PHASE 25: Erro ao verificar ícone:", fetchError.message);
         iconUrlFinal = `${baseUrl}/icons/default-icon.png`;
       }
     }
@@ -167,7 +175,7 @@ export async function GET(
       iconUrlFinal = iconUrlFinal.replace('http://', 'https://');
     }
     
-    console.log("[Manifest API] PHASE 25-C: URL FINAL do ícone (garantida HTTPS absoluta):", iconUrlFinal);
+    console.log("[Manifest API] PHASE 25: URL FINAL do ícone para PWA:", iconUrlFinal);
     console.log("[Manifest API] PHASE 25-C: Manifest gerado para lojista:", {
       lojistaId,
       nome,
