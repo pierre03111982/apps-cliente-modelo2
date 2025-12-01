@@ -38,7 +38,7 @@ const nextConfig = {
         hostname: "*.firebasestorage.googleapis.com",
       },
     ],
-    unoptimized: false,
+    unoptimized: true, // Desabilitar otimização para imagens locais funcionarem melhor
     formats: ['image/avif', 'image/webp'], // Formatos modernos
     minimumCacheTTL: 60, // Cache de 60 segundos
     // Permitir imagens locais sem otimização

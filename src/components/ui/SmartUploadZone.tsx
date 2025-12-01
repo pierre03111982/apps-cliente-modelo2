@@ -4,6 +4,7 @@ import React, { useRef, useState, useEffect } from "react"
 import { Camera, UploadCloud, AlertTriangle, ChevronRight, ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/Button"
 
+// Importar imagens diretamente para garantir que sejam incluídas no build
 const GUIDE_SLIDES = [
   {
     id: 1,
@@ -102,14 +103,23 @@ export function SmartUploadZone({ onFileSelect, isLoading }: SmartUploadZoneProp
             </div>
           ) : (
             <img
-              src={GUIDE_SLIDES[currentSlide].image}
+              key={`slide-${currentSlide}-${Date.now()}`}
+              src={`${GUIDE_SLIDES[currentSlide].image}?v=1`}
               alt={GUIDE_SLIDES[currentSlide].title}
               className="h-full w-full object-contain opacity-95 md:object-cover transition-opacity duration-500"
               onError={(e) => {
-                console.error("[SmartUploadZone] Erro ao carregar imagem:", GUIDE_SLIDES[currentSlide].image, e)
+                const imgSrc = GUIDE_SLIDES[currentSlide].image
+                console.error("[SmartUploadZone] Erro ao carregar imagem:", imgSrc, e)
                 setImageError(currentSlide)
               }}
+              onLoad={() => {
+                // Limpar erro se a imagem carregar com sucesso
+                if (imageError === currentSlide) {
+                  setImageError(null)
+                }
+              }}
               loading={currentSlide === 0 ? "eager" : "lazy"}
+              crossOrigin="anonymous"
             />
           )}
           <div className="absolute inset-x-0 bottom-0 pt-10 text-center">
