@@ -139,32 +139,20 @@ export async function GET(
       }
     }
     
-    // PHASE 25: Para PWA, criar rota específica de ícone que sempre funciona
+    // PHASE 25: SEMPRE usar rota específica de ícone PWA para garantir que funcione
     // Chrome precisa de ícones acessíveis e com Content-Type correto
-    let iconUrlFinal = iconUrlAbsolute;
+    // A rota /api/pwa-icon/[lojistaId] garante que o ícone seja servido corretamente
+    let iconUrlFinal: string;
     
-    // Se for Firebase Storage, usar rota específica de ícone PWA
-    if (isFirebaseStorage) {
-      // PHASE 25: Criar rota específica para ícone PWA que garante acesso
+    if (iconUrl) {
+      // PHASE 25: Sempre usar rota específica de ícone PWA
       iconUrlFinal = `${baseUrl}/api/pwa-icon/${lojistaId}`;
       console.log("[Manifest API] PHASE 25: Usando rota específica de ícone PWA:", iconUrlFinal);
+      console.log("[Manifest API] PHASE 25: Ícone original:", iconUrl);
     } else {
-      // Para outras URLs, verificar se são acessíveis
-      try {
-        const iconResponse = await fetch(iconUrlAbsolute, { 
-          method: 'HEAD',
-          signal: AbortSignal.timeout(5000)
-        });
-        if (!iconResponse.ok) {
-          console.warn("[Manifest API] PHASE 25: Ícone não acessível (status:", iconResponse.status, "), usando fallback");
-          iconUrlFinal = `${baseUrl}/icons/default-icon.png`;
-        } else {
-          console.log("[Manifest API] PHASE 25: Ícone verificado e acessível:", iconUrlAbsolute);
-        }
-      } catch (fetchError: any) {
-        console.warn("[Manifest API] PHASE 25: Erro ao verificar ícone:", fetchError.message);
-        iconUrlFinal = `${baseUrl}/icons/default-icon.png`;
-      }
+      // Se não houver ícone configurado, usar fallback
+      iconUrlFinal = `${baseUrl}/icons/default-icon.png`;
+      console.log("[Manifest API] PHASE 25: Nenhum ícone configurado, usando fallback:", iconUrlFinal);
     }
     
     // PHASE 25-C: Garantir que a URL final seja HTTPS absoluta
