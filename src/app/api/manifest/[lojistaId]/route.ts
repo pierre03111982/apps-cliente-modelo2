@@ -182,6 +182,7 @@ export async function GET(
     // PHASE 25-C: Estrutura do manifest conforme especificação
     // Garantir que todos os ícones tenham type: 'image/png' e URLs absolutas HTTPS
     // Incluir múltiplos tamanhos para melhor compatibilidade com PWA
+    // PHASE 25: Adicionar mais tamanhos e garantir que o ícone apareça no modal de instalação
     const manifest = {
       name: `${nome} | Provador Virtual com IA`,
       short_name: nome.length > 12 ? nome.slice(0, 12) : nome,
@@ -191,18 +192,33 @@ export async function GET(
       orientation: 'portrait',
       background_color: backgroundColor,
       theme_color: themeColor,
+      scope: `/${lojistaId}/`,
       icons: [
+        // PHASE 25: Ícone maskable para Android (melhor suporte)
         {
           src: iconUrlFinal,
           sizes: '512x512',
           type: 'image/png',
-          purpose: 'any maskable', // Suporta ícones maskable para Android
+          purpose: 'maskable',
+        },
+        // PHASE 25: Ícones padrão (qualquer propósito)
+        {
+          src: iconUrlFinal,
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'any',
         },
         {
           src: iconUrlFinal,
-          sizes: '512x512',
+          sizes: '384x384',
           type: 'image/png',
-          purpose: 'any', // Ícone padrão
+          purpose: 'any',
+        },
+        {
+          src: iconUrlFinal,
+          sizes: '256x256',
+          type: 'image/png',
+          purpose: 'any',
         },
         {
           src: iconUrlFinal,
@@ -219,6 +235,12 @@ export async function GET(
         {
           src: iconUrlFinal,
           sizes: '144x144',
+          type: 'image/png',
+          purpose: 'any',
+        },
+        {
+          src: iconUrlFinal,
+          sizes: '128x128',
           type: 'image/png',
           purpose: 'any',
         },

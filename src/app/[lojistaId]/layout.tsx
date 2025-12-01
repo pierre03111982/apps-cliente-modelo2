@@ -217,8 +217,8 @@ export default async function LojistaLayout({
   
   return (
     <>
-      {/* PHASE 25-C: Link do manifest via API Route com cache busting (?v=4) */}
-      <link rel="manifest" href={`/api/manifest/${lojistaId}?v=4`} />
+      {/* PHASE 25-C: Link do manifest via API Route com cache busting (?v=5) */}
+      <link rel="manifest" href={`/api/manifest/${lojistaId}?v=5`} />
       {/* Favicon dinâmico usando logo da loja - PHASE 25: Melhorado para garantir que apareça na barra de navegação e no modal de instalação */}
       {faviconUrlAbsolute ? (
         <>
@@ -229,7 +229,17 @@ export default async function LojistaLayout({
           <link rel="icon" type="image/png" sizes="32x32" href={faviconUrlAbsolute} />
           <link rel="icon" type="image/png" sizes="16x16" href={faviconUrlAbsolute} />
           {/* Apple Touch Icon (iOS) - Essencial para aparecer no modal de instalação */}
+          {/* PHASE 25: Adicionar múltiplos tamanhos para melhor compatibilidade */}
+          <link rel="apple-touch-icon" sizes="57x57" href={faviconUrlAbsolute} />
+          <link rel="apple-touch-icon" sizes="60x60" href={faviconUrlAbsolute} />
+          <link rel="apple-touch-icon" sizes="72x72" href={faviconUrlAbsolute} />
+          <link rel="apple-touch-icon" sizes="76x76" href={faviconUrlAbsolute} />
+          <link rel="apple-touch-icon" sizes="114x114" href={faviconUrlAbsolute} />
+          <link rel="apple-touch-icon" sizes="120x120" href={faviconUrlAbsolute} />
+          <link rel="apple-touch-icon" sizes="144x144" href={faviconUrlAbsolute} />
+          <link rel="apple-touch-icon" sizes="152x152" href={faviconUrlAbsolute} />
           <link rel="apple-touch-icon" sizes="180x180" href={faviconUrlAbsolute} />
+          <link rel="apple-touch-icon" sizes="192x192" href={faviconUrlAbsolute} />
           <link rel="apple-touch-icon" sizes="512x512" href={faviconUrlAbsolute} />
           {/* Shortcut icon (IE/Edge) */}
           <link rel="shortcut icon" href={faviconUrlAbsolute} />
