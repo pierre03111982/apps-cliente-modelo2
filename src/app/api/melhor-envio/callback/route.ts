@@ -15,15 +15,20 @@ export async function GET(request: NextRequest) {
     const state = searchParams.get("state") // lojistaId
     const error = searchParams.get("error")
 
+    // URL do painel admin
+    const painelAdminUrl = process.env.NEXT_PUBLIC_PAINELADM_URL || 
+                          process.env.NEXT_PUBLIC_BACKEND_URL ||
+                          "https://paineladm.experimenteai.com.br"
+
     if (error) {
       return NextResponse.redirect(
-        new URL(`/admin?error=melhor-envio-auth-error&message=${encodeURIComponent(error)}`, request.url)
+        `${painelAdminUrl}/admin?error=melhor-envio-auth-error&message=${encodeURIComponent(error)}`
       )
     }
 
     if (!code || !state) {
       return NextResponse.redirect(
-        new URL("/admin?error=melhor-envio-auth-failed", request.url)
+        `${painelAdminUrl}/admin?error=melhor-envio-auth-failed`
       )
     }
 
@@ -34,9 +39,13 @@ export async function GET(request: NextRequest) {
     const lojaRef = db.collection("lojas").doc(lojistaId)
     const perfilDoc = await lojaRef.collection("perfil").doc("dados").get()
     
+    const painelAdminUrl = process.env.NEXT_PUBLIC_PAINELADM_URL || 
+                          process.env.NEXT_PUBLIC_BACKEND_URL ||
+                          "https://paineladm.experimenteai.com.br"
+
     if (!perfilDoc.exists) {
       return NextResponse.redirect(
-        new URL("/admin?error=melhor-envio-config-not-found", request.url)
+        `${painelAdminUrl}/admin?error=melhor-envio-config-not-found`
       )
     }
 
@@ -47,7 +56,7 @@ export async function GET(request: NextRequest) {
 
     if (!clientId || !clientSecret) {
       return NextResponse.redirect(
-        new URL("/admin?error=melhor-envio-credentials-missing", request.url)
+        `${painelAdminUrl}/admin?error=melhor-envio-credentials-missing`
       )
     }
 
@@ -77,7 +86,7 @@ export async function GET(request: NextRequest) {
       const errorData = await tokenResponse.json().catch(() => ({}))
       console.error("[melhor-envio/callback] Erro ao obter token:", errorData)
       return NextResponse.redirect(
-        new URL(`/admin?error=melhor-envio-token-error&message=${encodeURIComponent(errorData.error || "Erro desconhecido")}`, request.url)
+        `${painelAdminUrl}/admin?error=melhor-envio-token-error&message=${encodeURIComponent(errorData.error || "Erro desconhecido")}`
       )
     }
 
@@ -104,13 +113,19 @@ export async function GET(request: NextRequest) {
     console.log("[melhor-envio/callback] Token salvo com sucesso para lojistaId:", lojistaId)
 
     // Redirecionar para painel admin com sucesso
+    const painelAdminUrl = process.env.NEXT_PUBLIC_PAINELADM_URL || 
+                          process.env.NEXT_PUBLIC_BACKEND_URL ||
+                          "https://paineladm.experimenteai.com.br"
     return NextResponse.redirect(
-      new URL("/admin?success=melhor-envio-auth-success", request.url)
+      `${painelAdminUrl}/admin?success=melhor-envio-auth-success`
     )
   } catch (error) {
     console.error("[melhor-envio/callback] Erro:", error)
+    const painelAdminUrl = process.env.NEXT_PUBLIC_PAINELADM_URL || 
+                          process.env.NEXT_PUBLIC_BACKEND_URL ||
+                          "https://paineladm.experimenteai.com.br"
     return NextResponse.redirect(
-      new URL("/admin?error=melhor-envio-callback-error", request.url)
+      `${painelAdminUrl}/admin?error=melhor-envio-callback-error`
     )
   }
 }
