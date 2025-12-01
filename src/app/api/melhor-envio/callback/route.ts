@@ -38,10 +38,6 @@ export async function GET(request: NextRequest) {
     const db = getFirestoreAdmin()
     const lojaRef = db.collection("lojas").doc(lojistaId)
     const perfilDoc = await lojaRef.collection("perfil").doc("dados").get()
-    
-    const painelAdminUrl = process.env.NEXT_PUBLIC_PAINELADM_URL || 
-                          process.env.NEXT_PUBLIC_BACKEND_URL ||
-                          "https://paineladm.experimenteai.com.br"
 
     if (!perfilDoc.exists) {
       return NextResponse.redirect(
@@ -113,14 +109,12 @@ export async function GET(request: NextRequest) {
     console.log("[melhor-envio/callback] Token salvo com sucesso para lojistaId:", lojistaId)
 
     // Redirecionar para painel admin com sucesso
-    const painelAdminUrl = process.env.NEXT_PUBLIC_PAINELADM_URL || 
-                          process.env.NEXT_PUBLIC_BACKEND_URL ||
-                          "https://paineladm.experimenteai.com.br"
     return NextResponse.redirect(
       `${painelAdminUrl}/admin?success=melhor-envio-auth-success`
     )
   } catch (error) {
     console.error("[melhor-envio/callback] Erro:", error)
+    // URL do painel admin (declarada no topo da função)
     const painelAdminUrl = process.env.NEXT_PUBLIC_PAINELADM_URL || 
                           process.env.NEXT_PUBLIC_BACKEND_URL ||
                           "https://paineladm.experimenteai.com.br"
