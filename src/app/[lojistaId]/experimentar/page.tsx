@@ -1201,23 +1201,40 @@ export default function ExperimentarPage() {
         if (userPhotoUrl.startsWith('blob:') || userPhotoUrl.startsWith('data:')) {
           console.warn("[handleVisualize] ⚠️ URL blob/data sem File, tentando converter...")
           try {
-            // Criar AbortController para timeout no fetch da blob
+            // PHASE 25: Melhorar timeout e tratamento de erros para mobile
+            // Mobile pode ter conexão mais lenta, aumentar timeout
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const fetchTimeoutMs = isMobile ? 30000 : 15000; // 30s mobile, 15s desktop
+            
             const fetchController = new AbortController();
-            const fetchTimeout = setTimeout(() => fetchController.abort(), 10000); // 10 segundos para fetch
+            const fetchTimeout = setTimeout(() => fetchController.abort(), fetchTimeoutMs);
             
             let response: Response;
             try {
-              response = await fetch(userPhotoUrl, { signal: fetchController.signal });
+              // PHASE 25: Adicionar headers e melhor configuração para mobile
+              response = await fetch(userPhotoUrl, { 
+                signal: fetchController.signal,
+                cache: 'no-cache',
+                mode: 'cors',
+              });
               clearTimeout(fetchTimeout);
             } catch (fetchError: any) {
               clearTimeout(fetchTimeout);
               
               if (fetchError.name === 'AbortError') {
-                throw new Error("Tempo de resposta excedido ao carregar a foto. Tente selecionar novamente.");
+                throw new Error("Tempo de resposta excedido ao carregar a foto. Verifique sua conexão e tente novamente.");
               }
               
-              if (fetchError.message?.includes('fetch failed') || fetchError.message?.includes('Failed to fetch')) {
-                throw new Error("Não foi possível carregar a foto. Tente selecionar novamente.");
+              // PHASE 25: Melhor tratamento de erros de rede no mobile
+              if (fetchError.message?.includes('fetch failed') || 
+                  fetchError.message?.includes('Failed to fetch') ||
+                  fetchError.message?.includes('NetworkError') ||
+                  fetchError.message?.includes('Network request failed')) {
+                throw new Error("Erro de conexão. Verifique sua internet e tente novamente.");
+              }
+              
+              if (fetchError.message?.includes('CORS') || fetchError.message?.includes('cross-origin')) {
+                throw new Error("Erro ao acessar a foto. Tente selecionar novamente.");
               }
               
               throw fetchError;
@@ -1305,36 +1322,53 @@ export default function ExperimentarPage() {
         payloadOriginalPhotoUrl: payload.original_photo_url?.substring(0, 50) + "...",
       })
 
-      // Adicionar timeout e melhor tratamento de erros
+      // PHASE 25: Melhorar timeout e tratamento de erros para mobile
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const timeoutMs = isMobile ? 180000 : 120000; // 3 minutos mobile, 2 minutos desktop
+      
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 120000) // 2 minutos de timeout
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
       let response: Response
       try {
         // PHASE 11-B FIX: Usar a rota correta /api/generate-looks
+        // PHASE 25: Adicionar headers e configurações melhores para mobile
         response = await fetch("/api/generate-looks", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+          },
           body: JSON.stringify(payload),
           signal: controller.signal,
+          cache: 'no-cache',
+          mode: 'cors',
         })
       } catch (fetchError: any) {
         clearTimeout(timeoutId)
         
-        // Tratar diferentes tipos de erro de fetch
+        // PHASE 25: Melhor tratamento de erros de rede no mobile
         if (fetchError.name === "AbortError") {
-          throw new Error("Tempo de resposta excedido. O servidor está demorando muito para processar. Tente novamente.")
+          throw new Error("Tempo de resposta excedido. O processamento está demorando mais que o esperado. Tente novamente.")
         }
         
-        if (fetchError.message?.includes("fetch failed") || fetchError.message?.includes("Failed to fetch")) {
-          throw new Error("Não foi possível conectar com o servidor. Tente novamente em alguns instantes.")
+        if (fetchError.message?.includes("fetch failed") || 
+            fetchError.message?.includes("Failed to fetch") ||
+            fetchError.message?.includes("NetworkError") ||
+            fetchError.message?.includes("Network request failed")) {
+          throw new Error("Erro de conexão. Verifique sua internet e tente novamente.")
         }
         
-        if (fetchError.message?.includes("ECONNREFUSED") || fetchError.message?.includes("NetworkError")) {
+        if (fetchError.message?.includes("ECONNREFUSED") || fetchError.message?.includes("ERR_CONNECTION_REFUSED")) {
           throw new Error("Servidor não está respondendo. Tente novamente em alguns instantes.")
         }
         
-        throw new Error(`Erro de conexão: ${fetchError.message || "Erro desconhecido"}`)
+        if (fetchError.message?.includes("CORS") || fetchError.message?.includes("cross-origin")) {
+          throw new Error("Erro de permissão. Tente recarregar a página e tentar novamente.")
+        }
+        
+        // PHASE 25: Mensagem mais amigável para erros desconhecidos
+        throw new Error(`Erro ao processar foto: ${fetchError.message || "Erro desconhecido. Tente novamente."}`)
       }
 
       clearTimeout(timeoutId)
