@@ -66,6 +66,27 @@ export function middleware(request: NextRequest) {
     return NextResponse.rewrite(url)
   }
 
+  // Limpar URLs malformadas: detectar padrões como números de telefone ou caracteres inválidos após lojistaId
+  // Exemplo: /[lojistaId]/(48)%2098815-6098 -> /[lojistaId]/experimentar
+  const malformedUrlMatch = pathname.match(/^\/([^/]+)\/([^/]+)/)
+  if (malformedUrlMatch) {
+    const lojistaId = malformedUrlMatch[1]
+    const invalidSegment = malformedUrlMatch[2]
+    
+    // Verificar se o segmento inválido parece ser um número de telefone ou texto inválido
+    // Padrões: números, parênteses, espaços codificados, etc.
+    const phonePattern = /[\(\)\d\s%\-]+/i
+    const isInvalidSegment = phonePattern.test(invalidSegment) && 
+                             !['login', 'experimentar', 'resultado', 'tv', 'manifest.json'].includes(invalidSegment)
+    
+    if (isInvalidSegment) {
+      // Redirecionar para a página correta do lojista
+      const protocol = request.nextUrl.protocol
+      const newUrl = new URL(`${protocol}//${hostname}/${lojistaId}/experimentar${request.nextUrl.search}`)
+      return NextResponse.redirect(newUrl, 301)
+    }
+  }
+
   // Para app2.experimenteai.com.br ou outros domínios, comportamento normal
   return NextResponse.next()
 }
