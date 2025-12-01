@@ -182,7 +182,7 @@ export function ShoppingCartModal({
             <Truck className="h-4 w-4 text-blue-500" />
             CEP de destino
           </label>
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="text"
               value={destinationZip}
@@ -190,12 +190,12 @@ export function ShoppingCartModal({
               placeholder="00000-000"
               className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-800 focus:border-blue-500 focus:outline-none"
             />
-        <Button
-          type="button"
-          variant="ghost"
-          className="border-blue-500 text-blue-600"
-          onClick={handleCalculateShipping}
-          disabled={isCalculating}
+            <Button
+              type="button"
+              variant="ghost"
+              className="border-blue-500 text-blue-600 whitespace-nowrap sm:w-auto w-full"
+              onClick={handleCalculateShipping}
+              disabled={isCalculating}
             >
               {isCalculating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Calcular"}
             </Button>
