@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 
 export default function HomePage() {
   const [mounted, setMounted] = useState(false)
-  const router = useRouter()
 
   useEffect(() => {
     setMounted(true)
