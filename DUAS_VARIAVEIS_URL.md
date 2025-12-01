@@ -11,7 +11,7 @@ Você tem **DUAS variáveis diferentes** na Vercel:
 
 ### 1. `NEXT_PUBLIC_APP_URL` (PWA & SEO)
 ```
-NEXT_PUBLIC_APP_URL=https://app2.experimenteal.com.br
+NEXT_PUBLIC_APP_URL=https://app2.experimenteai.com.br
 ```
 
 **Onde é usado:**
@@ -24,7 +24,7 @@ NEXT_PUBLIC_APP_URL=https://app2.experimenteal.com.br
 
 ### 2. `NEXT_PUBLIC_CLIENT_APP_URL` (Webhooks & Links)
 ```
-NEXT_PUBLIC_CLIENT_APP_URL=https://app2.experimenteal.com.br
+NEXT_PUBLIC_CLIENT_APP_URL=https://app2.experimenteai.com.br
 ```
 
 **Onde é usado:**
@@ -39,8 +39,8 @@ NEXT_PUBLIC_CLIENT_APP_URL=https://app2.experimenteal.com.br
 
 ### Para Produção:
 ```
-NEXT_PUBLIC_APP_URL=https://app2.experimenteal.com.br
-NEXT_PUBLIC_CLIENT_APP_URL=https://app2.experimenteal.com.br
+NEXT_PUBLIC_APP_URL=https://app2.experimenteai.com.br
+NEXT_PUBLIC_CLIENT_APP_URL=https://app2.experimenteai.com.br
 ```
 
 **Ambas apontam para o mesmo domínio** (app cliente em produção).
@@ -48,8 +48,8 @@ NEXT_PUBLIC_CLIENT_APP_URL=https://app2.experimenteal.com.br
 ### Se Tiver Ambientes Diferentes:
 ```
 # Produção
-NEXT_PUBLIC_APP_URL=https://app2.experimenteal.com.br
-NEXT_PUBLIC_CLIENT_APP_URL=https://app2.experimenteal.com.br
+NEXT_PUBLIC_APP_URL=https://app2.experimenteai.com.br
+NEXT_PUBLIC_CLIENT_APP_URL=https://app2.experimenteai.com.br
 
 # Desenvolvimento (opcional)
 NEXT_PUBLIC_CLIENT_APP_DEV_URL=http://localhost:3002
@@ -59,26 +59,26 @@ NEXT_PUBLIC_CLIENT_APP_DEV_URL=http://localhost:3002
 
 Na sua configuração atual:
 - ❌ `NEXT_PUBLIC_APP_URL` = `https://www.experimenteai.com.br` (ERRADO - esse é o painel admin)
-- ✅ `NEXT_PUBLIC_CLIENT_APP_URL` = `https://app2.experimenteal.com.br` (CORRETO)
+- ✅ `NEXT_PUBLIC_CLIENT_APP_URL` = `https://app2.experimenteai.com.br` (CORRETO)
 
 ## ✅ Correção Necessária
 
 **Altere na Vercel:**
 ```
-NEXT_PUBLIC_APP_URL=https://app2.experimenteal.com.br
+NEXT_PUBLIC_APP_URL=https://app2.experimenteai.com.br
 ```
 
 **Mantenha:**
 ```
-NEXT_PUBLIC_CLIENT_APP_URL=https://app2.experimenteal.com.br
+NEXT_PUBLIC_CLIENT_APP_URL=https://app2.experimenteai.com.br
 ```
 
 ## 🧪 Como Verificar
 
 Após corrigir, teste:
-1. **OG Image:** `https://app2.experimenteal.com.br/api/og-image/{lojistaId}`
-2. **Manifest:** `https://app2.experimenteal.com.br/{lojistaId}/manifest.json`
-3. **Diagnóstico:** `https://app2.experimenteal.com.br/api/test-og-image/{lojistaId}`
+1. **OG Image:** `https://app2.experimenteai.com.br/api/og-image/{lojistaId}`
+2. **Manifest:** `https://app2.experimenteai.com.br/{lojistaId}/manifest.json`
+3. **Diagnóstico:** `https://app2.experimenteai.com.br/api/test-og-image/{lojistaId}`
 
 O endpoint de diagnóstico mostrará se ambas as variáveis estão corretas.
 

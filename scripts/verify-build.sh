@@ -72,3 +72,4 @@ echo "✅ Todas as verificações passaram! Pronto para deploy."
 
 
 
+

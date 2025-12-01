@@ -19,114 +19,166 @@ export async function POST(request: NextRequest) {
     }
 
     const paymentId = data.id
-
-    // Buscar informações do pagamento no Mercado Pago
-    // Nota: Para verificar o pagamento, precisamos do access_token do lojista
-    // Vamos buscar o pedido pelo external_reference primeiro
     const db = getFirestoreAdmin()
 
-    // Buscar pedido pelo payment_id em todas as lojas
-    // (Em produção, você pode otimizar isso usando um índice ou estrutura diferente)
-    const lojasSnapshot = await db.collection("lojas").get()
+    // ESTRATÉGIA MELHORADA: Buscar o pagamento primeiro para pegar o external_reference
+    // Isso nos permite identificar o lojista sem precisar buscar em todas as lojas
+    let paymentData: any = null
+    let lojistaIdFromPayment: string | null = null
+    let preferenceIdFromPayment: string | null = null
 
-    let orderFound = false
+    // Tentar buscar o pagamento em todas as lojas até encontrar o access_token correto
+    const lojasSnapshot = await db.collection("lojas").get()
 
     for (const lojaDoc of lojasSnapshot.docs) {
       const lojistaId = lojaDoc.id
-      const ordersRef = lojaDoc.ref.collection("orders")
-      const ordersSnapshot = await ordersRef.where("payment_id", "==", paymentId).get()
+      const lojistaData = lojaDoc.data()
+      const salesConfig = lojistaData?.salesConfig || lojistaData?.sales_config
+      const accessToken = salesConfig?.integrations?.mercadopago_access_token
 
-      if (!ordersSnapshot.empty) {
-        const orderDoc = ordersSnapshot.docs[0]
-        const orderData = orderDoc.data()
+      if (!accessToken) continue
 
-        // Buscar access_token do lojista para verificar o pagamento
-        const lojistaData = lojaDoc.data()
-        const salesConfig = lojistaData?.salesConfig || lojistaData?.sales_config
-        const accessToken = salesConfig?.integrations?.mercadopago_access_token
+      try {
+        const client = new MercadoPagoConfig({ accessToken })
+        const paymentClient = new Payment(client)
+        const payment = await paymentClient.get({ id: parseInt(paymentId) })
 
-        if (accessToken) {
-          // Configurar SDK do Mercado Pago
-          const client = new MercadoPagoConfig({ accessToken })
-          const paymentClient = new Payment(client)
+        if (payment) {
+          paymentData = payment
+          lojistaIdFromPayment = lojistaId
 
-          try {
-            // Buscar informações do pagamento
-            const payment = await paymentClient.get({ id: parseInt(paymentId) })
-
-            if (payment) {
-              const paymentData = payment
-              const status = paymentData.status
-
-              console.log("[webhooks/mercadopago] Status do pagamento:", {
-                paymentId,
-                status,
-                externalReference: paymentData.external_reference,
-              })
-
-              // Atualizar status do pedido baseado no status do pagamento
-              let orderStatus = "pending"
-
-              if (status === "approved") {
-                orderStatus = "paid"
-              } else if (status === "rejected" || status === "cancelled") {
-                orderStatus = "cancelled"
-              } else if (status === "refunded" || status === "charged_back") {
-                orderStatus = "refunded"
-              } else if (status === "pending" || status === "in_process") {
-                orderStatus = "pending"
-              }
-
-              // Atualizar pedido no Firestore
-              await orderDoc.ref.update({
-                status: orderStatus,
-                payment_status: status,
-                payment_data: {
-                  id: paymentData.id,
-                  status: paymentData.status,
-                  status_detail: paymentData.status_detail,
-                  transaction_amount: paymentData.transaction_amount,
-                  date_approved: paymentData.date_approved,
-                  date_created: paymentData.date_created,
-                },
-                updatedAt: new Date(),
-              })
-
-              console.log("[webhooks/mercadopago] Pedido atualizado:", {
-                orderId: orderDoc.id,
-                lojistaId,
-                status: orderStatus,
-              })
-
-              orderFound = true
-
-              // Se o pagamento foi aprovado, podemos fazer outras ações:
-              // - Deduzir estoque
-              // - Enviar notificação para o lojista
-              // - Enviar email de confirmação para o cliente
-              if (status === "approved") {
-                // TODO: Implementar dedução de estoque
-                // TODO: Implementar notificações
-                console.log("[webhooks/mercadopago] Pagamento aprovado! Pedido:", orderDoc.id)
-              }
+          // Extrair preference_id do external_reference ou metadata
+          const externalRef = payment.external_reference || ""
+          // Formato: order_{lojistaId}_{timestamp}
+          if (externalRef.startsWith("order_")) {
+            const parts = externalRef.split("_")
+            if (parts.length >= 2) {
+              lojistaIdFromPayment = parts[1] // Confirmar lojistaId
             }
-          } catch (error: any) {
-            console.error("[webhooks/mercadopago] Erro ao buscar pagamento:", error)
-            // Continuar mesmo se houver erro ao buscar o pagamento
           }
-        } else {
-          console.warn("[webhooks/mercadopago] Access token não encontrado para lojista:", lojistaId)
-        }
 
-        break // Encontrou o pedido, pode parar
+          // O preference_id pode estar no metadata ou precisamos buscar pela preference
+          preferenceIdFromPayment = payment.metadata?.preference_id || null
+
+          console.log("[webhooks/mercadopago] Pagamento encontrado:", {
+            paymentId,
+            lojistaId: lojistaIdFromPayment,
+            externalReference: externalRef,
+            status: payment.status,
+          })
+          break
+        }
+      } catch (error: any) {
+        // Este access_token não tem acesso a este pagamento, tentar próximo
+        continue
       }
     }
 
-    if (!orderFound) {
-      console.warn("[webhooks/mercadopago] Pedido não encontrado para payment_id:", paymentId)
+    if (!paymentData || !lojistaIdFromPayment) {
+      console.warn("[webhooks/mercadopago] Pagamento não encontrado ou lojista não identificado:", {
+        paymentId,
+      })
+      return NextResponse.json({ received: true, processed: false, error: "Pagamento não encontrado" })
     }
 
-    return NextResponse.json({ received: true, processed: orderFound })
+    // Buscar pedido pelo preference_id (salvo quando o pedido foi criado)
+    // OU pelo payment_id (se já foi atualizado anteriormente)
+    const lojistaRef = db.collection("lojas").doc(lojistaIdFromPayment)
+    const ordersRef = lojistaRef.collection("orders")
+
+    // Tentar buscar pelo payment_id primeiro (caso já tenha sido atualizado)
+    let ordersSnapshot = await ordersRef.where("payment_id", "==", paymentId).get()
+
+    // Se não encontrar, buscar pelo preference_id (do external_reference)
+    if (ordersSnapshot.empty && preferenceIdFromPayment) {
+      ordersSnapshot = await ordersRef.where("preference_id", "==", preferenceIdFromPayment).get()
+    }
+
+    // Se ainda não encontrar, buscar pelo external_reference no metadata do pedido
+    if (ordersSnapshot.empty) {
+      const externalRef = paymentData.external_reference || ""
+      if (externalRef) {
+        // Buscar todos os pedidos pendentes deste lojista e verificar pelo external_reference
+        const allOrders = await ordersRef.where("status", "==", "pending").get()
+        for (const orderDoc of allOrders.docs) {
+          // Verificar se o external_reference corresponde (formato: order_{lojistaId}_{timestamp})
+          const orderData = orderDoc.data()
+          if (orderData.preference_id) {
+            // Se temos o preference_id, podemos verificar se corresponde
+            ordersSnapshot = await ordersRef.where("preference_id", "==", orderData.preference_id).limit(1).get()
+            if (!ordersSnapshot.empty) break
+          }
+        }
+      }
+    }
+
+    if (ordersSnapshot.empty) {
+      console.warn("[webhooks/mercadopago] Pedido não encontrado para payment_id:", {
+        paymentId,
+        lojistaId: lojistaIdFromPayment,
+        preferenceId: preferenceIdFromPayment,
+      })
+      return NextResponse.json({ received: true, processed: false, error: "Pedido não encontrado" })
+    }
+
+    const orderDoc = ordersSnapshot.docs[0]
+    const status = paymentData.status
+
+    console.log("[webhooks/mercadopago] Status do pagamento:", {
+      paymentId,
+      status,
+      externalReference: paymentData.external_reference,
+      orderId: orderDoc.id,
+    })
+
+    // Atualizar status do pedido baseado no status do pagamento
+    let orderStatus = "pending"
+
+    if (status === "approved") {
+      orderStatus = "paid"
+    } else if (status === "rejected" || status === "cancelled") {
+      orderStatus = "cancelled"
+    } else if (status === "refunded" || status === "charged_back") {
+      orderStatus = "refunded"
+    } else if (status === "pending" || status === "in_process") {
+      orderStatus = "pending"
+    }
+
+    // Atualizar pedido no Firestore
+    await orderDoc.ref.update({
+      status: orderStatus,
+      payment_id: paymentId.toString(), // Salvar o payment_id real
+      payment_status: status,
+      payment_data: {
+        id: paymentData.id,
+        status: paymentData.status,
+        status_detail: paymentData.status_detail,
+        transaction_amount: paymentData.transaction_amount,
+        date_approved: paymentData.date_approved,
+        date_created: paymentData.date_created,
+        external_reference: paymentData.external_reference,
+      },
+      updatedAt: new Date(),
+    })
+
+    console.log("[webhooks/mercadopago] Pedido atualizado:", {
+      orderId: orderDoc.id,
+      lojistaId: lojistaIdFromPayment,
+      status: orderStatus,
+      paymentId,
+    })
+
+    // Se o pagamento foi aprovado, podemos fazer outras ações:
+    // - Deduzir estoque
+    // - Enviar notificação para o lojista
+    // - Enviar email de confirmação para o cliente
+    if (status === "approved") {
+      // TODO: Implementar dedução de estoque
+      // TODO: Implementar notificações
+      console.log("[webhooks/mercadopago] ✅ Pagamento aprovado! Pedido:", orderDoc.id)
+    }
+
+    return NextResponse.json({ received: true, processed: true, orderId: orderDoc.id, status: orderStatus })
   } catch (error) {
     console.error("[webhooks/mercadopago] Erro ao processar webhook:", error)
     // Retornar 200 mesmo em caso de erro para evitar retentativas desnecessárias

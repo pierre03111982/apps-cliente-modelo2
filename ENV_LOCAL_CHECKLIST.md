@@ -8,7 +8,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3005
 ```
 **Para desenvolvimento local:**
 - Use `http://localhost:3005` (mesma porta do app cliente)
-- **OU** use a URL de produção: `https://app2.experimenteal.com.br`
+- **OU** use a URL de produção: `https://app2.experimenteai.com.br`
 
 **Onde é usado:**
 - OG Image (`/api/og-image/{lojistaId}`)
@@ -57,8 +57,8 @@ NEXT_PUBLIC_FACEBOOK_APP_ID=1155635880092697
 
 | Variável | Uso | Valor Local | Valor Produção |
 |----------|-----|------------|----------------|
-| `NEXT_PUBLIC_APP_URL` | PWA, OG Image, Manifest | `http://localhost:3005` | `https://app2.experimenteal.com.br` |
-| `NEXT_PUBLIC_CLIENT_APP_URL` | Webhooks, Links | `http://localhost:3005` | `https://app2.experimenteal.com.br` |
+| `NEXT_PUBLIC_APP_URL` | PWA, OG Image, Manifest | `http://localhost:3005` | `https://app2.experimenteai.com.br` |
+| `NEXT_PUBLIC_CLIENT_APP_URL` | Webhooks, Links | `http://localhost:3005` | `https://app2.experimenteai.com.br` |
 
 **Nota:** Em desenvolvimento local, ambas podem ter o mesmo valor (`http://localhost:3005`).
 

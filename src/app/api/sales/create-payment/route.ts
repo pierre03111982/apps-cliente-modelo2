@@ -126,7 +126,8 @@ async function createOrder(
     shipping: shippingPrice,
     total,
     destinationZip,
-    payment_id: preferenceId || null,
+    preference_id: preferenceId || null, // ID da Preference (usado para buscar pedido)
+    payment_id: null, // Será preenchido quando o pagamento for criado (via webhook)
     createdAt: new Date(),
     updatedAt: new Date(),
   }

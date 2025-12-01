@@ -12,14 +12,14 @@ FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY----
 
 ### 2. URL Base da Aplicação
 ```
-NEXT_PUBLIC_APP_URL=https://app2.experimenteal.com.br
+NEXT_PUBLIC_APP_URL=https://app2.experimenteai.com.br
 ```
 **⚠️ CRÍTICO:** Esta deve ser a URL onde o **app cliente** está hospedado (não o painel admin).
 
-**✅ URL Confirmada:** Baseado no deploy da Vercel, a URL de produção é `https://app2.experimenteal.com.br`
+**✅ URL Confirmada:** Baseado no deploy da Vercel, a URL de produção é `https://app2.experimenteai.com.br`
 
 **Verificação:**
-- ✅ **CORRETO:** `https://app2.experimenteal.com.br` (app cliente - produção)
+- ✅ **CORRETO:** `https://app2.experimenteai.com.br` (app cliente - produção)
 - ❌ **ERRADO:** `https://www.experimenteai.com.br` (esse é o painel admin)
 - ❌ **ERRADO:** `https://app.experimenteai.com.br` (URL antiga ou diferente)
 
@@ -99,7 +99,7 @@ NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=paineladmexperimenteai.firebasestorage.app
 ## 🧪 Como Testar se Está Funcionando
 
 ### Teste 0: Endpoint de Diagnóstico (NOVO!)
-1. Acesse: `https://app2.experimenteal.com.br/api/test-og-image/{lojistaId}`
+1. Acesse: `https://app2.experimenteai.com.br/api/test-og-image/{lojistaId}`
 2. Este endpoint retorna um JSON completo com:
    - ✅ Status de todas as variáveis de ambiente
    - ✅ Status da conexão com Firestore
@@ -108,18 +108,18 @@ NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=paineladmexperimenteai.firebasestorage.app
    - ✅ Recomendações de correção
 
 ### Teste 1: OG Image
-1. Acesse: `https://app2.experimenteal.com.br/api/og-image/{lojistaId}`
+1. Acesse: `https://app2.experimenteai.com.br/api/og-image/{lojistaId}`
 2. Deve retornar uma imagem PNG (não erro 500)
 3. Se retornar erro, verifique os logs da Vercel
 
 ### Teste 2: Manifest
-1. Acesse: `https://app2.experimenteal.com.br/{lojistaId}/manifest.json`
+1. Acesse: `https://app2.experimenteai.com.br/{lojistaId}/manifest.json`
 2. Deve retornar JSON com `icons` contendo URLs válidas
 3. Verifique se `icons[0].src` aponta para uma URL acessível
 
 ### Teste 3: Facebook Debugger
 1. Acesse: https://developers.facebook.com/tools/debug/
-2. Cole: `https://app2.experimenteal.com.br/{lojistaId}/login`
+2. Cole: `https://app2.experimenteai.com.br/{lojistaId}/login`
 3. Clique em "Scrape Again"
 4. A imagem deve aparecer no preview
 5. Se não aparecer, verifique o campo `og:image` na tabela de propriedades
