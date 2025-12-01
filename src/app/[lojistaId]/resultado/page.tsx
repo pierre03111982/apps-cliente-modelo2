@@ -1304,15 +1304,53 @@ export default function ResultadoPage() {
           let file: File;
           
           if (originalPhotoUrl.startsWith('blob:')) {
-            // Converter blob: para File
-            const response = await fetch(originalPhotoUrl);
-            const blob = await response.blob();
-            file = new File([blob], 'photo.jpg', { type: blob.type || 'image/jpeg' });
+            // Converter blob: para File com tratamento de erro melhorado para mobile
+            try {
+              const response = await fetch(originalPhotoUrl, {
+                cache: 'no-cache',
+                mode: 'cors',
+              });
+              
+              if (!response.ok) {
+                throw new Error(`Erro ao buscar blob: ${response.status} ${response.statusText}`);
+              }
+              
+              const blob = await response.blob();
+              if (!blob || blob.size === 0) {
+                throw new Error("Blob vazio ou inválido");
+              }
+              
+              file = new File([blob], 'photo.jpg', { type: blob.type || 'image/jpeg' });
+            } catch (blobError: any) {
+              console.error("[handleRegenerate] Erro ao converter blob:", blobError);
+              throw new Error(`Erro ao processar foto: ${blobError.message || 'Não foi possível acessar a imagem. Tente fazer upload novamente.'}`);
+            }
           } else {
-            // Converter data: para File
-            const response = await fetch(originalPhotoUrl);
-            const blob = await response.blob();
-            file = new File([blob], 'photo.jpg', { type: blob.type || 'image/jpeg' });
+            // Converter data: para File com tratamento melhorado
+            try {
+              // Para data URLs, converter diretamente sem fetch
+              const base64Data = originalPhotoUrl.split(',')[1];
+              if (!base64Data) {
+                throw new Error("Data URL inválida");
+              }
+              
+              const byteCharacters = atob(base64Data);
+              const byteNumbers = new Array(byteCharacters.length);
+              for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+              }
+              const byteArray = new Uint8Array(byteNumbers);
+              const blob = new Blob([byteArray], { type: 'image/jpeg' });
+              
+              if (!blob || blob.size === 0) {
+                throw new Error("Blob vazio ou inválido");
+              }
+              
+              file = new File([blob], 'photo.jpg', { type: blob.type || 'image/jpeg' });
+            } catch (dataError: any) {
+              console.error("[handleRegenerate] Erro ao converter data URL:", dataError);
+              throw new Error(`Erro ao processar foto: ${dataError.message || 'Não foi possível processar a imagem. Tente fazer upload novamente.'}`);
+            }
           }
           
           // IMPORTANTE: Comprimir imagem antes do upload para evitar erro 413 (Payload Too Large)
@@ -1337,13 +1375,29 @@ export default function ResultadoPage() {
           
           let uploadData: any;
           try {
+            console.log("[handleRegenerate] Iniciando upload da foto...", {
+              fileSize: fileToUpload.size,
+              fileName: fileToUpload.name,
+              fileType: fileToUpload.type,
+            });
+            
             const uploadResponse = await fetch('/api/upload-photo', {
               method: 'POST',
               body: formData,
               signal: uploadController.signal,
+              // Adicionar headers para melhor compatibilidade mobile
+              headers: {
+                'Accept': 'application/json',
+              },
             });
             
             clearTimeout(uploadTimeout);
+            
+            console.log("[handleRegenerate] Resposta do upload:", {
+              status: uploadResponse.status,
+              statusText: uploadResponse.statusText,
+              ok: uploadResponse.ok,
+            });
             
             if (!uploadResponse.ok) {
               let errorData: any = {};
@@ -1355,7 +1409,10 @@ export default function ResultadoPage() {
               } catch (parseError) {
                 console.error("[handleRegenerate] Erro ao parsear resposta de erro:", parseError);
               }
-              throw new Error(errorData.error || errorData.message || `Erro ao fazer upload: ${uploadResponse.status}`);
+              
+              const errorMessage = errorData.error || errorData.message || `Erro ao fazer upload: ${uploadResponse.status}`;
+              console.error("[handleRegenerate] Erro no upload:", errorMessage);
+              throw new Error(errorMessage);
             }
             
             // Processar resposta dentro do mesmo bloco try
@@ -1380,15 +1437,29 @@ export default function ResultadoPage() {
           } catch (fetchError: any) {
             clearTimeout(uploadTimeout);
             
+            console.error("[handleRegenerate] Erro no fetch do upload:", {
+              name: fetchError.name,
+              message: fetchError.message,
+              stack: fetchError.stack,
+            });
+            
             if (fetchError.name === 'AbortError') {
-              throw new Error("Tempo de resposta excedido ao fazer upload da foto. Tente novamente.");
+              throw new Error("Tempo de resposta excedido ao fazer upload da foto. Verifique sua conexão e tente novamente.");
             }
             
-            if (fetchError.message?.includes('fetch failed') || fetchError.message?.includes('Failed to fetch')) {
-              throw new Error("Não foi possível conectar com o servidor. Verifique sua conexão e tente novamente.");
+            if (fetchError.message?.includes('fetch failed') || 
+                fetchError.message?.includes('Failed to fetch') ||
+                fetchError.message?.includes('NetworkError') ||
+                fetchError.message?.includes('Network request failed')) {
+              throw new Error("Não foi possível conectar com o servidor. Verifique sua conexão com a internet e tente novamente.");
             }
             
-            throw fetchError; // Re-throw para ser capturado pelo catch externo
+            // Se o erro já tem uma mensagem amigável, usar ela
+            if (fetchError.message && fetchError.message.includes("Erro ao processar foto")) {
+              throw fetchError;
+            }
+            
+            throw new Error(`Erro ao fazer upload: ${fetchError.message || 'Erro desconhecido. Tente novamente.'}`);
           }
           // Atualizar sessionStorage com a URL HTTP válida
           sessionStorage.setItem(`original_photo_${lojistaId}`, originalPhotoUrl);
