@@ -217,8 +217,8 @@ export default async function LojistaLayout({
   
   return (
     <>
-      {/* PHASE 25-C: Link do manifest via API Route com cache busting (?v=5) */}
-      <link rel="manifest" href={`/api/manifest/${lojistaId}?v=5`} />
+      {/* PHASE 25-C: Link do manifest via API Route com cache busting (?v=6) */}
+      <link rel="manifest" href={`/api/manifest/${lojistaId}?v=6`} />
       {/* Favicon dinâmico usando logo da loja - PHASE 25: Melhorado para garantir que apareça na barra de navegação e no modal de instalação */}
       {faviconUrlAbsolute ? (
         <>
