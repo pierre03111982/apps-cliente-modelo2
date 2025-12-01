@@ -35,15 +35,33 @@ export async function GET(
     // Priorizar app_icon_url, depois logoUrl
     const iconUrl = lojaData?.app_icon_url || lojaData?.logoUrl || null;
     
-    if (!iconUrl) {
-      // Retornar ícone padrão se não houver
-      return NextResponse.redirect(new URL('/icons/default-icon.png', request.url));
-    }
-    
     // Construir URL absoluta
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
                    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
                    'https://app2.experimenteai.com.br';
+    
+    // Se não houver ícone, buscar ícone padrão
+    if (!iconUrl) {
+      try {
+        const defaultIconUrl = `${baseUrl}/icons/default-icon.png`;
+        const defaultResponse = await fetch(defaultIconUrl, {
+          signal: AbortSignal.timeout(5000),
+        });
+        if (defaultResponse.ok) {
+          const buffer = await defaultResponse.arrayBuffer();
+          return new NextResponse(buffer, {
+            headers: {
+              'Content-Type': 'image/png',
+              'Cache-Control': 'public, max-age=31536000, immutable',
+              'Access-Control-Allow-Origin': '*',
+            },
+          });
+        }
+      } catch (error) {
+        console.error('[PWA Icon] Erro ao buscar ícone padrão:', error);
+      }
+      return new NextResponse('Ícone não encontrado', { status: 404 });
+    }
     
     let iconUrlAbsolute: string;
     if (iconUrl.startsWith('http://') || iconUrl.startsWith('https://')) {
@@ -52,13 +70,14 @@ export async function GET(
       iconUrlAbsolute = iconUrl.startsWith('/') ? `${baseUrl}${iconUrl}` : `${baseUrl}/${iconUrl}`;
     }
     
-    // Se for Firebase Storage, buscar via proxy
-    if (iconUrlAbsolute.includes('storage.googleapis.com') || iconUrlAbsolute.includes('firebasestorage.googleapis.com')) {
-      // Usar proxy-image para buscar a imagem
-      const proxyUrl = `${baseUrl}/api/proxy-image?url=${encodeURIComponent(iconUrlAbsolute)}`;
+    // PHASE 25: Buscar imagem diretamente (Chrome precisa de resposta direta, não redirecionamento)
+    try {
+      let imageResponse: Response;
       
-      try {
-        const imageResponse = await fetch(proxyUrl, {
+      // Se for Firebase Storage, buscar diretamente (Firebase permite CORS se configurado)
+      if (iconUrlAbsolute.includes('storage.googleapis.com') || iconUrlAbsolute.includes('firebasestorage.googleapis.com')) {
+        // Tentar buscar diretamente primeiro
+        imageResponse = await fetch(iconUrlAbsolute, {
           headers: {
             'User-Agent': 'Mozilla/5.0 (compatible; ExperimenteAI/1.0)',
             'Accept': 'image/*',
@@ -66,31 +85,51 @@ export async function GET(
           signal: AbortSignal.timeout(10000),
         });
         
-        if (imageResponse.ok) {
-          const imageBuffer = await imageResponse.arrayBuffer();
-          const contentType = imageResponse.headers.get('content-type') || 'image/png';
-          
-          // Retornar imagem com headers corretos para PWA
-          return new NextResponse(imageBuffer, {
+        // Se não funcionar, usar proxy
+        if (!imageResponse.ok) {
+          const proxyUrl = `${baseUrl}/api/proxy-image?url=${encodeURIComponent(iconUrlAbsolute)}`;
+          imageResponse = await fetch(proxyUrl, {
             headers: {
-              'Content-Type': contentType,
-              'Cache-Control': 'public, max-age=31536000, immutable',
-              'Access-Control-Allow-Origin': '*',
-              'Access-Control-Allow-Methods': 'GET',
-              'Access-Control-Allow-Headers': 'Content-Type',
+              'User-Agent': 'Mozilla/5.0 (compatible; ExperimenteAI/1.0)',
+              'Accept': 'image/*',
             },
+            signal: AbortSignal.timeout(10000),
           });
         }
-      } catch (error) {
-        console.error('[PWA Icon] Erro ao buscar via proxy:', error);
+      } else {
+        // Para outras URLs, buscar diretamente
+        imageResponse = await fetch(iconUrlAbsolute, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; ExperimenteAI/1.0)',
+            'Accept': 'image/*',
+          },
+          signal: AbortSignal.timeout(10000),
+        });
       }
-    } else {
-      // Se não for Firebase Storage, redirecionar para URL direta
-      return NextResponse.redirect(iconUrlAbsolute);
+      
+      if (imageResponse.ok) {
+        const imageBuffer = await imageResponse.arrayBuffer();
+        const contentType = imageResponse.headers.get('content-type') || 'image/png';
+        
+        // PHASE 25: Retornar imagem diretamente com headers corretos para PWA
+        // Chrome precisa de Content-Type correto e CORS habilitado
+        return new NextResponse(imageBuffer, {
+          headers: {
+            'Content-Type': contentType,
+            'Cache-Control': 'public, max-age=31536000, immutable',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET',
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'X-Content-Type-Options': 'nosniff',
+          },
+        });
+      }
+    } catch (error: any) {
+      console.error('[PWA Icon] Erro ao buscar ícone:', error);
     }
     
-    // Fallback: redirecionar para ícone padrão
-    return NextResponse.redirect(new URL('/icons/default-icon.png', request.url));
+    // Fallback: retornar erro 404
+    return new NextResponse('Ícone não encontrado', { status: 404 });
   } catch (error: any) {
     console.error('[PWA Icon] Erro:', error);
     return NextResponse.redirect(new URL('/icons/default-icon.png', request.url));
