@@ -150,11 +150,25 @@ export async function POST(request: NextRequest) {
     if (!salesConfig) {
       try {
         const db = getFirestoreAdmin()
-        const lojistaRef = db.collection("lojistas").doc(lojistaId)
-        const lojistaDoc = await lojistaRef.get()
-        if (lojistaDoc.exists) {
-          const data = lojistaDoc.data()
+        const lojaRef = db.collection("lojas").doc(lojistaId)
+        const lojaDoc = await lojaRef.get()
+        
+        if (lojaDoc.exists) {
+          const data = lojaDoc.data()
           salesConfig = data?.salesConfig || data?.sales_config
+        }
+        
+        // Se não encontrou, buscar em perfil/dados
+        if (!salesConfig) {
+          try {
+            const perfilDoc = await lojaRef.collection("perfil").doc("dados").get()
+            if (perfilDoc.exists) {
+              const perfilData = perfilDoc.data()
+              salesConfig = perfilData?.salesConfig || perfilData?.sales_config
+            }
+          } catch (error) {
+            // Ignorar erro
+          }
         }
       } catch (error) {
         console.warn("[sales/calculate-shipping] Erro ao buscar salesConfig:", error)

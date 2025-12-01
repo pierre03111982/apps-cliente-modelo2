@@ -32,8 +32,26 @@ export async function POST(request: NextRequest) {
 
     for (const lojaDoc of lojasSnapshot.docs) {
       const lojistaId = lojaDoc.id
-      const lojistaData = lojaDoc.data()
-      const salesConfig = lojistaData?.salesConfig || lojistaData?.sales_config
+      
+      // Buscar salesConfig em dois lugares possíveis:
+      // 1. Diretamente no documento da loja: lojas/{lojistaId}
+      // 2. No subdocumento: lojas/{lojistaId}/perfil/dados
+      let lojistaData = lojaDoc.data()
+      let salesConfig = lojistaData?.salesConfig || lojistaData?.sales_config
+      
+      // Se não encontrou, buscar em perfil/dados
+      if (!salesConfig) {
+        try {
+          const perfilDoc = await lojaDoc.ref.collection("perfil").doc("dados").get()
+          if (perfilDoc.exists) {
+            const perfilData = perfilDoc.data()
+            salesConfig = perfilData?.salesConfig || perfilData?.sales_config
+          }
+        } catch (error) {
+          // Ignorar erro e continuar
+        }
+      }
+      
       const accessToken = salesConfig?.integrations?.mercadopago_access_token
 
       if (!accessToken) continue

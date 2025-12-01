@@ -14,16 +14,33 @@ export async function GET() {
     
     // Verificar se há lojas configuradas
     const lojasSnapshot = await db.collection("lojas").limit(5).get()
-    const lojas = lojasSnapshot.docs.map((doc) => {
-      const data = doc.data()
-      const salesConfig = data?.salesConfig || data?.sales_config
-      return {
-        lojistaId: doc.id,
-        nome: data?.nome || data?.name || "Sem nome",
-        temMercadoPago: !!salesConfig?.integrations?.mercadopago_access_token,
-        paymentGateway: salesConfig?.payment_gateway || "não configurado",
-      }
-    })
+    const lojas = await Promise.all(
+      lojasSnapshot.docs.map(async (doc) => {
+        const data = doc.data()
+        let salesConfig = data?.salesConfig || data?.sales_config
+        
+        // Se não encontrou, buscar em perfil/dados
+        if (!salesConfig) {
+          try {
+            const perfilDoc = await doc.ref.collection("perfil").doc("dados").get()
+            if (perfilDoc.exists) {
+              const perfilData = perfilDoc.data()
+              salesConfig = perfilData?.salesConfig || perfilData?.sales_config
+            }
+          } catch (error) {
+            // Ignorar erro
+          }
+        }
+        
+        return {
+          lojistaId: doc.id,
+          nome: data?.nome || data?.name || "Sem nome",
+          temMercadoPago: !!salesConfig?.integrations?.mercadopago_access_token,
+          paymentGateway: salesConfig?.payment_gateway || "não configurado",
+          salesConfigLocation: salesConfig ? (data?.salesConfig ? "lojas/{id}" : "lojas/{id}/perfil/dados") : "não encontrado",
+        }
+      })
+    )
 
     return NextResponse.json({
       status: "ok",

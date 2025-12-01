@@ -162,14 +162,31 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar salesConfig do Firestore
+    // Buscar em dois lugares possíveis:
+    // 1. Diretamente no documento: lojas/{lojistaId}
+    // 2. No subdocumento: lojas/{lojistaId}/perfil/dados
     let salesConfig: SalesConfig | null = null
     try {
       const db = getFirestoreAdmin()
-      const lojistaRef = db.collection("lojistas").doc(lojistaId)
-      const lojistaDoc = await lojistaRef.get()
-      if (lojistaDoc.exists) {
-        const data = lojistaDoc.data()
+      const lojaRef = db.collection("lojas").doc(lojistaId)
+      const lojaDoc = await lojaRef.get()
+      
+      if (lojaDoc.exists) {
+        const data = lojaDoc.data()
         salesConfig = data?.salesConfig || data?.sales_config || null
+      }
+      
+      // Se não encontrou, buscar em perfil/dados
+      if (!salesConfig) {
+        try {
+          const perfilDoc = await lojaRef.collection("perfil").doc("dados").get()
+          if (perfilDoc.exists) {
+            const perfilData = perfilDoc.data()
+            salesConfig = perfilData?.salesConfig || perfilData?.sales_config || null
+          }
+        } catch (error) {
+          // Ignorar erro e continuar
+        }
       }
     } catch (error) {
       console.error("[sales/create-payment] Erro ao buscar salesConfig:", error)
