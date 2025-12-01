@@ -984,29 +984,46 @@ export default function ExperimentarPage() {
         try {
           console.log("[handleRefine] Convertendo blob/data URL para File...");
           
-          // Criar AbortController para timeout no fetch da blob
+          // PHASE 25: Melhorar timeout e tratamento de erros para blob URLs no mobile
           const fetchController = new AbortController();
-          const fetchTimeout = setTimeout(() => fetchController.abort(), 10000); // 10 segundos para fetch
+          const fetchTimeout = setTimeout(() => fetchController.abort(), 30000); // 30 segundos para fetch (mobile pode ser mais lento)
           
           let response: Response;
           try {
-            response = await fetch(originalPhotoUrl, { signal: fetchController.signal });
+            response = await fetch(originalPhotoUrl, { 
+              signal: fetchController.signal,
+              cache: 'no-cache',
+              mode: 'cors',
+            });
             clearTimeout(fetchTimeout);
           } catch (fetchError: any) {
             clearTimeout(fetchTimeout);
             
+            // PHASE 25: Melhor tratamento de erros de rede no mobile
             if (fetchError.name === 'AbortError') {
               throw new Error("Tempo de resposta excedido ao carregar a foto. Tente fazer upload novamente.");
             }
             
-            if (fetchError.message?.includes('fetch failed') || fetchError.message?.includes('Failed to fetch')) {
-              throw new Error("Não foi possível carregar a foto. Tente fazer upload novamente.");
+            if (fetchError.message?.includes('fetch failed') || 
+                fetchError.message?.includes('Failed to fetch') ||
+                fetchError.message?.includes('NetworkError') ||
+                fetchError.message?.includes('Network request failed') ||
+                fetchError.message?.includes('ERR_FILE_NOT_FOUND')) {
+              throw new Error("Não foi possível carregar a foto. A foto pode ter expirado. Por favor, faça upload novamente.");
             }
             
-            throw fetchError;
+            if (fetchError.message?.includes('ECONNREFUSED') || fetchError.message?.includes('ERR_CONNECTION_REFUSED')) {
+              throw new Error("Servidor não está respondendo. Tente novamente em alguns instantes.");
+            }
+            
+            throw new Error(`Erro ao carregar foto: ${fetchError.message || "Erro desconhecido. Tente fazer upload novamente."}`);
           }
           
           if (!response.ok) {
+            // PHASE 25: Se o blob não foi encontrado (404), a foto expirou
+            if (response.status === 404) {
+              throw new Error("A foto não foi encontrada. Por favor, faça upload novamente.");
+            }
             throw new Error(`Erro ao carregar foto: ${response.status} ${response.statusText}`);
           }
           
