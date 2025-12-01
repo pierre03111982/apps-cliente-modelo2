@@ -66,7 +66,12 @@ export async function GET(request: NextRequest) {
     // Melhor Envio requer autenticação básica (Basic Auth) com client_id:client_secret
     const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64")
     
-    const tokenResponse = await fetch("https://sandbox.melhorenvio.com.br/oauth/token", {
+    // Usar produção ou sandbox baseado em variável de ambiente
+    const melhorEnvioBaseUrl = process.env.MELHOR_ENVIO_SANDBOX === "true" 
+      ? "https://sandbox.melhorenvio.com.br" 
+      : "https://www.melhorenvio.com.br"
+    
+    const tokenResponse = await fetch(`${melhorEnvioBaseUrl}/oauth/token`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
