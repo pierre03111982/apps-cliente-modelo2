@@ -1074,22 +1074,62 @@ export default function ExperimentarPage() {
         productIds,
       })
 
-      // Adicionar timeout e melhor tratamento de erros
+      // PHASE 25: Melhorar timeout e tratamento de erros para mobile
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const timeoutMs = isMobile ? 180000 : 120000; // 3 minutos mobile, 2 minutos desktop
+      
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 120000) // 2 minutos de timeout
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
-      const response = await fetch("/api/generate-looks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        signal: controller.signal,
-      })
+      let response: Response;
+      try {
+        response = await fetch("/api/generate-looks", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+          },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+          cache: 'no-cache',
+          mode: 'cors',
+        })
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        
+        // PHASE 25: Melhor tratamento de erros de rede no mobile
+        if (fetchError.name === "AbortError") {
+          throw new Error("Tempo de resposta excedido. O processamento está demorando mais que o esperado. Tente novamente.");
+        }
+        
+        if (fetchError.message?.includes("fetch failed") || 
+            fetchError.message?.includes("Failed to fetch") ||
+            fetchError.message?.includes("NetworkError") ||
+            fetchError.message?.includes("Network request failed")) {
+          throw new Error("Erro de conexão. Verifique sua internet e tente novamente.");
+        }
+        
+        throw new Error(`Erro ao processar foto: ${fetchError.message || "Erro desconhecido. Tente novamente."}`);
+      }
 
       clearTimeout(timeoutId)
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || `Erro ao gerar look: ${response.status}`)
+        let errorMessage = errorData.error || errorData.message || `Erro ao gerar look (${response.status})`;
+        
+        // PHASE 25: Melhorar mensagens de erro
+        if (response.status === 500) {
+          errorMessage = "Erro interno do servidor. Tente novamente em alguns instantes.";
+        } else if (response.status === 503) {
+          errorMessage = "Serviço temporariamente indisponível. Tente novamente em alguns instantes.";
+        } else if (response.status === 429) {
+          errorMessage = "Muitas requisições. Aguarde alguns instantes antes de tentar novamente.";
+        } else if (response.status === 400) {
+          errorMessage = errorData.error || errorData.message || "Dados inválidos. Verifique se selecionou uma foto e produtos.";
+        }
+        
+        throw new Error(errorMessage)
       }
 
       const responseData = await response.json()
@@ -1262,6 +1302,17 @@ export default function ExperimentarPage() {
               stack: blobError.stack,
             });
             
+            // PHASE 25: Melhor tratamento de erros de blob no mobile
+            if (blobError.name === 'AbortError') {
+              throw new Error("Tempo de resposta excedido ao processar a foto. Tente selecionar novamente.");
+            }
+            
+            if (blobError.message?.includes("fetch failed") || 
+                blobError.message?.includes("Failed to fetch") ||
+                blobError.message?.includes("NetworkError")) {
+              throw new Error("Erro de conexão ao processar a foto. Verifique sua internet e tente novamente.");
+            }
+            
             // Se o erro já tem uma mensagem específica, usar ela
             if (blobError.message && !blobError.message.includes("Erro ao processar foto")) {
               throw blobError;
@@ -1386,9 +1437,10 @@ export default function ExperimentarPage() {
           errorData = { error: `Erro HTTP ${response.status}` }
         }
         
-        // Mensagens mais amigáveis para diferentes códigos de erro
-        let errorMessage = errorData.error || `Erro ao gerar composição (${response.status})`
+        // PHASE 25: Mensagens mais amigáveis para diferentes códigos de erro
+        let errorMessage = errorData.error || errorData.message || `Erro ao gerar composição (${response.status})`
         
+        // PHASE 25: Melhorar mensagens de erro para mobile
         if (response.status === 500) {
           errorMessage = "Erro interno do servidor. Tente novamente em alguns instantes."
         } else if (response.status === 503) {
@@ -1396,7 +1448,16 @@ export default function ExperimentarPage() {
         } else if (response.status === 429) {
           errorMessage = "Muitas requisições. Aguarde alguns instantes antes de tentar novamente."
         } else if (response.status === 400) {
-          errorMessage = errorData.error || "Dados inválidos. Verifique se selecionou uma foto e produtos."
+          errorMessage = errorData.error || errorData.message || "Dados inválidos. Verifique se selecionou uma foto e produtos."
+        } else if (response.status === 413) {
+          errorMessage = "Foto muito grande. Tente usar uma foto menor ou comprimir a imagem."
+        } else if (response.status === 408) {
+          errorMessage = "Tempo de processamento excedido. Tente novamente com uma foto menor."
+        }
+        
+        // PHASE 25: Garantir que a mensagem seja sempre amigável
+        if (errorMessage.includes("Failed to fetch") || errorMessage.includes("fetch failed")) {
+          errorMessage = "Erro de conexão. Verifique sua internet e tente novamente."
         }
         
         throw new Error(errorMessage)
