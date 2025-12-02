@@ -1,11 +1,118 @@
 /**
  * PHASE 26: Scenario Tag Matching
+ * PHASE 27: Cache em memória para cenários
  * 
  * Funções para buscar cenários baseados em tags de produtos.
  */
 
 import { getFirestoreAdmin } from './firebaseAdmin';
 import type { Produto } from './types';
+
+/**
+ * PHASE 27: Cache em memória para cenários
+ * Armazena todos os cenários ativos para evitar queries repetidas ao Firestore
+ */
+interface CachedScenario {
+  id: string;
+  fileName?: string;
+  imageUrl: string;
+  lightingPrompt?: string;
+  category: string;
+  tags?: string[];
+  active: boolean;
+}
+
+class ScenarioCache {
+  private scenarios: CachedScenario[] = [];
+  private lastFetch: number = 0;
+  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+  private fetchPromise: Promise<void> | null = null;
+
+  /**
+   * Carrega cenários do Firestore se necessário
+   */
+  async loadScenarios(forceRefresh: boolean = false): Promise<void> {
+    const now = Date.now();
+    const isExpired = now - this.lastFetch > this.CACHE_TTL;
+
+    // Se o cache está válido e não é refresh forçado, retornar
+    if (!forceRefresh && !isExpired && this.scenarios.length > 0) {
+      return;
+    }
+
+    // Se já há uma requisição em andamento, aguardar ela
+    if (this.fetchPromise) {
+      await this.fetchPromise;
+      return;
+    }
+
+    // Criar nova requisição
+    this.fetchPromise = this._fetchScenarios();
+    await this.fetchPromise;
+    this.fetchPromise = null;
+  }
+
+  private async _fetchScenarios(): Promise<void> {
+    const db = getFirestoreAdmin();
+    
+    if (!db) {
+      console.warn('[scenarioCache] Firestore Admin não disponível');
+      return;
+    }
+
+    try {
+      console.log('[scenarioCache] Carregando cenários do Firestore...');
+      const scenariosSnapshot = await db
+        .collection('scenarios')
+        .where('active', '==', true)
+        .get();
+
+      this.scenarios = scenariosSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as CachedScenario[];
+
+      this.lastFetch = Date.now();
+      console.log(`[scenarioCache] ✅ ${this.scenarios.length} cenários carregados no cache`);
+    } catch (error: any) {
+      console.error('[scenarioCache] Erro ao carregar cenários:', error);
+      // Manter cache anterior se houver erro
+      if (this.scenarios.length === 0) {
+        throw error;
+      }
+    }
+  }
+
+  /**
+   * Retorna todos os cenários do cache
+   */
+  getAllScenarios(): CachedScenario[] {
+    return this.scenarios;
+  }
+
+  /**
+   * Limpa o cache (útil para testes ou refresh manual)
+   */
+  clear(): void {
+    this.scenarios = [];
+    this.lastFetch = 0;
+  }
+
+  /**
+   * Retorna estatísticas do cache
+   */
+  getStats() {
+    return {
+      count: this.scenarios.length,
+      lastFetch: this.lastFetch,
+      age: Date.now() - this.lastFetch,
+      isExpired: Date.now() - this.lastFetch > this.CACHE_TTL,
+    };
+  }
+}
+
+// Instância singleton do cache
+const scenarioCache = new ScenarioCache();
 
 /**
  * Extrai keywords/tags de um produto baseado em nome, descrição e categoria
@@ -109,6 +216,7 @@ function mapProductCategoryToScenarioCategory(productCategory?: string | null): 
 
 /**
  * Busca cenários no Firestore baseado em tags de produtos
+ * PHASE 27: Usa cache em memória para evitar queries repetidas
  * 
  * Estratégia:
  * 1. Tenta encontrar cenários que contenham qualquer tag dos produtos
@@ -122,10 +230,12 @@ export async function findScenarioByProductTags(
   lightingPrompt: string;
   category: string;
 } | null> {
-  const db = getFirestoreAdmin();
+  // PHASE 27: Carregar cenários do cache (ou do Firestore se necessário)
+  await scenarioCache.loadScenarios();
+  const allScenarios = scenarioCache.getAllScenarios();
   
-  if (!db) {
-    console.warn('[scenarioMatcher] Firestore Admin não disponível');
+  if (allScenarios.length === 0) {
+    console.warn('[scenarioMatcher] Nenhum cenário disponível no cache');
     return null;
   }
   
@@ -142,46 +252,25 @@ export async function findScenarioByProductTags(
   console.log('[scenarioMatcher] Keywords extraídas dos produtos:', uniqueKeywords);
   
   // Estratégia 1: Buscar cenários que contenham qualquer uma das tags
-  let matchingScenarios: any[] = [];
+  let matchingScenarios: CachedScenario[] = [];
   
   if (uniqueKeywords.length > 0) {
-    // Firestore array-contains-any permite buscar documentos onde o array contém qualquer um dos valores
-    // Mas precisamos fazer múltiplas queries ou usar uma estratégia diferente
-    
-    // Como Firestore não suporta array-contains-any diretamente em uma query,
-    // vamos buscar cenários ativos e filtrar em memória (ou fazer múltiplas queries)
-    
-    try {
-      // Buscar todos os cenários ativos
-      const scenariosSnapshot = await db
-        .collection('scenarios')
-        .where('active', '==', true)
-        .get();
+    // PHASE 27: Filtrar em memória usando cache (muito mais rápido que query ao Firestore)
+    matchingScenarios = allScenarios.filter((scenario) => {
+      if (!scenario.tags || !Array.isArray(scenario.tags)) {
+        return false;
+      }
       
-      // Filtrar em memória: cenários que têm pelo menos uma tag em comum
-      matchingScenarios = scenariosSnapshot.docs
-        .map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        }))
-        .filter((scenario: any) => {
-          if (!scenario.tags || !Array.isArray(scenario.tags)) {
-            return false;
-          }
-          
-          // Verificar se alguma keyword do produto está nas tags do cenário
-          const scenarioTags = scenario.tags.map((t: string) => t.toLowerCase());
-          return uniqueKeywords.some(keyword => 
-            scenarioTags.some((tag: string) => 
-              tag.includes(keyword) || keyword.includes(tag)
-            )
-          );
-        });
-      
-      console.log(`[scenarioMatcher] ${matchingScenarios.length} cenários encontrados por tags`);
-    } catch (error: any) {
-      console.error('[scenarioMatcher] Erro ao buscar cenários por tags:', error);
-    }
+      // Verificar se alguma keyword do produto está nas tags do cenário
+      const scenarioTags = scenario.tags.map((t: string) => t.toLowerCase());
+      return uniqueKeywords.some(keyword => 
+        scenarioTags.some((tag: string) => 
+          tag.includes(keyword) || keyword.includes(tag)
+        )
+      );
+    });
+    
+    console.log(`[scenarioMatcher] ${matchingScenarios.length} cenários encontrados por tags (do cache)`);
   }
   
   // Se encontrou cenários por tags, escolher um aleatório
@@ -212,64 +301,20 @@ export async function findScenarioByProductTags(
   const scenarioCategory = mapProductCategoryToScenarioCategory(productCategory);
   
   if (scenarioCategory) {
-    try {
-      const categoryScenarios = await db
-        .collection('scenarios')
-        .where('active', '==', true)
-        .where('category', '==', scenarioCategory)
-        .get();
-      
-      if (!categoryScenarios.empty) {
-        const scenarios = categoryScenarios.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as any[];
-        
-        const randomScenario = scenarios[
-          Math.floor(Math.random() * scenarios.length)
-        ];
-        
-        console.log('[scenarioMatcher] ✅ Cenário selecionado por categoria (fallback) - primeiro produto:', {
-          fileName: randomScenario?.fileName || 'N/A',
-          category: randomScenario?.category || 'N/A',
-          primeiroProduto: products[0]?.nome || 'N/A',
-        });
-        
-        return {
-          imageUrl: randomScenario?.imageUrl || '',
-          lightingPrompt: randomScenario?.lightingPrompt || '',
-          category: randomScenario?.category || '',
-        };
-      }
-    } catch (error: any) {
-      console.error('[scenarioMatcher] Erro ao buscar cenários por categoria:', error);
-    }
-  }
-  
-  // Estratégia 3: Fallback FINAL - Sortear um cenário aleatório de TODOS os cenários ativos
-  // Nunca retornar null - sempre usar um cenário da lista
-  console.log('[scenarioMatcher] Nenhum cenário encontrado por categoria. Sortando cenário aleatório de todos os disponíveis...');
-  
-  try {
-    const allScenariosSnapshot = await db
-      .collection('scenarios')
-      .where('active', '==', true)
-      .get();
+    // PHASE 27: Filtrar do cache em vez de query ao Firestore
+    const categoryScenarios = allScenarios.filter(
+      scenario => scenario.category === scenarioCategory
+    );
     
-    if (!allScenariosSnapshot.empty) {
-      const allScenarios = allScenariosSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as any[];
-      
-      const randomScenario = allScenarios[
-        Math.floor(Math.random() * allScenarios.length)
+    if (categoryScenarios.length > 0) {
+      const randomScenario = categoryScenarios[
+        Math.floor(Math.random() * categoryScenarios.length)
       ];
       
-      console.log('[scenarioMatcher] ✅ Cenário aleatório selecionado (fallback final):', {
+      console.log('[scenarioMatcher] ✅ Cenário selecionado por categoria (fallback) - primeiro produto:', {
         fileName: randomScenario?.fileName || 'N/A',
         category: randomScenario?.category || 'N/A',
-        totalCenarios: allScenarios.length,
+        primeiroProduto: products[0]?.nome || 'N/A',
       });
       
       return {
@@ -278,13 +323,41 @@ export async function findScenarioByProductTags(
         category: randomScenario?.category || '',
       };
     }
-  } catch (error: any) {
-    console.error('[scenarioMatcher] Erro ao buscar cenários aleatórios:', error);
+  }
+  
+  // Estratégia 3: Fallback FINAL - Sortear um cenário aleatório de TODOS os cenários ativos
+  // Nunca retornar null - sempre usar um cenário da lista
+  console.log('[scenarioMatcher] Nenhum cenário encontrado por categoria. Sortando cenário aleatório de todos os disponíveis...');
+  
+  if (allScenarios.length > 0) {
+    const randomScenario = allScenarios[
+      Math.floor(Math.random() * allScenarios.length)
+    ];
+    
+    console.log('[scenarioMatcher] ✅ Cenário aleatório selecionado (fallback final):', {
+      fileName: randomScenario?.fileName || 'N/A',
+      category: randomScenario?.category || 'N/A',
+      totalCenarios: allScenarios.length,
+    });
+    
+    return {
+      imageUrl: randomScenario?.imageUrl || '',
+      lightingPrompt: randomScenario?.lightingPrompt || '',
+      category: randomScenario?.category || '',
+    };
   }
   
   // Último recurso: retornar null (não deveria acontecer se há cenários no banco)
-  console.warn('[scenarioMatcher] ⚠️ NENHUM cenário ativo encontrado no banco. Backend usará prompt genérico.');
+  console.warn('[scenarioMatcher] ⚠️ NENHUM cenário ativo encontrado no cache. Backend usará prompt genérico.');
   return null;
+}
+
+/**
+ * PHASE 27: Função auxiliar para forçar refresh do cache (útil para testes ou atualizações)
+ */
+export async function refreshScenarioCache(): Promise<void> {
+  await scenarioCache.loadScenarios(true);
+  console.log('[scenarioMatcher] Cache atualizado:', scenarioCache.getStats());
 }
 
 

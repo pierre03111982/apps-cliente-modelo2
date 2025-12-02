@@ -1,7 +1,7 @@
 import { consumeGenerationCredit } from "@/lib/financials";
 import { NextRequest, NextResponse } from "next/server";
 import { getFirestoreAdmin } from "@/lib/firebaseAdmin";
-import { findScenarioByProductTags } from "@/lib/scenarioMatcher";
+// PHASE 28: Removido import de findScenarioByProductTags - remix não busca cenário no frontend
 import type { Produto } from "@/lib/types";
 
 const DEFAULT_LOCAL_BACKEND = "http://localhost:3000";
@@ -145,33 +145,13 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // PHASE 26: Buscar cenário baseado em tags dos produtos
-    // IMPORTANTE: Quando há múltiplos produtos, usar o cenário do PRIMEIRO produto adicionado
-    let scenarioData: { imageUrl: string; lightingPrompt: string; category: string } | null = null;
-    if (productsForTags.length > 0) {
-      try {
-        // Se há múltiplos produtos, usar apenas o primeiro para buscar o cenário
-        const productsForScenario = productsForTags.length > 1 ? [productsForTags[0]] : productsForTags;
-        
-        console.log("[remix] PHASE 26: Buscando cenário:", {
-          totalProdutos: productsForTags.length,
-          usandoPrimeiroProduto: productsForTags.length > 1,
-          primeiroProduto: productsForTags[0]?.nome || "N/A",
-        });
-        
-        scenarioData = await findScenarioByProductTags(productsForScenario);
-        if (scenarioData) {
-          console.log("[remix] PHASE 26: Cenário encontrado por tags:", {
-            category: scenarioData.category,
-            hasImageUrl: !!scenarioData.imageUrl,
-            lightingPrompt: scenarioData.lightingPrompt.substring(0, 50) + "...",
-            baseadoNoPrimeiroProduto: productsForTags.length > 1,
-          });
-        }
-      } catch (scenarioError: any) {
-        console.warn("[remix] PHASE 26: Erro ao buscar cenário:", scenarioError.message);
-      }
-    }
+    // PHASE 28 FIX: Para REMIX, NÃO buscar cenário no frontend
+    // O backend usará getSmartScenario para variar o cenário e criar um look diferente
+    // Buscar cenário aqui faria o remix usar o mesmo cenário do original
+    console.log("[remix] PHASE 28: Remix - NÃO buscando cenário no frontend (backend vai variar):", {
+      totalProdutos: productsForTags.length,
+      note: "Backend usará getSmartScenario para gerar novo cenário diferente",
+    });
 
     // Validar créditos
     let creditValidation;
@@ -307,8 +287,9 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
       lojistaId: body.lojistaId,
       customerId: body.customerId || null,
       customerName: body.customerName || null, // Adicionar customerName para o Radar funcionar
-      // PHASE 21 FIX: NÃO passar scenePrompts - deixar backend usar getSmartScenario para determinar cenário correto
-      // scenePrompts: [remixPrompt], // REMOVIDO - backend usará getSmartScenario
+      // PHASE 28 FIX: Para REMIX, enviar scenePrompts com a pose e NÃO enviar scenarioImageUrl
+      // Isso força o backend a gerar um NOVO cenário usando getSmartScenario
+      scenePrompts: [remixPrompt], // PHASE 28: Enviar prompt de pose para variar
       options: {
         quality: body.options?.quality || "high",
         skipWatermark: body.options?.skipWatermark !== false, // Default: true
@@ -322,23 +303,10 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
       },
       // PHASE 25: Instrução explícita para evitar cenários noturnos
       sceneInstructions: "IMPORTANT: The scene must be during DAYTIME with bright natural lighting. NEVER use night scenes, dark backgrounds, evening, sunset, dusk, or any nighttime setting. Always use well-lit daytime environments with natural sunlight.",
-      // PHASE 26: Adicionar URL do cenário e prompt de iluminação se encontrado
-      ...(scenarioData && {
-        scenarioImageUrl: scenarioData.imageUrl,
-        scenarioLightingPrompt: scenarioData.lightingPrompt,
-        scenarioCategory: scenarioData.category,
-        // PHASE 26: Instrução crítica para usar a imagem como input visual
-        scenarioInstructions: `CRITICAL: Use the provided scenarioImageUrl as the BACKGROUND IMAGE input for Gemini Vision API. 
-        - This image should be the 3rd input image (after person photo and product images)
-        - DO NOT generate or create a new background - USE the provided scenario image as-is
-        - Focus ALL AI processing power on:
-          1. Maintaining exact facial identity and features from the person photo
-          2. Ensuring products match exactly (colors, textures, fit)
-          3. Seamlessly compositing the person and products onto the provided background
-          4. Adapting the pose to match: ${randomPose}
-        - The background image is already perfect - just use it directly
-        - Lighting and scene context: ${scenarioData.lightingPrompt}`,
-      }),
+      // PHASE 28 FIX: NÃO enviar scenarioImageUrl no remix - isso força o backend a gerar um NOVO cenário
+      // O backend usará getSmartScenario para variar o cenário baseado nos produtos
+      // Removido completamente: scenarioImageUrl, scenarioLightingPrompt, scenarioCategory, scenarioInstructions
+      // Isso garante que o backend gere um novo cenário diferente do original
     };
     
     console.log("[remix] PHASE 14: Flag 'GERAR NOVO LOOK' ativada no payload:", {
@@ -359,8 +327,8 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
       hasShoes,
       productCategory: payload.options.productCategory,
       payloadOriginalPhotoUrl: payload.original_photo_url?.substring(0, 80) + "...",
-      hasScenarioImage: !!scenarioData?.imageUrl,
-      scenarioCategory: scenarioData?.category || "N/A",
+      scenarioImageUrl: "NÃO ENVIADO (remix deve variar cenário)",
+      note: "Backend usará getSmartScenario para gerar novo cenário diferente",
     });
 
     const controller = new AbortController();

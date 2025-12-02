@@ -135,3 +135,44 @@ export interface UserProfile {
     disliked_products_fit: string[]
   }
 }
+
+/**
+ * PHASE 27: Tipos para Sistema de Jobs Assíncronos
+ */
+export type JobStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "CANCELLED"
+
+export interface GenerationJob {
+  id: string
+  lojistaId: string
+  customerId?: string
+  customerName?: string
+  status: JobStatus
+  reservationId: string // ID da reserva de crédito
+  createdAt: Date | FirebaseFirestore.Timestamp
+  startedAt?: Date | FirebaseFirestore.Timestamp
+  completedAt?: Date | FirebaseFirestore.Timestamp
+  failedAt?: Date | FirebaseFirestore.Timestamp
+  error?: string
+  errorDetails?: any
+  
+  // Dados da geração
+  personImageUrl: string
+  productIds: string[]
+  productUrl?: string
+  scenePrompts?: string[]
+  options?: any
+  
+  // Resultado (preenchido quando status = COMPLETED)
+  result?: {
+    compositionId?: string
+    imageUrl?: string
+    sceneImageUrls?: string[]
+    totalCost?: number
+    processingTime?: number
+  }
+  
+  // Métricas
+  apiCost?: number // Custo da API (sempre registrado)
+  viewedAt?: Date | FirebaseFirestore.Timestamp // Quando o usuário visualizou
+  creditCommitted?: boolean // Se o crédito foi debitado
+}

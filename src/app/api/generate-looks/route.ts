@@ -1,8 +1,9 @@
-import { consumeGenerationCredit } from "@/lib/financials";
+import { reserveCredit } from "@/lib/financials";
 import { NextRequest, NextResponse } from "next/server";
 import { getFirestoreAdmin } from "@/lib/firebaseAdmin";
 import { findScenarioByProductTags } from "@/lib/scenarioMatcher";
-import type { Produto } from "@/lib/types";
+import type { Produto, GenerationJob, JobStatus } from "@/lib/types";
+import { FieldValue } from "firebase-admin/firestore";
 
 const DEFAULT_LOCAL_BACKEND = "http://localhost:3000";
 
@@ -30,23 +31,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let creditValidation;
+    // PHASE 27: Reservar crédito (não debitar ainda)
+    let creditReservation;
     try {
-      creditValidation = await consumeGenerationCredit(body.lojistaId);
+      creditReservation = await reserveCredit(body.lojistaId);
     } catch (creditError: any) {
-      console.error("[modelo-2/api/generate-looks] Erro ao validar créditos:", creditError);
+      console.error("[modelo-2/api/generate-looks] Erro ao reservar créditos:", creditError);
       return NextResponse.json(
         { 
-          error: "Erro ao validar créditos", 
-          details: creditError?.message || "Erro interno na validação de créditos" 
+          error: "Erro ao reservar créditos", 
+          details: creditError?.message || "Erro interno na reserva de créditos" 
         },
         { status: 500 }
       );
     }
-    if (!creditValidation.allowed) {
-      // Type narrowing: quando allowed é false, message e status existem
-      const errorMessage = "message" in creditValidation ? creditValidation.message : "Créditos insuficientes";
-      const statusCode = "status" in creditValidation ? creditValidation.status : 402;
+    if (!creditReservation.success) {
+      const errorMessage = creditReservation.message || "Créditos insuficientes";
+      const statusCode = creditReservation.status || 402;
       console.warn("[modelo-2/api/generate-looks] Créditos bloqueados:", {
         lojistaId: body.lojistaId,
         message: errorMessage,
@@ -150,42 +151,32 @@ export async function POST(request: NextRequest) {
       ignorandoPreviousImage: body.previous_image ? "SIM (ignorado)" : "N/A",
     });
 
-    console.log("[modelo-2/api/generate-looks] PHASE 13: Iniciando requisição com foto ORIGINAL:", {
-      backendUrl,
-      hasOriginalPhoto: !!finalPersonImageUrl,
-      originalPhotoUrl: finalPersonImageUrl.substring(0, 80) + "...",
-      productIdsCount: body.productIds?.length || 0,
-      productIds: body.productIds,
+    // PHASE 27: Criar Job assíncrono em vez de processar síncronamente
+    const db = getFirestoreAdmin();
+    const jobsRef = db.collection("generation_jobs");
+    const jobId = `job-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    
+    // Preparar dados do Job
+    const jobData: Omit<GenerationJob, "id"> = {
       lojistaId: body.lojistaId,
-      customerId: body.customerId,
-      sandbox: creditValidation.sandbox ?? false,
-      remainingCredits: creditValidation.remainingBalance,
-      hasScenePrompts: !!body.scenePrompts,
-      hasOptions: !!body.options,
-    });
-
-    // PHASE 25: Aumentar timeout para mobile (pode ter conexão mais lenta)
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutos de timeout
-
-    let paineladmResponse: Response;
-    try {
-      // PHASE 13: Construir payload garantindo que personImageUrl seja sempre a foto ORIGINAL
-      const backendPayload = {
-        ...body,
-        personImageUrl: finalPersonImageUrl, // PHASE 13: Sempre usar foto original
-        original_photo_url: finalPersonImageUrl, // PHASE 13: Também enviar como original_photo_url para garantir
-        // PHASE 13: Remover qualquer referência a imagens geradas anteriormente
-        previous_image: undefined,
-        generated_image: undefined,
-        // PHASE 25: Adicionar instrução para evitar cenários noturnos se não foi fornecida
-        sceneInstructions: body.sceneInstructions || "IMPORTANT: The scene must be during DAYTIME with bright natural lighting. NEVER use night scenes, dark backgrounds, evening, sunset, dusk, or any nighttime setting. Always use well-lit daytime environments with natural sunlight.",
-        // PHASE 26: Adicionar URL do cenário e prompt de iluminação se encontrado
+      customerId: body.customerId || undefined,
+      customerName: body.customerName || undefined,
+      status: "PENDING" as JobStatus,
+      reservationId: creditReservation.reservationId,
+      createdAt: FieldValue.serverTimestamp() as any,
+      personImageUrl: finalPersonImageUrl,
+      productIds: body.productIds,
+      productUrl: body.productUrl || undefined,
+      scenePrompts: body.scenePrompts || undefined,
+      retryCount: 0, // PHASE 27: Inicializar contador de retries
+      maxRetries: 3, // PHASE 27: Máximo de 3 tentativas
+      options: {
+        ...body.options,
+        // PHASE 26: Adicionar dados do cenário
         ...(scenarioData && {
           scenarioImageUrl: scenarioData.imageUrl,
           scenarioLightingPrompt: scenarioData.lightingPrompt,
           scenarioCategory: scenarioData.category,
-          // PHASE 26: Instrução crítica para usar a imagem como input visual
           scenarioInstructions: `CRITICAL: Use the provided scenarioImageUrl as the BACKGROUND IMAGE input for Gemini Vision API. 
           - This image should be the 3rd input image (after person photo and product images)
           - DO NOT generate or create a new background - USE the provided scenario image as-is
@@ -196,123 +187,66 @@ export async function POST(request: NextRequest) {
           - The background image is already perfect - just use it directly
           - Lighting and scene context: ${scenarioData.lightingPrompt}`,
         }),
-      };
-      
-      console.log("[modelo-2/api/generate-looks] PHASE 13/26: Enviando requisição para backend:", {
-        url: `${backendUrl}/api/lojista/composicoes/generate`,
-        hasOriginalPhoto: !!finalPersonImageUrl,
-        originalPhotoUrl: finalPersonImageUrl.substring(0, 80) + "...",
-        productIdsCount: body.productIds?.length || 0,
-        hasScenePrompts: !!body.scenePrompts,
-        payloadPersonImageUrl: backendPayload.personImageUrl.substring(0, 80) + "...",
-        hasScenarioImage: !!scenarioData?.imageUrl,
-        scenarioCategory: scenarioData?.category || "N/A",
-      });
-      
-      paineladmResponse = await fetch(
-        `${backendUrl}/api/lojista/composicoes/generate`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(backendPayload),
-          signal: controller.signal,
-        }
-      );
-      clearTimeout(timeoutId);
-      console.log("[modelo-2/api/generate-looks] Resposta recebida:", {
-        status: paineladmResponse.status,
-        statusText: paineladmResponse.statusText,
-        ok: paineladmResponse.ok,
-      });
-    } catch (fetchError: any) {
-      clearTimeout(timeoutId);
-      console.error("[modelo-2/api/generate-looks] Erro ao conectar com backend:", fetchError);
-      
-      if (fetchError.name === 'AbortError' || fetchError.message?.includes('timeout')) {
-        return NextResponse.json(
-          {
-            error: "Timeout ao gerar composição. O processo está demorando mais que o esperado.",
-            details: "Tente novamente em alguns instantes.",
-          },
-          { status: 504 }
-        );
-      }
-      
-      // PHASE 25: Melhor tratamento de erros de rede no mobile
-      if (fetchError.message?.includes('ECONNREFUSED') || 
-          fetchError.message?.includes('fetch failed') ||
-          fetchError.message?.includes('Failed to fetch') ||
-          fetchError.message?.includes('NetworkError') ||
-          fetchError.message?.includes('Network request failed')) {
-        return NextResponse.json(
-          {
-            error: "Erro de conexão. Verifique sua internet e tente novamente.",
-            details: "Não foi possível conectar com o servidor de processamento.",
-          },
-          { status: 503 }
-        );
-      }
-      
-      // PHASE 25: Re-throw com mensagem mais amigável
-      return NextResponse.json(
-        {
-          error: "Erro ao processar foto",
-          details: fetchError.message || "Erro desconhecido ao conectar com o servidor.",
-        },
-        { status: 500 }
-      );
-    }
+        sceneInstructions: body.sceneInstructions || "IMPORTANT: The scene must be during DAYTIME with bright natural lighting. NEVER use night scenes, dark backgrounds, evening, sunset, dusk, or any nighttime setting. Always use well-lit daytime environments with natural sunlight.",
+        original_photo_url: finalPersonImageUrl,
+      },
+    };
 
-    let data: any;
     try {
-      const text = await paineladmResponse.text();
-      if (!text) {
-        console.error("[modelo-2/api/generate-looks] Resposta vazia do backend");
-        return NextResponse.json(
-          {
-            error: "Resposta vazia do servidor",
-            details: "O backend não retornou dados válidos.",
-          },
-          { status: 500 }
-        );
+      // Criar Job no Firestore
+      await jobsRef.doc(jobId).set(jobData);
+      
+      console.log("[modelo-2/api/generate-looks] PHASE 27: Job criado:", {
+        jobId,
+        reservationId: creditReservation.reservationId,
+        status: "PENDING",
+      });
+
+      // Disparar processamento assíncrono (não aguardar)
+      const backendUrl =
+        process.env.NEXT_PUBLIC_BACKEND_URL ||
+        process.env.NEXT_PUBLIC_PAINELADM_URL ||
+        DEFAULT_LOCAL_BACKEND;
+      
+      // Chamar endpoint interno de processamento (não aguardar resposta)
+      fetch(`${backendUrl}/api/internal/process-job`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Internal-Request": "true", // Header para identificar requisições internas
+        },
+        body: JSON.stringify({ jobId }),
+      }).catch((error) => {
+        console.error("[modelo-2/api/generate-looks] Erro ao disparar processamento assíncrono:", error);
+        // Não falhar a requisição se o disparo falhar - o Job pode ser processado depois
+      });
+
+      // Retornar jobId imediatamente
+      return NextResponse.json({
+        jobId,
+        status: "PENDING",
+        message: "Geração iniciada. Use o jobId para verificar o status.",
+        reservationId: creditReservation.reservationId,
+      }, { status: 202 }); // 202 Accepted - requisição aceita mas ainda processando
+    } catch (jobError: any) {
+      console.error("[modelo-2/api/generate-looks] Erro ao criar Job:", jobError);
+      
+      // Se falhar ao criar Job, fazer rollback da reserva
+      try {
+        const { rollbackCredit } = await import("@/lib/financials");
+        await rollbackCredit(body.lojistaId, creditReservation.reservationId);
+      } catch (rollbackError) {
+        console.error("[modelo-2/api/generate-looks] Erro ao fazer rollback da reserva:", rollbackError);
       }
-      data = JSON.parse(text);
-    } catch (parseError) {
-      console.error("[modelo-2/api/generate-looks] Erro ao parsear resposta:", parseError);
+      
       return NextResponse.json(
         {
-          error: "Erro ao processar resposta do servidor",
-          details: "A resposta do backend não está em formato válido.",
+          error: "Erro ao criar job de geração",
+          details: jobError.message || "Erro interno ao criar job.",
         },
         { status: 500 }
       );
     }
-
-    if (!paineladmResponse.ok) {
-      console.error("[modelo-2/api/generate-looks] Erro do backend:", {
-        status: paineladmResponse.status,
-        error: data.error,
-        details: data.details,
-        message: data.message,
-      });
-      
-      return NextResponse.json(
-        {
-          error: data.error || data.message || "Erro ao gerar composição",
-          details: data.details || `Status: ${paineladmResponse.status}`,
-        },
-        { status: paineladmResponse.status }
-      );
-    }
-
-    console.log("[modelo-2/api/generate-looks] Sucesso:", {
-      composicaoId: data.composicaoId,
-      looksCount: data.looks?.length || 0,
-    });
-
-    return NextResponse.json(data, { status: paineladmResponse.status });
   } catch (error: any) {
     console.error("[modelo-2/api/generate-looks] Erro inesperado no proxy:", error);
     console.error("[modelo-2/api/generate-looks] Stack:", error?.stack);
