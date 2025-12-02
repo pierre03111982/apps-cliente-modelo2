@@ -276,9 +276,27 @@ export async function POST(request: NextRequest) {
         jobId,
         lojistaId: body.lojistaId,
         productIdsCount: body.productIds?.length || 0,
+        hasDb: !!db,
+        hasJobsRef: !!jobsRef,
       });
       
-      await jobsRef.doc(jobId).set(jobData);
+      // Validar que jobData não contém valores inválidos
+      const sanitizedJobData = {
+        ...jobData,
+        // Garantir que todos os valores são serializáveis
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      };
+      
+      console.log("[modelo-2/api/generate-looks] PHASE 27: Dados do Job preparados:", {
+        jobId,
+        lojistaId: sanitizedJobData.lojistaId,
+        status: sanitizedJobData.status,
+        reservationId: sanitizedJobData.reservationId,
+        productIdsCount: sanitizedJobData.productIds?.length || 0,
+      });
+      
+      await jobsRef.doc(jobId).set(sanitizedJobData);
       
       console.log("[modelo-2/api/generate-looks] PHASE 27: Job criado com sucesso:", {
         jobId,
