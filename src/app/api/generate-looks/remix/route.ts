@@ -1,6 +1,8 @@
 import { consumeGenerationCredit } from "@/lib/financials";
 import { NextRequest, NextResponse } from "next/server";
 import { getFirestoreAdmin } from "@/lib/firebaseAdmin";
+import { findScenarioByProductTags } from "@/lib/scenarioMatcher";
+import type { Produto } from "@/lib/types";
 
 const DEFAULT_LOCAL_BACKEND = "http://localhost:3000";
 
@@ -104,6 +106,71 @@ export async function POST(request: NextRequest) {
         { error: "Nenhum produto válido encontrado" },
         { status: 400 }
       );
+    }
+
+    // PHASE 26: Buscar produtos do Firestore para extrair tags (se ainda não foram buscados)
+    let productsForTags: Produto[] = products.length > 0 ? products.map((p: any) => ({
+      id: p.id || p.productId,
+      nome: p.nome || "",
+      categoria: p.categoria || null,
+      preco: p.preco || null,
+      imagemUrl: p.imagemUrl || null,
+      obs: p.obs || null,
+    })) : [];
+    
+    // Se não temos produtos completos, buscar do Firestore
+    if (productsForTags.length === 0) {
+      try {
+        const db = getFirestoreAdmin();
+        if (db) {
+          const lojistaRef = db.collection("lojas").doc(body.lojistaId);
+          const produtosSnapshot = await lojistaRef.collection("produtos").get();
+          
+          productsForTags = produtosSnapshot.docs
+            .map(doc => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                nome: data.nome || "",
+                categoria: data.categoria || null,
+                preco: data.preco || null,
+                imagemUrl: data.imagemUrl || null,
+                obs: data.obs || null,
+              } as Produto;
+            })
+            .filter((p: Produto) => productIds.includes(p.id));
+        }
+      } catch (productError: any) {
+        console.warn("[remix] PHASE 26: Erro ao buscar produtos para tags:", productError.message);
+      }
+    }
+    
+    // PHASE 26: Buscar cenário baseado em tags dos produtos
+    // IMPORTANTE: Quando há múltiplos produtos, usar o cenário do PRIMEIRO produto adicionado
+    let scenarioData: { imageUrl: string; lightingPrompt: string; category: string } | null = null;
+    if (productsForTags.length > 0) {
+      try {
+        // Se há múltiplos produtos, usar apenas o primeiro para buscar o cenário
+        const productsForScenario = productsForTags.length > 1 ? [productsForTags[0]] : productsForTags;
+        
+        console.log("[remix] PHASE 26: Buscando cenário:", {
+          totalProdutos: productsForTags.length,
+          usandoPrimeiroProduto: productsForTags.length > 1,
+          primeiroProduto: productsForTags[0]?.nome || "N/A",
+        });
+        
+        scenarioData = await findScenarioByProductTags(productsForScenario);
+        if (scenarioData) {
+          console.log("[remix] PHASE 26: Cenário encontrado por tags:", {
+            category: scenarioData.category,
+            hasImageUrl: !!scenarioData.imageUrl,
+            lightingPrompt: scenarioData.lightingPrompt.substring(0, 50) + "...",
+            baseadoNoPrimeiroProduto: productsForTags.length > 1,
+          });
+        }
+      } catch (scenarioError: any) {
+        console.warn("[remix] PHASE 26: Erro ao buscar cenário:", scenarioError.message);
+      }
     }
 
     // Validar créditos
@@ -255,6 +322,23 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
       },
       // PHASE 25: Instrução explícita para evitar cenários noturnos
       sceneInstructions: "IMPORTANT: The scene must be during DAYTIME with bright natural lighting. NEVER use night scenes, dark backgrounds, evening, sunset, dusk, or any nighttime setting. Always use well-lit daytime environments with natural sunlight.",
+      // PHASE 26: Adicionar URL do cenário e prompt de iluminação se encontrado
+      ...(scenarioData && {
+        scenarioImageUrl: scenarioData.imageUrl,
+        scenarioLightingPrompt: scenarioData.lightingPrompt,
+        scenarioCategory: scenarioData.category,
+        // PHASE 26: Instrução crítica para usar a imagem como input visual
+        scenarioInstructions: `CRITICAL: Use the provided scenarioImageUrl as the BACKGROUND IMAGE input for Gemini Vision API. 
+        - This image should be the 3rd input image (after person photo and product images)
+        - DO NOT generate or create a new background - USE the provided scenario image as-is
+        - Focus ALL AI processing power on:
+          1. Maintaining exact facial identity and features from the person photo
+          2. Ensuring products match exactly (colors, textures, fit)
+          3. Seamlessly compositing the person and products onto the provided background
+          4. Adapting the pose to match: ${randomPose}
+        - The background image is already perfect - just use it directly
+        - Lighting and scene context: ${scenarioData.lightingPrompt}`,
+      }),
     };
     
     console.log("[remix] PHASE 14: Flag 'GERAR NOVO LOOK' ativada no payload:", {
@@ -263,7 +347,7 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
       hasShoes,
     });
 
-    console.log("[remix] PHASE 13: Enviando requisição para backend com foto ORIGINAL:", {
+    console.log("[remix] PHASE 13/26: Enviando requisição para backend com foto ORIGINAL:", {
       url: `${backendUrl}/api/lojista/composicoes/generate`,
       hasOriginalPhoto: !!body.original_photo_url,
       originalPhotoUrl: body.original_photo_url?.substring(0, 80) + "...",
@@ -275,6 +359,8 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
       hasShoes,
       productCategory: payload.options.productCategory,
       payloadOriginalPhotoUrl: payload.original_photo_url?.substring(0, 80) + "...",
+      hasScenarioImage: !!scenarioData?.imageUrl,
+      scenarioCategory: scenarioData?.category || "N/A",
     });
 
     const controller = new AbortController();
