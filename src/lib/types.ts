@@ -175,4 +175,8 @@ export interface GenerationJob {
   apiCost?: number // Custo da API (sempre registrado)
   viewedAt?: Date | FirebaseFirestore.Timestamp // Quando o usuário visualizou
   creditCommitted?: boolean // Se o crédito foi debitado
+  
+  // PHASE 27: Retry logic
+  retryCount?: number // Número de tentativas de reprocessamento
+  maxRetries?: number // Número máximo de retries
 }
