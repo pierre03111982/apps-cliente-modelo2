@@ -322,7 +322,8 @@ export async function POST(request: NextRequest) {
         process.env.NEXT_PUBLIC_PAINELADM_URL ||
         DEFAULT_LOCAL_BACKEND;
       
-      // Chamar endpoint interno de processamento (não aguardar resposta)
+      // PHASE 27: Disparar processamento assíncrono imediatamente
+      // Tentar chamar o endpoint interno primeiro, se falhar, o cron processará depois
       fetch(`${backendUrl}/api/internal/process-job`, {
         method: "POST",
         headers: {
@@ -330,9 +331,25 @@ export async function POST(request: NextRequest) {
           "X-Internal-Request": "true", // Header para identificar requisições internas
         },
         body: JSON.stringify({ jobId }),
+        // Não aguardar resposta (fire and forget)
       }).catch((error) => {
-        console.error("[modelo-2/api/generate-looks] Erro ao disparar processamento assíncrono:", error);
-        // Não falhar a requisição se o disparo falhar - o Job pode ser processado depois
+        console.error("[modelo-2/api/generate-looks] Erro ao disparar processamento assíncrono imediato:", error);
+        console.log("[modelo-2/api/generate-looks] Job será processado pelo cron job automaticamente");
+        // Não falhar a requisição se o disparo falhar - o Job será processado pelo cron
+      });
+      
+      // PHASE 27: Também disparar o trigger de processamento pendente como fallback
+      // Isso garante que Jobs sejam processados mesmo se o endpoint interno falhar
+      fetch(`${backendUrl}/api/triggers/process-pending-jobs`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Internal-Request": "true",
+        },
+        body: JSON.stringify({ jobId, limit: 1 }),
+      }).catch((error) => {
+        // Silenciosamente ignorar - o cron processará depois
+        console.log("[modelo-2/api/generate-looks] Trigger fallback não disponível, cron processará depois");
       });
 
       // Retornar jobId imediatamente
