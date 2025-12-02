@@ -225,7 +225,17 @@ export async function POST(request: NextRequest) {
     const jobId = `job-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     
     // Preparar dados do Job
-    const jobData: Omit<GenerationJob, "id"> = {
+    // Usar Partial para permitir campos opcionais e evitar erros de tipo
+    const jobData: Partial<GenerationJob> & {
+      lojistaId: string;
+      status: JobStatus;
+      reservationId: string;
+      createdAt: any;
+      personImageUrl: string;
+      productIds: string[];
+      retryCount: number;
+      maxRetries: number;
+    } = {
       lojistaId: body.lojistaId,
       customerId: body.customerId || undefined,
       customerName: body.customerName || undefined,
@@ -308,6 +318,8 @@ export async function POST(request: NextRequest) {
       console.error("[modelo-2/api/generate-looks] PHASE 27: Stack do erro:", jobError?.stack);
       console.error("[modelo-2/api/generate-looks] PHASE 27: Nome do erro:", jobError?.name);
       console.error("[modelo-2/api/generate-looks] PHASE 27: Tipo do erro:", typeof jobError);
+      console.error("[modelo-2/api/generate-looks] PHASE 27: Erro completo (stringify):", JSON.stringify(jobError, Object.getOwnPropertyNames(jobError)));
+      console.error("[modelo-2/api/generate-looks] PHASE 27: jobData que causou erro:", JSON.stringify(jobData, null, 2));
       
       // Se falhar ao criar Job, fazer rollback da reserva
       try {
