@@ -281,12 +281,24 @@ export async function POST(request: NextRequest) {
       });
       
       // Validar que jobData não contém valores inválidos
-      const sanitizedJobData = {
-        ...jobData,
-        // Garantir que todos os valores são serializáveis
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
+      // Remover campos undefined e garantir tipos corretos
+      const sanitizedJobData: any = {
+        lojistaId: jobData.lojistaId,
+        status: jobData.status,
+        reservationId: jobData.reservationId,
+        createdAt: jobData.createdAt, // Já é FieldValue.serverTimestamp()
+        personImageUrl: jobData.personImageUrl,
+        productIds: jobData.productIds,
+        retryCount: jobData.retryCount || 0,
+        maxRetries: jobData.maxRetries || 3,
       };
+      
+      // Adicionar campos opcionais apenas se existirem e não forem undefined
+      if (jobData.customerId !== undefined) sanitizedJobData.customerId = jobData.customerId;
+      if (jobData.customerName !== undefined) sanitizedJobData.customerName = jobData.customerName;
+      if (jobData.productUrl !== undefined) sanitizedJobData.productUrl = jobData.productUrl;
+      if (jobData.scenePrompts !== undefined) sanitizedJobData.scenePrompts = jobData.scenePrompts;
+      if (jobData.options !== undefined) sanitizedJobData.options = jobData.options;
       
       console.log("[modelo-2/api/generate-looks] PHASE 27: Dados do Job preparados:", {
         jobId,
