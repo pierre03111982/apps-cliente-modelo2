@@ -45,6 +45,43 @@ export async function GET(
       return ts;
     };
 
+    // PHASE 27: Sanitizar result antes de retornar (caso contenha estruturas inválidas)
+    const sanitizeResult = (result: any): any => {
+      if (!result || typeof result !== "object") return result;
+      
+      const sanitized: any = {};
+      
+      // Copiar apenas campos primitivos e arrays de primitivos
+      for (const [key, value] of Object.entries(result)) {
+        if (value === null || value === undefined) continue;
+        
+        if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+          sanitized[key] = value;
+        } else if (Array.isArray(value)) {
+          // Validar que o array contém apenas primitivos
+          const sanitizedArray = value
+            .map((item: any) => {
+              if (typeof item === "string") return item;
+              if (typeof item === "number") return item;
+              if (typeof item === "boolean") return item;
+              // Se for objeto, tentar extrair string
+              if (item && typeof item === "object") {
+                return String(item.imageUrl || item.url || item.toString || "");
+              }
+              return null;
+            })
+            .filter((item: any) => item !== null && item !== "");
+          
+          if (sanitizedArray.length > 0) {
+            sanitized[key] = sanitizedArray;
+          }
+        }
+        // Ignorar objetos complexos aninhados
+      }
+      
+      return Object.keys(sanitized).length > 0 ? sanitized : null;
+    };
+
     return NextResponse.json({
       jobId,
       status: jobData?.status,
@@ -55,7 +92,7 @@ export async function GET(
       failedAt: formatTimestamp(jobData?.failedAt),
       error: jobData?.error,
       errorDetails: jobData?.errorDetails,
-      result: jobData?.result,
+      result: sanitizeResult(jobData?.result),
       viewedAt: formatTimestamp(jobData?.viewedAt),
       creditCommitted: jobData?.creditCommitted || false,
     });
