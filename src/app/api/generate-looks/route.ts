@@ -51,10 +51,23 @@ export async function POST(request: NextRequest) {
       console.warn("[modelo-2/api/generate-looks] Créditos bloqueados:", {
         lojistaId: body.lojistaId,
         message: errorMessage,
+        status: statusCode,
       });
       return NextResponse.json(
         { error: errorMessage },
         { status: statusCode }
+      );
+    }
+
+    // Validar que reservationId existe
+    if (!creditReservation.reservationId) {
+      console.error("[modelo-2/api/generate-looks] reservationId não retornado pela reserva:", creditReservation);
+      return NextResponse.json(
+        { 
+          error: "Erro interno do servidor. Tente novamente em alguns instantes.",
+          details: "Reserva de crédito inválida"
+        },
+        { status: 500 }
       );
     }
 
@@ -84,9 +97,41 @@ export async function POST(request: NextRequest) {
     
     // PHASE 26: Buscar produtos do Firestore para extrair tags
     let products: Produto[] = [];
+    let db;
+    
+    // Tentar obter db uma única vez, com tratamento de erro adequado
     try {
-      const db = getFirestoreAdmin();
-      if (db) {
+      console.log("[modelo-2/api/generate-looks] PHASE 26: Tentando obter Firestore Admin...");
+      db = getFirestoreAdmin();
+      console.log("[modelo-2/api/generate-looks] PHASE 26: Firestore Admin obtido com sucesso:", { dbExists: !!db });
+    } catch (dbInitError: any) {
+      console.error("[modelo-2/api/generate-looks] PHASE 26: Erro ao inicializar Firestore Admin:", dbInitError);
+      console.error("[modelo-2/api/generate-looks] PHASE 26: Mensagem do erro:", dbInitError?.message);
+      console.error("[modelo-2/api/generate-looks] PHASE 26: Stack do erro:", dbInitError?.stack);
+      
+      // Fazer rollback da reserva
+      try {
+        const { rollbackCredit } = await import("@/lib/financials");
+        await rollbackCredit(body.lojistaId, creditReservation.reservationId);
+      } catch (rollbackError) {
+        console.error("[modelo-2/api/generate-looks] Erro ao fazer rollback:", rollbackError);
+      }
+      
+      return NextResponse.json(
+        {
+          error: "Erro interno do servidor. Tente novamente em alguns instantes.",
+          details: dbInitError?.message?.includes("não configurada") 
+            ? "Configuração do Firebase incompleta" 
+            : "Serviço temporariamente indisponível"
+        },
+        { status: 500 }
+      );
+    }
+    
+    // Se db foi obtido, buscar produtos
+    if (db) {
+      try {
+        console.log("[modelo-2/api/generate-looks] PHASE 26: Buscando produtos do Firestore...");
         const lojistaRef = db.collection("lojas").doc(body.lojistaId);
         const produtosSnapshot = await lojistaRef.collection("produtos").get();
         
@@ -105,10 +150,13 @@ export async function POST(request: NextRequest) {
           .filter((p: Produto) => body.productIds.includes(p.id));
         
         console.log("[modelo-2/api/generate-looks] PHASE 26: Produtos encontrados:", products.length);
+      } catch (productError: any) {
+        console.warn("[modelo-2/api/generate-looks] PHASE 26: Erro ao buscar produtos:", productError.message);
+        console.warn("[modelo-2/api/generate-looks] PHASE 26: Stack do erro:", productError?.stack);
+        // Continuar mesmo sem produtos - fallback será usado
       }
-    } catch (productError: any) {
-      console.warn("[modelo-2/api/generate-looks] PHASE 26: Erro ao buscar produtos:", productError.message);
-      // Continuar mesmo sem produtos - fallback será usado
+    } else {
+      console.warn("[modelo-2/api/generate-looks] PHASE 26: db é null/undefined, pulando busca de produtos");
     }
     
     // PHASE 26: Buscar cenário baseado em tags dos produtos
@@ -147,13 +195,33 @@ export async function POST(request: NextRequest) {
     console.log("[modelo-2/api/generate-looks] PHASE 13: Source of Truth - Usando foto ORIGINAL:", {
       original_photo_url: body.original_photo_url ? "FORNECIDO" : "NÃO FORNECIDO",
       personImageUrl: body.personImageUrl ? "FORNECIDO" : "NÃO FORNECIDO",
-      finalPersonImageUrl: finalPersonImageUrl.substring(0, 80) + "...",
+      finalPersonImageUrl: finalPersonImageUrl ? (finalPersonImageUrl.length > 80 ? finalPersonImageUrl.substring(0, 80) + "..." : finalPersonImageUrl) : "N/A",
       ignorandoPreviousImage: body.previous_image ? "SIM (ignorado)" : "N/A",
     });
 
     // PHASE 27: Criar Job assíncrono em vez de processar síncronamente
-    const db = getFirestoreAdmin();
+    // db já foi obtido e validado anteriormente, então deve estar disponível aqui
+    if (!db) {
+      console.error("[modelo-2/api/generate-looks] PHASE 27: ERRO CRÍTICO - db não está disponível");
+      // Fazer rollback da reserva
+      try {
+        const { rollbackCredit } = await import("@/lib/financials");
+        await rollbackCredit(body.lojistaId, creditReservation.reservationId);
+      } catch (rollbackError) {
+        console.error("[modelo-2/api/generate-looks] Erro ao fazer rollback:", rollbackError);
+      }
+      return NextResponse.json(
+        {
+          error: "Erro interno do servidor. Tente novamente em alguns instantes.",
+          details: "Firestore Admin não disponível"
+        },
+        { status: 500 }
+      );
+    }
+
+    console.log("[modelo-2/api/generate-looks] PHASE 27: Criando referência para collection 'generation_jobs'...");
     const jobsRef = db.collection("generation_jobs");
+    console.log("[modelo-2/api/generate-looks] PHASE 27: Referência para collection criada com sucesso");
     const jobId = `job-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     
     // Preparar dados do Job
@@ -194,9 +262,15 @@ export async function POST(request: NextRequest) {
 
     try {
       // Criar Job no Firestore
+      console.log("[modelo-2/api/generate-looks] PHASE 27: Tentando criar job no Firestore...", {
+        jobId,
+        lojistaId: body.lojistaId,
+        productIdsCount: body.productIds?.length || 0,
+      });
+      
       await jobsRef.doc(jobId).set(jobData);
       
-      console.log("[modelo-2/api/generate-looks] PHASE 27: Job criado:", {
+      console.log("[modelo-2/api/generate-looks] PHASE 27: Job criado com sucesso:", {
         jobId,
         reservationId: creditReservation.reservationId,
         status: "PENDING",
@@ -229,20 +303,29 @@ export async function POST(request: NextRequest) {
         reservationId: creditReservation.reservationId,
       }, { status: 202 }); // 202 Accepted - requisição aceita mas ainda processando
     } catch (jobError: any) {
-      console.error("[modelo-2/api/generate-looks] Erro ao criar Job:", jobError);
+      console.error("[modelo-2/api/generate-looks] PHASE 27: Erro ao criar Job:", jobError);
+      console.error("[modelo-2/api/generate-looks] PHASE 27: Mensagem do erro:", jobError?.message);
+      console.error("[modelo-2/api/generate-looks] PHASE 27: Stack do erro:", jobError?.stack);
+      console.error("[modelo-2/api/generate-looks] PHASE 27: Nome do erro:", jobError?.name);
+      console.error("[modelo-2/api/generate-looks] PHASE 27: Tipo do erro:", typeof jobError);
       
       // Se falhar ao criar Job, fazer rollback da reserva
       try {
         const { rollbackCredit } = await import("@/lib/financials");
         await rollbackCredit(body.lojistaId, creditReservation.reservationId);
+        console.log("[modelo-2/api/generate-looks] PHASE 27: Rollback da reserva realizado com sucesso");
       } catch (rollbackError) {
-        console.error("[modelo-2/api/generate-looks] Erro ao fazer rollback da reserva:", rollbackError);
+        console.error("[modelo-2/api/generate-looks] PHASE 27: Erro ao fazer rollback da reserva:", rollbackError);
       }
       
       return NextResponse.json(
         {
           error: "Erro ao criar job de geração",
-          details: jobError.message || "Erro interno ao criar job.",
+          details: jobError?.message || "Erro interno ao criar job.",
+          ...(process.env.NODE_ENV === 'development' && {
+            errorName: jobError?.name,
+            errorStack: jobError?.stack,
+          }),
         },
         { status: 500 }
       );
