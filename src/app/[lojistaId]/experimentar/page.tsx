@@ -1486,7 +1486,101 @@ export default function ExperimentarPage() {
 
       const responseData = await response.json()
 
-      // 4. Salvar resultados e navegar
+      // PHASE 27: Verificar se a resposta é assíncrona (202 Accepted com jobId)
+      if (response.status === 202 && responseData.jobId) {
+        console.log("[handleVisualize] PHASE 27: Job criado, iniciando polling:", responseData.jobId)
+        
+        // Salvar jobId e reservationId para uso posterior
+        const jobId = responseData.jobId
+        const reservationId = responseData.reservationId
+        
+        // Função de polling para verificar status do Job
+        const pollJobStatus = async (): Promise<any> => {
+          const maxPollingTime = 180000 // 3 minutos máximo
+          const pollInterval = 2000 // 2 segundos entre polls
+          const startTime = Date.now()
+          
+          while (Date.now() - startTime < maxPollingTime) {
+            try {
+              const statusResponse = await fetch(`/api/jobs/${jobId}`, {
+                method: "GET",
+                headers: { "Content-Type": "application/json" },
+                cache: 'no-cache',
+              })
+              
+              if (!statusResponse.ok) {
+                throw new Error(`Erro ao verificar status: ${statusResponse.status}`)
+              }
+              
+              const statusData = await statusResponse.json()
+              console.log("[handleVisualize] PHASE 27: Status do Job:", statusData.status)
+              
+              if (statusData.status === "COMPLETED") {
+                // Job concluído com sucesso
+                if (statusData.result?.imageUrl || statusData.result?.compositionId) {
+                  return {
+                    success: true,
+                    imageUrl: statusData.result.imageUrl,
+                    compositionId: statusData.result.compositionId,
+                    reservationId,
+                  }
+                } else {
+                  throw new Error("Job concluído mas sem URL de imagem")
+                }
+              } else if (statusData.status === "FAILED") {
+                // Job falhou
+                throw new Error(statusData.error || "Erro ao gerar imagem")
+              } else if (statusData.status === "PROCESSING" || statusData.status === "PENDING") {
+                // Ainda processando, continuar polling
+                await new Promise(resolve => setTimeout(resolve, pollInterval))
+                continue
+              } else {
+                // Status desconhecido
+                await new Promise(resolve => setTimeout(resolve, pollInterval))
+                continue
+              }
+            } catch (pollError: any) {
+              console.error("[handleVisualize] PHASE 27: Erro no polling:", pollError)
+              // Se o erro for de rede, continuar tentando
+              if (pollError.message?.includes("fetch") || pollError.message?.includes("network")) {
+                await new Promise(resolve => setTimeout(resolve, pollInterval))
+                continue
+              }
+              throw pollError
+            }
+          }
+          
+          // Timeout atingido
+          throw new Error("Tempo de processamento excedido. A geração está demorando mais que o esperado.")
+        }
+        
+        // Iniciar polling
+        const pollResult = await pollJobStatus()
+        
+        // Salvar resultados e navegar
+        const generatedLook = {
+          id: pollResult.compositionId || `generated-${Date.now()}`,
+          titulo: "Look Gerado",
+          imagemUrl: pollResult.imageUrl,
+          produtoNome: selectedProducts.map((p) => p.nome).join(" + "),
+          produtoPreco: selectedProducts.reduce((sum, p) => sum + (p.preco || 0), 0),
+          compositionId: pollResult.compositionId || null,
+        }
+
+        sessionStorage.setItem(`looks_${lojistaId}`, JSON.stringify([generatedLook]))
+        sessionStorage.setItem(`photo_${lojistaId}`, personImageUrl || userPhotoUrl || "")
+        sessionStorage.setItem(`products_${lojistaId}`, JSON.stringify(selectedProducts))
+        sessionStorage.setItem(`new_looks_generated_${lojistaId}`, "true")
+        // Salvar reservationId para confirmação de visualização
+        if (reservationId) {
+          sessionStorage.setItem(`reservation_${lojistaId}`, reservationId)
+          sessionStorage.setItem(`job_${lojistaId}`, jobId)
+        }
+        router.push(`/${lojistaId}/resultado`)
+        return
+      }
+
+      // 4. Salvar resultados e navegar (compatibilidade com resposta síncrona antiga)
       // PHASE 11-B FIX: A resposta vem com looks[] array
       if (responseData.looks && responseData.looks.length > 0) {
         // Usar o primeiro look gerado
