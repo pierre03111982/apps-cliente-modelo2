@@ -223,22 +223,22 @@ export async function findScenarioByProductTags(
         const scenarios = categoryScenarios.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
-        }));
+        })) as any[];
         
         const randomScenario = scenarios[
           Math.floor(Math.random() * scenarios.length)
         ];
         
         console.log('[scenarioMatcher] ✅ Cenário selecionado por categoria (fallback) - primeiro produto:', {
-          fileName: randomScenario.fileName,
-          category: randomScenario.category,
+          fileName: randomScenario?.fileName || 'N/A',
+          category: randomScenario?.category || 'N/A',
           primeiroProduto: products[0]?.nome || 'N/A',
         });
         
         return {
-          imageUrl: randomScenario.imageUrl,
-          lightingPrompt: randomScenario.lightingPrompt || '',
-          category: randomScenario.category,
+          imageUrl: randomScenario?.imageUrl || '',
+          lightingPrompt: randomScenario?.lightingPrompt || '',
+          category: randomScenario?.category || '',
         };
       }
     } catch (error: any) {
@@ -260,22 +260,22 @@ export async function findScenarioByProductTags(
       const allScenarios = allScenariosSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-      }));
+      })) as any[];
       
       const randomScenario = allScenarios[
         Math.floor(Math.random() * allScenarios.length)
       ];
       
       console.log('[scenarioMatcher] ✅ Cenário aleatório selecionado (fallback final):', {
-        fileName: randomScenario.fileName,
-        category: randomScenario.category,
+        fileName: randomScenario?.fileName || 'N/A',
+        category: randomScenario?.category || 'N/A',
         totalCenarios: allScenarios.length,
       });
       
       return {
-        imageUrl: randomScenario.imageUrl,
-        lightingPrompt: randomScenario.lightingPrompt || '',
-        category: randomScenario.category,
+        imageUrl: randomScenario?.imageUrl || '',
+        lightingPrompt: randomScenario?.lightingPrompt || '',
+        category: randomScenario?.category || '',
       };
     }
   } catch (error: any) {
