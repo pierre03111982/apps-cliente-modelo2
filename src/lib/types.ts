@@ -1,4 +1,4 @@
-﻿export type SocialLinks = {
+export type SocialLinks = {
   instagram?: string
   tiktok?: string
   facebook?: string

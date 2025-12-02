@@ -115,3 +115,7 @@ Se o erro persistir:
 4. **Faça um deploy manual** para forçar atualização
 5. **Verifique os logs da Vercel** para ver erros específicos
 
+
+
+
+

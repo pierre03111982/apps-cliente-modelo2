@@ -159,3 +159,4 @@ Se após seguir todos os passos a logo ainda não aparecer:
 2. Use a rota de debug: `/api/debug-logo/{lojistaId}`
 3. Verifique se a URL da logo é acessível publicamente
 
+

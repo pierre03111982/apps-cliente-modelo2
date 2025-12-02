@@ -245,3 +245,4 @@ Antes de fazer commit, verifique:
 **Última atualização**: Dezembro 2024  
 **Mantido por**: Equipe de Desenvolvimento
 
+

@@ -100,3 +100,7 @@ lojas/{lojistaId}/perfil/dados.salesConfig.integrations.melhor_envio_token
 - [Documentação Melhor Envio - Autenticação](https://docs.melhorenvio.com.br/docs/autenticacao-1)
 - [Documentação Melhor Envio - Introdução](https://docs.melhorenvio.com.br/docs/introducao-a-api)
 
+
+
+
+

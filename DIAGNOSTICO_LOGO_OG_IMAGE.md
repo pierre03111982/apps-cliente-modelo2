@@ -133,3 +133,4 @@ https://app2.experimenteai.com.br/api/og-image/{lojistaId}
 - Timeout de 20 segundos para download da logo
 - Fallback: mostra inicial do nome se logo não estiver disponível
 
+
