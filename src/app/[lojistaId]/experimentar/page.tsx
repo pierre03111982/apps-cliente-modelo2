@@ -1153,6 +1153,129 @@ export default function ExperimentarPage() {
 
       const responseData = await response.json()
 
+      // PHASE 27: Verificar se a resposta é assíncrona (202 Accepted com jobId)
+      if (response.status === 202 && responseData.jobId) {
+        console.log("[handleRefine] PHASE 27: Job criado, iniciando polling:", responseData.jobId)
+        
+        // Salvar jobId e reservationId para uso posterior
+        const jobId = responseData.jobId
+        const reservationId = responseData.reservationId
+        
+        // Função de polling para verificar status do Job
+        const pollJobStatus = async (): Promise<any> => {
+          const maxPollingTime = 180000 // 3 minutos máximo
+          const pollInterval = 2000 // 2 segundos entre polls
+          const startTime = Date.now()
+          
+          while (Date.now() - startTime < maxPollingTime) {
+            try {
+              const statusResponse = await fetch(`/api/jobs/${jobId}`, {
+                method: "GET",
+                headers: { "Content-Type": "application/json" },
+                cache: 'no-cache',
+              })
+              
+              if (!statusResponse.ok) {
+                throw new Error(`Erro ao verificar status: ${statusResponse.status}`)
+              }
+              
+              const statusData = await statusResponse.json()
+              console.log("[handleRefine] PHASE 27: Status do Job:", statusData.status)
+              
+              if (statusData.status === "COMPLETED") {
+                // Job concluído com sucesso
+                if (statusData.result?.imageUrl || statusData.result?.compositionId) {
+                  return {
+                    success: true,
+                    imageUrl: statusData.result.imageUrl,
+                    compositionId: statusData.result.compositionId,
+                    reservationId,
+                  }
+                } else {
+                  throw new Error("Job concluído mas sem URL de imagem")
+                }
+              } else if (statusData.status === "FAILED") {
+                // Job falhou
+                throw new Error(statusData.error || "Erro ao gerar imagem")
+              } else if (statusData.status === "PROCESSING" || statusData.status === "PENDING") {
+                // Ainda processando, continuar polling
+                await new Promise(resolve => setTimeout(resolve, pollInterval))
+                continue
+              } else {
+                // Status desconhecido
+                await new Promise(resolve => setTimeout(resolve, pollInterval))
+                continue
+              }
+            } catch (pollError: any) {
+              console.error("[handleRefine] PHASE 27: Erro no polling:", pollError)
+              // Se o erro for de rede, continuar tentando
+              if (pollError.message?.includes("fetch") || pollError.message?.includes("network")) {
+                await new Promise(resolve => setTimeout(resolve, pollInterval))
+                continue
+              }
+              throw pollError
+            }
+          }
+          
+          // Timeout atingido
+          throw new Error("Tempo de processamento excedido. A geração está demorando mais que o esperado.")
+        }
+        
+        // Iniciar polling
+        const pollResult = await pollJobStatus()
+        
+        // Salvar resultados e navegar
+        const generatedLook = {
+          id: pollResult.compositionId || `generated-${Date.now()}`,
+          titulo: "Look Gerado",
+          imagemUrl: pollResult.imageUrl,
+          produtoNome: selectedProducts.map((p) => p.nome).join(" + "),
+          produtoPreco: selectedProducts.reduce((sum, p) => sum + (p.preco || 0), 0),
+          compositionId: pollResult.compositionId || null,
+        }
+
+        sessionStorage.setItem(`looks_${lojistaId}`, JSON.stringify([generatedLook]))
+        sessionStorage.setItem(`products_${lojistaId}`, JSON.stringify(selectedProducts))
+        // Salvar reservationId para confirmação de visualização
+        if (reservationId) {
+          sessionStorage.setItem(`reservation_${lojistaId}`, reservationId)
+          sessionStorage.setItem(`job_${lojistaId}`, jobId)
+        }
+        
+        // IMPORTANTE: Preservar a foto original (não substituir pela gerada)
+        // A foto original deve permanecer para futuras trocas de produto
+        if (originalPhotoUrl) {
+          sessionStorage.setItem(`original_photo_${lojistaId}`, originalPhotoUrl)
+          console.log("[handleRefine] ✅ Foto original preservada para futuras trocas")
+        }
+
+        // Limpar modo de refinamento
+        sessionStorage.removeItem(`refine_mode_${lojistaId}`)
+        sessionStorage.removeItem(`refine_baseImage_${lojistaId}`)
+        sessionStorage.removeItem(`refine_compositionId_${lojistaId}`)
+
+        // IMPORTANTE: Preservar conexão com display ao navegar para resultado
+        const currentTargetDisplay = sessionStorage.getItem("target_display")
+        const currentConnectedStoreId = sessionStorage.getItem("connected_store_id")
+        
+        if (currentTargetDisplay) {
+          console.log("[handleRefine] Preservando conexão com display:", {
+            targetDisplay: currentTargetDisplay,
+            connectedStoreId: currentConnectedStoreId,
+          })
+        }
+
+        // Marcar que uma nova imagem foi gerada (para resetar hasVoted na tela de resultado)
+        sessionStorage.setItem(`new_looks_generated_${lojistaId}`, "true")
+        
+        console.log("[handleRefine] ✅ Look gerado com sucesso, navegando para resultado")
+        
+        // Navegar para resultado
+        router.push(`/${lojistaId}/resultado`)
+        return
+      }
+
+      // Compatibilidade com resposta síncrona antiga
       if (responseData.looks && Array.isArray(responseData.looks) && responseData.looks.length > 0) {
         // Salvar looks gerados
         sessionStorage.setItem(`looks_${lojistaId}`, JSON.stringify(responseData.looks))
