@@ -1072,6 +1072,13 @@ export default function ExperimentarPage() {
       }
 
       // Preparar payload para API de geração normal
+      // MASTER PROMPT: UNIFICAÇÃO DE QUALIDADE VISUAL - Aplicar protocolo Remix Universal
+      // Gerar seed aleatório para evitar resultados "médios/plásticos"
+      const randomSeed = Math.floor(Math.random() * 1000000);
+      
+      // Prompt base de alta qualidade para todas as gerações
+      const baseScenePrompt = "Professional fashion photography, confident pose, natural lighting, looking at camera, high detail";
+      
       const payload = {
         personImageUrl: personImageUrl,
         productIds: productIds,
@@ -1081,7 +1088,12 @@ export default function ExperimentarPage() {
         options: {
           skipWatermark: true,
           lookType: "creative", // Sempre usar Look Criativo para multi-produto
+          // MASTER PROMPT: Ativar protocolo Remix Universal para qualidade editorial
+          gerarNovoLook: true, // Força reconstrução de cena com melhor integração de luz
+          seed: randomSeed, // Seed aleatório para variar e evitar resultados "médios"
         },
+        // MASTER PROMPT: Scene prompts dinâmico para todas as gerações
+        scenePrompts: [baseScenePrompt],
         // PHASE 25: Instrução explícita para evitar cenários noturnos
         sceneInstructions: "IMPORTANT: The scene must be during DAYTIME with bright natural lighting. NEVER use night scenes, dark backgrounds, evening, sunset, dusk, or any nighttime setting. Always use well-lit daytime environments with natural sunlight.",
       }
@@ -1491,6 +1503,13 @@ export default function ExperimentarPage() {
       const clienteNome = clienteData?.nome || clienteData?.name || null
 
       // PHASE 13: Usar a API correta (/api/generate-looks) e enviar original_photo_url explicitamente
+      // MASTER PROMPT: UNIFICAÇÃO DE QUALIDADE VISUAL - Aplicar protocolo Remix Universal
+      // Gerar seed aleatório para evitar resultados "médios/plásticos"
+      const randomSeed = Math.floor(Math.random() * 1000000);
+      
+      // Prompt base de alta qualidade para todas as gerações
+      const baseScenePrompt = "Professional fashion photography, confident pose, natural lighting, looking at camera, high detail";
+      
       const payload = {
         original_photo_url: personImageUrl, // PHASE 13: Sempre enviar como original_photo_url (Source of Truth)
         personImageUrl: personImageUrl, // Também enviar como personImageUrl para compatibilidade
@@ -1504,7 +1523,12 @@ export default function ExperimentarPage() {
           // Quando skipWatermark = true, o orquestrador não aplica a sobreposição preta no canto da imagem
           skipWatermark: true,
           lookType: "creative", // Sempre usar Look Criativo para multi-produto
+          // MASTER PROMPT: Ativar protocolo Remix Universal para qualidade editorial
+          gerarNovoLook: true, // Força reconstrução de cena com melhor integração de luz
+          seed: randomSeed, // Seed aleatório para variar e evitar resultados "médios"
         },
+        // MASTER PROMPT: Scene prompts dinâmico para todas as gerações
+        scenePrompts: [baseScenePrompt],
         // PHASE 25: Instrução explícita para evitar cenários noturnos
         sceneInstructions: "IMPORTANT: The scene must be during DAYTIME with bright natural lighting. NEVER use night scenes, dark backgrounds, evening, sunset, dusk, or any nighttime setting. Always use well-lit daytime environments with natural sunlight.",
       }

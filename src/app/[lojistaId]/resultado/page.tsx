@@ -1274,7 +1274,84 @@ export default function ResultadoPage() {
     })
   }
 
-  // Gerar novo look (remixar) com as mesmas foto e produtos
+  // Upload de foto para o backend (helper function para handleRegenerate)
+  const uploadPersonPhoto = async (file: File): Promise<string> => {
+    try {
+      console.log("[uploadPersonPhoto] Iniciando upload:", {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+      })
+      
+      let fileToUpload = file
+      if (file.size > 1024 * 1024) {
+        console.log("[uploadPersonPhoto] Comprimindo imagem antes do upload...")
+        fileToUpload = await compressImage(file, 1920, 1920, 0.85)
+      }
+      
+      const formData = new FormData()
+      formData.append("photo", fileToUpload)
+      formData.append("lojistaId", lojistaId)
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      
+      let response: Response;
+      try {
+        response = await fetch("/api/upload-photo", {
+          method: "POST",
+          body: formData,
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          throw new Error("Tempo de resposta excedido ao fazer upload da foto. Tente novamente.");
+        }
+        if (fetchError.message?.includes('fetch failed') || fetchError.message?.includes('Failed to fetch')) {
+          throw new Error("Não foi possível conectar com o servidor. Verifique sua conexão e tente novamente.");
+        }
+        throw fetchError;
+      }
+
+      if (!response.ok) {
+        let errorData: any = {}
+        try {
+          const responseText = await response.text()
+          if (responseText) {
+            errorData = JSON.parse(responseText)
+          }
+        } catch (parseError) {
+          console.error("[uploadPersonPhoto] Erro ao parsear resposta de erro:", parseError)
+        }
+        const errorMessage = errorData.error || errorData.message || `Erro ao fazer upload: ${response.status}`
+        throw new Error(errorMessage)
+      }
+
+      let data: any
+      try {
+        const responseText = await response.text()
+        if (!responseText) {
+          throw new Error("Resposta vazia do servidor")
+        }
+        data = JSON.parse(responseText)
+      } catch (parseError) {
+        throw new Error("Erro ao processar resposta do servidor")
+      }
+
+      if (!data.imageUrl) {
+        throw new Error("Servidor não retornou URL da imagem")
+      }
+
+      return data.imageUrl
+    } catch (error: any) {
+      console.error("[uploadPersonPhoto] Erro:", error)
+      throw error
+    }
+  }
+
+  // Gerar novo look (remixar) - REESCRITO BASEADO NO handleVisualize
   const handleRegenerate = async () => {
     let phraseInterval: NodeJS.Timeout | null = null
     
@@ -1295,209 +1372,116 @@ export default function ResultadoPage() {
         }
       }, 2500)
 
-      // PHASE 11 FIX: Buscar foto ORIGINAL (não a foto gerada) para manter identidade
-      let originalPhotoUrl: string | null = null
+      // PHASE 11 FIX: SEMPRE usar a foto ORIGINAL (não a foto gerada anteriormente) - MESMA LÓGICA DO handleVisualize
+      let personImageUrl: string
       
-      // Prioridade: buscar foto original do sessionStorage
-      originalPhotoUrl = sessionStorage.getItem(`original_photo_${lojistaId}`)
+      // Prioridade 1: Buscar foto original do sessionStorage
+      const originalPhotoUrl = sessionStorage.getItem(`original_photo_${lojistaId}`)
       
-      // Se não houver foto original, tentar usar a foto atual (fallback)
-      if (!originalPhotoUrl) {
-        if (fromFavoritos && currentLook && currentLook.imagemUrl) {
-          originalPhotoUrl = currentLook.imagemUrl
+      if (originalPhotoUrl) {
+        // Se tiver foto original salva, usar ela (pode ser blob ou HTTP)
+        console.log("[handleRegenerate] 📸 Usando foto ORIGINAL do sessionStorage:", originalPhotoUrl.substring(0, 50) + "...")
+        
+        if (originalPhotoUrl.startsWith('blob:')) {
+          // Se for blob, converter para File e fazer upload
+          try {
+            const response = await fetch(originalPhotoUrl)
+            const blob = await response.blob()
+            const fileName = `original-${Date.now()}.${blob.type.split('/')[1] || 'png'}`
+            const file = new File([blob], fileName, { type: blob.type || 'image/png' })
+            personImageUrl = await uploadPersonPhoto(file)
+            console.log("[handleRegenerate] ✅ Foto original (blob) convertida e enviada:", personImageUrl?.substring(0, 50) + "...")
+          } catch (blobError) {
+            console.error("[handleRegenerate] Erro ao converter blob original para File:", blobError)
+            // Fallback: tentar usar diretamente
+            personImageUrl = originalPhotoUrl
+          }
         } else {
-          originalPhotoUrl = sessionStorage.getItem(`photo_${lojistaId}`)
+          // URL HTTP/HTTPS (já foi enviada anteriormente)
+          personImageUrl = originalPhotoUrl
+          console.log("[handleRegenerate] ✅ Usando foto original (HTTP):", personImageUrl?.substring(0, 50) + "...")
         }
-      }
-      
-      // Se a foto já é HTTP/HTTPS, não precisa fazer upload novamente
-      if (originalPhotoUrl && (originalPhotoUrl.startsWith('http://') || originalPhotoUrl.startsWith('https://'))) {
-        console.log("[handleRegenerate] ✅ Foto já é HTTP, usando diretamente:", originalPhotoUrl.substring(0, 50) + "...");
-        // Pular a conversão e ir direto para a geração
-      }
-
-      if (!originalPhotoUrl) {
-        // Se não houver dados salvos, redirecionar para experimentar
-        router.push(`/${lojistaId}/experimentar`)
-        return
-      }
-
-      // FIX MOBILE: Se a URL for blob: ou data:, fazer upload para obter URL HTTP válida
-      // URLs blob: e data: não podem ser acessadas pelo backend, precisam ser convertidas para HTTP
-      if (originalPhotoUrl.startsWith('blob:') || originalPhotoUrl.startsWith('data:')) {
-        try {
-          console.log("[handleRegenerate] Convertendo blob/data URL para URL HTTP...");
-          
-          let file: File;
-          
-          if (originalPhotoUrl.startsWith('blob:')) {
-            // Converter blob: para File com tratamento de erro melhorado para mobile
+      } else {
+        // Fallback: Se não tiver original, tentar usar foto atual
+        const currentPhotoUrl = fromFavoritos && currentLook && currentLook.imagemUrl 
+          ? currentLook.imagemUrl 
+          : sessionStorage.getItem(`photo_${lojistaId}`)
+        
+        if (!currentPhotoUrl) {
+          throw new Error("Foto não encontrada. Por favor, faça upload de uma nova foto.")
+        }
+        
+        // Se for blob/data, converter e fazer upload - MESMA LÓGICA DO handleVisualize
+        if (currentPhotoUrl.startsWith('blob:') || currentPhotoUrl.startsWith('data:')) {
+          console.warn("[handleRegenerate] ⚠️ URL blob/data sem File, tentando converter...")
+          try {
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const fetchTimeoutMs = isMobile ? 30000 : 15000;
+            
+            const fetchController = new AbortController();
+            const fetchTimeout = setTimeout(() => fetchController.abort(), fetchTimeoutMs);
+            
+            let response: Response;
             try {
-              const response = await fetch(originalPhotoUrl, {
+              response = await fetch(currentPhotoUrl, { 
+                signal: fetchController.signal,
                 cache: 'no-cache',
                 mode: 'cors',
               });
-              
-              if (!response.ok) {
-                throw new Error(`Erro ao buscar blob: ${response.status} ${response.statusText}`);
+              clearTimeout(fetchTimeout);
+            } catch (fetchError: any) {
+              clearTimeout(fetchTimeout);
+              if (fetchError.name === 'AbortError') {
+                throw new Error("Tempo de resposta excedido ao carregar a foto. Verifique sua conexão e tente novamente.");
               }
-              
-              const blob = await response.blob();
-              if (!blob || blob.size === 0) {
-                throw new Error("Blob vazio ou inválido");
+              if (fetchError.message?.includes('fetch failed') || 
+                  fetchError.message?.includes('Failed to fetch') ||
+                  fetchError.message?.includes('NetworkError')) {
+                throw new Error("Erro de conexão. Verifique sua internet e tente novamente.");
               }
-              
-              file = new File([blob], 'photo.jpg', { type: blob.type || 'image/jpeg' });
-            } catch (blobError: any) {
-              console.error("[handleRegenerate] Erro ao converter blob:", blobError);
-              throw new Error(`Erro ao processar foto: ${blobError.message || 'Não foi possível acessar a imagem. Tente fazer upload novamente.'}`);
-            }
-          } else {
-            // Converter data: para File com tratamento melhorado
-            try {
-              // Para data URLs, converter diretamente sem fetch
-              const base64Data = originalPhotoUrl.split(',')[1];
-              if (!base64Data) {
-                throw new Error("Data URL inválida");
-              }
-              
-              const byteCharacters = atob(base64Data);
-              const byteNumbers = new Array(byteCharacters.length);
-              for (let i = 0; i < byteCharacters.length; i++) {
-                byteNumbers[i] = byteCharacters.charCodeAt(i);
-              }
-              const byteArray = new Uint8Array(byteNumbers);
-              const blob = new Blob([byteArray], { type: 'image/jpeg' });
-              
-              if (!blob || blob.size === 0) {
-                throw new Error("Blob vazio ou inválido");
-              }
-              
-              file = new File([blob], 'photo.jpg', { type: blob.type || 'image/jpeg' });
-            } catch (dataError: any) {
-              console.error("[handleRegenerate] Erro ao converter data URL:", dataError);
-              throw new Error(`Erro ao processar foto: ${dataError.message || 'Não foi possível processar a imagem. Tente fazer upload novamente.'}`);
-            }
-          }
-          
-          // IMPORTANTE: Comprimir imagem antes do upload para evitar erro 413 (Payload Too Large)
-          let fileToUpload = file;
-          if (file.size > 1024 * 1024) { // Se maior que 1MB
-            console.log("[handleRegenerate] Comprimindo imagem antes do upload...");
-            fileToUpload = await compressImage(file, 1920, 1920, 0.85);
-            console.log("[handleRegenerate] Imagem comprimida:", {
-              originalSize: file.size,
-              compressedSize: fileToUpload.size,
-            });
-          }
-          
-          // Fazer upload para obter URL HTTP válida
-          const formData = new FormData();
-          formData.append('photo', fileToUpload);
-          formData.append('lojistaId', lojistaId);
-          
-          // Criar AbortController para timeout
-          const uploadController = new AbortController();
-          const uploadTimeout = setTimeout(() => uploadController.abort(), 30000); // 30 segundos
-          
-          let uploadData: any;
-          try {
-            console.log("[handleRegenerate] Iniciando upload da foto...", {
-              fileSize: fileToUpload.size,
-              fileName: fileToUpload.name,
-              fileType: fileToUpload.type,
-            });
-            
-            const uploadResponse = await fetch('/api/upload-photo', {
-              method: 'POST',
-              body: formData,
-              signal: uploadController.signal,
-              // Adicionar headers para melhor compatibilidade mobile
-              headers: {
-                'Accept': 'application/json',
-              },
-            });
-            
-            clearTimeout(uploadTimeout);
-            
-            console.log("[handleRegenerate] Resposta do upload:", {
-              status: uploadResponse.status,
-              statusText: uploadResponse.statusText,
-              ok: uploadResponse.ok,
-            });
-            
-            if (!uploadResponse.ok) {
-              let errorData: any = {};
-              try {
-                const errorText = await uploadResponse.text();
-                if (errorText) {
-                  errorData = JSON.parse(errorText);
-                }
-              } catch (parseError) {
-                console.error("[handleRegenerate] Erro ao parsear resposta de erro:", parseError);
-              }
-              
-              const errorMessage = errorData.error || errorData.message || `Erro ao fazer upload: ${uploadResponse.status}`;
-              console.error("[handleRegenerate] Erro no upload:", errorMessage);
-              throw new Error(errorMessage);
-            }
-            
-            // Processar resposta dentro do mesmo bloco try
-            try {
-              const uploadText = await uploadResponse.text();
-              if (!uploadText) {
-                throw new Error("Resposta vazia do servidor");
-              }
-              uploadData = JSON.parse(uploadText);
-            } catch (parseError) {
-              console.error("[handleRegenerate] Erro ao parsear resposta de upload:", parseError);
-              throw new Error("Erro ao processar resposta do servidor de upload");
-            }
-            
-            // A API retorna imageUrl
-            if (!uploadData.imageUrl || !uploadData.imageUrl.startsWith('http')) {
-              console.error("[handleRegenerate] URL de upload inválida:", uploadData);
-              throw new Error('URL de upload inválida retornada pelo servidor');
-            }
-            
-            originalPhotoUrl = uploadData.imageUrl;
-          } catch (fetchError: any) {
-            clearTimeout(uploadTimeout);
-            
-            console.error("[handleRegenerate] Erro no fetch do upload:", {
-              name: fetchError.name,
-              message: fetchError.message,
-              stack: fetchError.stack,
-            });
-            
-            if (fetchError.name === 'AbortError') {
-              throw new Error("Tempo de resposta excedido ao fazer upload da foto. Verifique sua conexão e tente novamente.");
-            }
-            
-            if (fetchError.message?.includes('fetch failed') || 
-                fetchError.message?.includes('Failed to fetch') ||
-                fetchError.message?.includes('NetworkError') ||
-                fetchError.message?.includes('Network request failed')) {
-              throw new Error("Não foi possível conectar com o servidor. Verifique sua conexão com a internet e tente novamente.");
-            }
-            
-            // Se o erro já tem uma mensagem amigável, usar ela
-            if (fetchError.message && fetchError.message.includes("Erro ao processar foto")) {
               throw fetchError;
             }
             
-            throw new Error(`Erro ao fazer upload: ${fetchError.message || 'Erro desconhecido. Tente novamente.'}`);
+            if (!response.ok) {
+              throw new Error(`Erro ao carregar foto: ${response.status}`)
+            }
+            
+            const blob = await response.blob()
+            if (!blob || blob.size === 0) {
+              throw new Error("Foto vazia ou inválida. Tente selecionar novamente.")
+            }
+            
+            const fileName = `avatar-${Date.now()}.${blob.type.split('/')[1] || 'png'}`
+            const file = new File([blob], fileName, { type: blob.type || 'image/png' })
+            personImageUrl = await uploadPersonPhoto(file)
+            // Salvar como original
+            sessionStorage.setItem(`original_photo_${lojistaId}`, personImageUrl)
+            sessionStorage.setItem(`photo_${lojistaId}`, personImageUrl)
+          } catch (blobError: any) {
+            console.error("[handleRegenerate] Erro ao converter blob/data para File:", blobError)
+            if (blobError.name === 'AbortError') {
+              throw new Error("Tempo de resposta excedido ao processar a foto. Tente selecionar novamente.")
+            }
+            if (blobError.message?.includes("fetch failed") || blobError.message?.includes("Failed to fetch")) {
+              throw new Error("Erro de conexão ao processar a foto. Verifique sua internet e tente novamente.")
+            }
+            throw new Error(blobError.message || "Erro ao processar foto. Tente selecionar novamente.")
           }
-          // Atualizar sessionStorage com a URL HTTP válida
-          sessionStorage.setItem(`original_photo_${lojistaId}`, originalPhotoUrl);
-          console.log("[handleRegenerate] Blob/data URL convertida para URL HTTP com sucesso:", originalPhotoUrl.substring(0, 100));
-        } catch (uploadError: any) {
-          console.error("[handleRegenerate] Erro ao converter/fazer upload da foto:", uploadError);
-          throw new Error(`Erro ao processar foto: ${uploadError.message || 'Por favor, faça upload de uma nova foto.'}`);
+        } else {
+          // URL HTTP/HTTPS (já foi enviada anteriormente)
+          personImageUrl = currentPhotoUrl
+          // Salvar como original se não estiver salva
+          if (!originalPhotoUrl) {
+            sessionStorage.setItem(`original_photo_${lojistaId}`, personImageUrl)
+            sessionStorage.setItem(`photo_${lojistaId}`, personImageUrl)
+          }
         }
       }
+      
+      console.log("[handleRegenerate] ✅ Foto final enviada:", personImageUrl?.substring(0, 50) + "...")
 
-      // PHASE 11 FIX: Buscar produtos completos (não apenas IDs)
+      // 2. Preparar dados para geração - MESMA LÓGICA DO handleVisualize
+      // PHASE 11-B FIX: Enviar TODOS os produtos selecionados (não apenas o primeiro)
       const storedProducts = sessionStorage.getItem(`products_${lojistaId}`)
       if (!storedProducts) {
         router.push(`/${lojistaId}/experimentar`)
@@ -1507,8 +1491,8 @@ export default function ResultadoPage() {
       const products = JSON.parse(storedProducts)
       const productIds = products.map((p: any) => p.id).filter(Boolean)
 
-      if (productIds.length === 0 || products.length === 0) {
-        throw new Error("Nenhum produto encontrado")
+      if (productIds.length === 0) {
+        throw new Error("Nenhum produto válido selecionado")
       }
 
       // Buscar clienteId do localStorage
@@ -1517,31 +1501,47 @@ export default function ResultadoPage() {
       const clienteId = clienteData?.clienteId || null
       const clienteNome = clienteData?.nome || clienteData?.name || null
 
-      // PHASE 11 FIX: Usar API de Remix dedicada
+      // PHASE 13: Usar a API de Remix (/api/generate-looks/remix) e enviar original_photo_url explicitamente
       const payload = {
-        original_photo_url: originalPhotoUrl, // Foto original para manter identidade
+        original_photo_url: personImageUrl, // PHASE 13: Sempre enviar como original_photo_url (Source of Truth)
+        personImageUrl: personImageUrl, // Também enviar como personImageUrl para compatibilidade
         products: products, // Passar produtos completos (com nome, descrição, categoria)
-        productIds: productIds, // IDs também para compatibilidade
+        productIds: productIds, // TODOS os produtos selecionados
         lojistaId,
         customerId: clienteId,
         customerName: clienteNome, // Adicionar customerName para o Radar funcionar
         gender: products.find((p: any) => p.genero)?.genero || null, // Detectar gênero dos produtos
-        options: { 
-          quality: "high", 
-          skipWatermark: true 
+        options: {
+          quality: "high",
+          // IMPORTANTE: Desabilitar watermark para remover a caixa preta com informações do produto
+          skipWatermark: true,
+          lookType: "creative", // Sempre usar Look Criativo para multi-produto
         },
+        // PHASE 25: Instrução explícita para evitar cenários noturnos
+        sceneInstructions: "IMPORTANT: The scene must be during DAYTIME with bright natural lighting. NEVER use night scenes, dark backgrounds, evening, sunset, dusk, or any nighttime setting. Always use well-lit daytime environments with natural sunlight.",
       }
 
-      // PHASE 25: Melhorar timeout e tratamento de erros para mobile
+      console.log("[handleRegenerate] PHASE 13: Enviando para /api/generate-looks/remix com foto ORIGINAL:", {
+        hasOriginalPhoto: !!personImageUrl,
+        originalPhotoUrl: personImageUrl?.substring(0, 50) + "...",
+        totalProducts: productIds.length,
+        productIds,
+        payloadOriginalPhotoUrl: payload.original_photo_url?.substring(0, 50) + "...",
+      })
+
+      // PHASE 25: Melhorar timeout e tratamento de erros para mobile - MESMA LÓGICA DO handleVisualize
+      // IMPORTANTE: Timeout inicial apenas para a requisição POST inicial (criação do job)
+      // Após receber jobId, o timeout será limpo e o polling terá seu próprio timeout
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const timeoutMs = isMobile ? 180000 : 120000; // 3 minutos mobile, 2 minutos desktop
+      const timeoutMs = isMobile ? 60000 : 45000; // 60s mobile, 45s desktop (apenas para criar o job)
       
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-      
-      let response: Response;
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+
+      let response: Response
       try {
-        // PHASE 11 FIX: Chamar API de Remix (não a API genérica)
+        // PHASE 11-B FIX: Usar a rota correta /api/generate-looks/remix
+        // PHASE 25: Adicionar headers e configurações melhores para mobile
         response = await fetch("/api/generate-looks/remix", {
           method: "POST",
           headers: { 
@@ -1552,123 +1552,265 @@ export default function ResultadoPage() {
           signal: controller.signal,
           cache: 'no-cache',
           mode: 'cors',
-        });
+        })
       } catch (fetchError: any) {
-        clearTimeout(timeoutId);
+        clearTimeout(timeoutId)
         
         // PHASE 25: Melhor tratamento de erros de rede no mobile
         if (fetchError.name === "AbortError") {
-          throw new Error("Tempo de resposta excedido. O processamento está demorando mais que o esperado. Tente novamente.");
+          throw new Error("Tempo de resposta excedido. O processamento está demorando mais que o esperado. Tente novamente.")
         }
         
         if (fetchError.message?.includes("fetch failed") || 
             fetchError.message?.includes("Failed to fetch") ||
             fetchError.message?.includes("NetworkError") ||
             fetchError.message?.includes("Network request failed")) {
-          throw new Error("Erro de conexão. Verifique sua internet e tente novamente.");
+          throw new Error("Erro de conexão. Verifique sua internet e tente novamente.")
         }
         
         if (fetchError.message?.includes("ECONNREFUSED") || fetchError.message?.includes("ERR_CONNECTION_REFUSED")) {
-          throw new Error("Servidor não está respondendo. Tente novamente em alguns instantes.");
+          throw new Error("Servidor não está respondendo. Tente novamente em alguns instantes.")
         }
         
-        throw new Error(`Erro ao processar foto: ${fetchError.message || "Erro desconhecido. Tente novamente."}`);
+        if (fetchError.message?.includes("CORS") || fetchError.message?.includes("cross-origin")) {
+          throw new Error("Erro de permissão. Tente recarregar a página e tentar novamente.")
+        }
+        
+        // PHASE 25: Mensagem mais amigável para erros desconhecidos
+        throw new Error(`Erro ao processar foto: ${fetchError.message || "Erro desconhecido. Tente novamente."}`)
       }
-      
-      clearTimeout(timeoutId);
+
+      clearTimeout(timeoutId)
 
       if (!response.ok) {
-        let errorData: any = {};
+        let errorData: any = {}
         try {
-          const errorText = await response.text();
-          if (errorText) {
-            try {
-              errorData = JSON.parse(errorText);
-            } catch {
-              errorData = { error: errorText || `Erro HTTP ${response.status}` };
-            }
+          const errorText = await response.text()
+          try {
+            errorData = JSON.parse(errorText)
+          } catch {
+            errorData = { error: errorText || `Erro HTTP ${response.status}` }
           }
         } catch {
-          errorData = { error: `Erro HTTP ${response.status}` };
+          errorData = { error: `Erro HTTP ${response.status}` }
         }
         
         // PHASE 25: Mensagens mais amigáveis para diferentes códigos de erro
-        // NOTA: responseData ainda não foi declarado aqui, então usamos apenas errorData
-        let errorMessage = errorData.error || errorData.message || errorData.details || `Erro ao gerar composição (${response.status})`;
+        let errorMessage = errorData.error || errorData.message || `Erro ao gerar composição (${response.status})`
         
+        // PHASE 25: Melhorar mensagens de erro para mobile
         if (response.status === 500) {
-          errorMessage = "Erro interno do servidor. Tente novamente em alguns instantes.";
+          errorMessage = "Erro interno do servidor. Tente novamente em alguns instantes."
         } else if (response.status === 503) {
-          errorMessage = errorData.details || errorData.error || errorData.message || "Serviço temporariamente indisponível. Tente novamente em alguns instantes.";
+          errorMessage = "Serviço temporariamente indisponível. Tente novamente em alguns instantes."
         } else if (response.status === 429) {
-          errorMessage = "Muitas requisições. Aguarde alguns instantes antes de tentar novamente.";
+          errorMessage = "Muitas requisições. Aguarde alguns instantes antes de tentar novamente."
         } else if (response.status === 400) {
-          errorMessage = errorData.error || errorData.message || errorData.details || "Dados inválidos. Verifique se selecionou uma foto e produtos.";
+          errorMessage = errorData.error || errorData.message || "Dados inválidos. Verifique se selecionou uma foto e produtos."
         } else if (response.status === 413) {
-          errorMessage = "Foto muito grande. Tente usar uma foto menor ou comprimir a imagem.";
+          errorMessage = "Foto muito grande. Tente usar uma foto menor ou comprimir a imagem."
         } else if (response.status === 408) {
-          errorMessage = "Tempo de processamento excedido. Tente novamente com uma foto menor.";
+          errorMessage = "Tempo de processamento excedido. Tente novamente com uma foto menor."
         }
         
         // PHASE 25: Garantir que a mensagem seja sempre amigável
         if (errorMessage.includes("Failed to fetch") || errorMessage.includes("fetch failed")) {
-          errorMessage = "Erro de conexão. Verifique sua internet e tente novamente.";
+          errorMessage = "Erro de conexão. Verifique sua internet e tente novamente."
         }
         
-        throw new Error(errorMessage);
+        throw new Error(errorMessage)
       }
+
+      // IMPORTANTE: Limpar o timeout da requisição POST inicial (já recebemos a resposta)
+      clearTimeout(timeoutId)
       
-      let responseData: any;
-      try {
-        const responseText = await response.text();
-        if (!responseText) {
-          throw new Error("Resposta vazia do servidor");
+      const responseData = await response.json()
+
+      // PHASE 27: Verificar se a resposta é assíncrona (202 Accepted com jobId) - MESMA LÓGICA DO handleVisualize
+      if (response.status === 202 && responseData.jobId) {
+        
+        console.log("[handleRegenerate] PHASE 27: Job criado, iniciando polling:", responseData.jobId)
+        
+        // Salvar jobId e reservationId para uso posterior
+        const jobId = responseData.jobId
+        const reservationId = responseData.reservationId
+        
+        // Função de polling para verificar status do Job - MESMA LÓGICA DO handleVisualize
+        const pollJobStatus = async (): Promise<any> => {
+          // Aumentar tempo máximo de polling para 5 minutos (geração de imagens pode demorar)
+          const maxPollingTime = 300000 // 5 minutos máximo
+          const pollInterval = 2000 // 2 segundos entre polls
+          const startTime = Date.now()
+          let consecutiveErrors = 0
+          const maxConsecutiveErrors = 5 // Máximo de 5 erros consecutivos antes de falhar
+          
+          while (Date.now() - startTime < maxPollingTime) {
+            let requestTimeout: NodeJS.Timeout | null = null
+            try {
+              // Usar o mesmo endpoint que handleVisualize usa
+              // Criar AbortController para timeout individual de cada requisição
+              const requestController = new AbortController()
+              requestTimeout = setTimeout(() => requestController.abort(), 10000) // 10 segundos timeout por requisição
+              
+              const statusResponse = await fetch(`/api/jobs/${jobId}`, {
+                method: "GET",
+                headers: { "Content-Type": "application/json" },
+                cache: 'no-cache',
+                signal: requestController.signal,
+              })
+              
+              if (requestTimeout) {
+                clearTimeout(requestTimeout)
+                requestTimeout = null
+              }
+              
+              // Resetar contador de erros em caso de sucesso
+              consecutiveErrors = 0
+              
+              if (!statusResponse.ok) {
+                // Se for 404, o job pode não existir ainda (retry)
+                if (statusResponse.status === 404) {
+                  console.warn(`[handleRegenerate] PHASE 27: Job não encontrado (404), aguardando...`)
+                  await new Promise(resolve => setTimeout(resolve, pollInterval))
+                  continue
+                }
+                throw new Error(`Erro ao verificar status: ${statusResponse.status}`)
+              }
+              
+              const statusData = await statusResponse.json()
+              const attemptNumber = Math.floor((Date.now() - startTime) / pollInterval) + 1
+              console.log("[handleRegenerate] PHASE 27: Polling attempt:", {
+                attempt: attemptNumber,
+                status: statusData.status,
+                elapsed: Math.floor((Date.now() - startTime) / 1000) + "s",
+              })
+              
+              if (statusData.status === "COMPLETED") {
+                // Job concluído com sucesso
+                if (statusData.result?.imageUrl || statusData.final_image_url) {
+                  console.log("[handleRegenerate] PHASE 27: ✅ Job concluído com sucesso!")
+                  return {
+                    success: true,
+                    imageUrl: statusData.result?.imageUrl || statusData.final_image_url,
+                    compositionId: statusData.result?.compositionId || statusData.composition_id,
+                    reservationId,
+                  }
+                } else {
+                  throw new Error("Job concluído mas sem URL de imagem")
+                }
+              } else if (statusData.status === "FAILED") {
+                // Job falhou
+                const errorMsg = statusData.error || statusData.errorDetails?.message || "Erro ao gerar imagem"
+                console.error("[handleRegenerate] PHASE 27: ❌ Job falhou:", errorMsg)
+                throw new Error(errorMsg)
+              } else if (statusData.status === "PROCESSING" || statusData.status === "PENDING") {
+                // Ainda processando, continuar polling
+                await new Promise(resolve => setTimeout(resolve, pollInterval))
+                continue
+              } else {
+                // Status desconhecido
+                console.warn("[handleRegenerate] PHASE 27: Status desconhecido:", statusData.status)
+                await new Promise(resolve => setTimeout(resolve, pollInterval))
+                continue
+              }
+            } catch (pollError: any) {
+              // Limpar timeout se ainda estiver ativo
+              if (requestTimeout) {
+                clearTimeout(requestTimeout)
+                requestTimeout = null
+              }
+              
+              consecutiveErrors++
+              console.error("[handleRegenerate] PHASE 27: Erro no polling:", {
+                error: pollError.message,
+                name: pollError.name,
+                consecutiveErrors,
+                attempt: Math.floor((Date.now() - startTime) / pollInterval) + 1,
+              })
+              
+              // Se exceder máximo de erros consecutivos, falhar
+              if (consecutiveErrors >= maxConsecutiveErrors) {
+                console.error("[handleRegenerate] PHASE 27: ❌ Muitos erros consecutivos, abortando polling")
+                throw new Error("Erro de conexão durante o processamento. Tente novamente.")
+              }
+              
+              // Se o erro for de rede/timeout, continuar tentando com backoff
+              if (pollError.name === "AbortError" || 
+                  pollError.name === "TimeoutError" ||
+                  pollError.message?.includes("ECONNRESET") ||
+                  pollError.message?.includes("fetch failed") || 
+                  pollError.message?.includes("Failed to fetch") ||
+                  pollError.message?.includes("NetworkError") ||
+                  pollError.message?.includes("network") ||
+                  pollError.message?.includes("timeout")) {
+                // Backoff exponencial: esperar mais tempo após erros
+                const backoffDelay = Math.min(pollInterval * Math.pow(2, consecutiveErrors - 1), 10000)
+                console.log(`[handleRegenerate] PHASE 27: Erro de rede/timeout, aguardando ${backoffDelay}ms antes de retry...`)
+                await new Promise(resolve => setTimeout(resolve, backoffDelay))
+                continue
+              }
+              
+              // Para outros erros, aguardar intervalo normal e continuar
+              await new Promise(resolve => setTimeout(resolve, pollInterval))
+              continue
+            }
+          }
+          
+          // Timeout atingido
+          throw new Error("Tempo de processamento excedido. A geração está demorando mais que o esperado.")
         }
-        responseData = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error("[handleRegenerate] Erro ao parsear resposta:", parseError);
-        throw new Error("Erro ao processar resposta do servidor");
+        
+        // Iniciar polling
+        const pollResult = await pollJobStatus()
+        
+        // Salvar resultados e recarregar - MESMA LÓGICA DO handleVisualize
+        const generatedLook = {
+          id: pollResult.compositionId || `generated-${Date.now()}`,
+          titulo: "Look Remixado",
+          imagemUrl: pollResult.imageUrl,
+          produtoNome: products.map((p: any) => p.nome).join(" + "),
+          produtoPreco: products.reduce((sum: number, p: any) => sum + (p.preco || 0), 0),
+          compositionId: pollResult.compositionId || null,
+        }
+
+        sessionStorage.setItem(`looks_${lojistaId}`, JSON.stringify([generatedLook]))
+        // PHASE 11 FIX: Manter foto ORIGINAL (não sobrescrever com foto gerada)
+        if (personImageUrl) {
+          sessionStorage.setItem(`original_photo_${lojistaId}`, personImageUrl)
+          sessionStorage.setItem(`photo_${lojistaId}`, personImageUrl)
+        }
+        sessionStorage.setItem(`products_${lojistaId}`, storedProducts)
+        sessionStorage.setItem(`new_looks_generated_${lojistaId}`, "true")
+        // Salvar reservationId para confirmação de visualização
+        if (reservationId) {
+          sessionStorage.setItem(`reservation_${lojistaId}`, reservationId)
+          sessionStorage.setItem(`job_${lojistaId}`, jobId)
+        }
+        
+        // Resetar votação para o novo look ANTES de recarregar
+        setHasVoted(false)
+        setVotedType(null)
+        setCurrentLookIndex(0)
+        
+        // Limpar intervalo de frases antes de recarregar
+        if (phraseInterval) {
+          clearInterval(phraseInterval)
+        }
+        
+        // Recarregar a página para mostrar o novo look
+        window.location.reload()
+        return
       }
 
-      if (!response.ok) {
-        // Usar mensagem amigável do backend
-        let errorMessage = responseData?.error || responseData?.details || "Erro ao gerar composição";
-        const errorDetails = responseData?.details || "";
-        
-        // Mensagens mais amigáveis para diferentes códigos de erro
-        if (response.status === 500) {
-          errorMessage = "Erro ao gerar composição";
-        } else if (response.status === 503) {
-          errorMessage = "Erro ao gerar composição";
-        } else if (response.status === 504) {
-          errorMessage = "Erro ao gerar composição";
-        } else if (response.status === 429) {
-          errorMessage = "Erro ao gerar composição";
-        } else if (response.status === 400) {
-          errorMessage = "Erro ao gerar composição";
-        }
-        
-        // Combinar mensagem e detalhes se disponível
-        if (errorDetails && errorDetails !== errorMessage) {
-          errorMessage = `${errorMessage}. ${errorDetails}`;
-        }
-        
-        console.error("[handleRegenerate] Erro do servidor:", {
-          status: response.status,
-          error: responseData?.error,
-          details: responseData?.details,
-          fullResponse: responseData,
-        });
-        throw new Error(errorMessage);
-      }
-
-      // Salvar novos resultados
+      // 4. Salvar resultados e navegar (compatibilidade com resposta síncrona antiga)
+      // PHASE 11-B FIX: A resposta vem com looks[] array - MESMA LÓGICA DO handleVisualize
       if (responseData.looks && Array.isArray(responseData.looks) && responseData.looks.length > 0) {
         sessionStorage.setItem(`looks_${lojistaId}`, JSON.stringify(responseData.looks))
         // PHASE 11 FIX: Manter foto ORIGINAL (não sobrescrever com foto gerada)
         // A foto original deve permanecer para próximos remixes
-        if (originalPhotoUrl) {
-          sessionStorage.setItem(`original_photo_${lojistaId}`, originalPhotoUrl)
+        if (personImageUrl) {
+          sessionStorage.setItem(`original_photo_${lojistaId}`, personImageUrl)
+          sessionStorage.setItem(`photo_${lojistaId}`, personImageUrl)
         }
         sessionStorage.setItem(`products_${lojistaId}`, storedProducts)
         
