@@ -163,17 +163,18 @@ export async function POST(request: NextRequest) {
     }
 
     // REMIX: Gerar prompt de pose (ÚNICA DIFERENÇA DO CRIAR LOOK)
+    // MASTER PROMPT: REFINAMENTO DE ESTILO - Poses elegantes e estáticas (sem movimento)
     const poses = [
-      "Walking confidently towards camera with dynamic movement, natural stride, engaging expression, fashion model walk",
-      "Leaning against wall casually with relaxed posture, hands visible, one leg crossed, confident casual stance",
-      "Standing with hands in pockets, relaxed body language, natural positioning, casual confident expression",
-      "Looking over shoulder with engaging expression, dynamic angle, direct eye contact, fashion editorial pose",
-      "Standing with one hand on hip, confident powerful pose, fashion model stance, strong presence",
-      "Standing with arms crossed, confident assertive pose, strong body language, professional demeanor",
-      "Walking away from camera then turning back, dynamic movement, cinematic pose, engaging presence",
-      "Standing with weight on one leg, relaxed confident pose, natural body language, fashion model stance",
-      "Walking with slight turn, dynamic movement, engaging expression, professional photography style",
-      "Standing with hands on hips, powerful confident pose, strong presence, fashion editorial style"
+      "Standing elegantly with straight back, relaxed shoulders, hands naturally at sides, confident high fashion editorial pose",
+      "Leaning against wall casually with relaxed posture, hands visible, one leg crossed, confident casual stance, static elegant pose",
+      "Standing with hands in pockets, relaxed body language, natural positioning, casual confident expression, stylish static pose",
+      "Looking over shoulder with engaging expression, elegant angle, direct eye contact, fashion editorial pose, static confident stance",
+      "Standing with one hand on hip, confident powerful pose, fashion model stance, strong presence, elegant static posture",
+      "Standing with arms crossed, confident assertive pose, strong body language, professional demeanor, elegant static stance",
+      "Standing with slight turn towards camera, elegant confident pose, engaging expression, professional photography style, static editorial pose",
+      "Standing with weight on one leg, relaxed confident pose, natural body language, fashion model stance, elegant static posture",
+      "Standing with hands on hips, powerful confident pose, strong presence, fashion editorial style, elegant static stance",
+      "Standing with hands folded in front, elegant sophisticated pose, confident expression, high fashion editorial style, static professional stance"
     ];
 
     const randomPose = poses[Math.floor(Math.random() * poses.length)];
@@ -216,14 +217,15 @@ export async function POST(request: NextRequest) {
     });
 
     // Gerar prompt de remix
+    // MASTER PROMPT: REFINAMENTO DE ESTILO - Poses elegantes e estáticas
     const remixPrompt = `${subjectDescription} ${randomPose} wearing ${productPrompt}${beachFootwearPrompt}, harmonious outfit combination. 
 
 ⚠️ CRITICAL REMIX INSTRUCTION: This is a REMIX generation. The scene MUST be DRAMATICALLY DIFFERENT from any previous generation. 
-- POSE: The person must be in a ${randomPose.toLowerCase()} position, which is DIFFERENT from the original photo's pose. ⚠️ CRITICAL: The person MUST face the camera or at MOST slightly to the side (3/4 view). NEVER from behind (back view). The face and frontal body MUST be visible.
-- LIGHTING: Adapt lighting to match the new scene context.
+- POSE: The person must be in a ${randomPose.toLowerCase()} position, which is DIFFERENT from the original photo's pose. ⚠️ CRITICAL: The person MUST face the camera or at MOST slightly to the side (3/4 view). NEVER from behind (back view). The face and frontal body MUST be visible. **NO WALKING or RUNNING** - elegant, static, confident pose only.
+- LIGHTING: Adapt lighting to match the new scene context with warm, natural tones.
 - CAMERA ANGLE: Use a different camera angle or perspective to emphasize the new pose and scene.
 
-Photorealistic, 8k, highly detailed, professional fashion photography, distinct visual style. The final image must look like a COMPLETELY NEW PHOTOSHOOT in a DIFFERENT LOCATION with a DIFFERENT POSE, while maintaining the person's exact identity and the products' fidelity.`;
+Photorealistic, 8k, highly detailed, professional fashion photography, distinct visual style. The final image must look like a COMPLETELY NEW PHOTOSHOOT in a DIFFERENT LOCATION with a DIFFERENT ELEGANT STATIC POSE, while maintaining the person's exact identity and the products' fidelity.`;
 
     // IMPORTANTE: REMIX NÃO busca cenário no frontend
     // Backend usará getSmartScenario para variar o cenário
