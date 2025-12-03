@@ -1,8 +1,8 @@
-import { consumeGenerationCredit } from "@/lib/financials";
+import { reserveCredit } from "@/lib/financials";
 import { NextRequest, NextResponse } from "next/server";
 import { getFirestoreAdmin } from "@/lib/firebaseAdmin";
-// PHASE 28: Removido import de findScenarioByProductTags - remix não busca cenário no frontend
-import type { Produto } from "@/lib/types";
+import type { Produto, GenerationJob, JobStatus } from "@/lib/types";
+import { FieldValue } from "firebase-admin/firestore";
 
 const DEFAULT_LOCAL_BACKEND = "http://localhost:3000";
 
@@ -11,10 +11,11 @@ export const dynamic = 'force-dynamic';
 export const runtime = "nodejs";
 
 /**
- * PHASE 11: REMIX ENGINE - Scenario/Pose Shuffler
- * 
- * Gera uma variação do look usando a foto original + mesmo produto,
- * mas mudando o cenário e a pose.
+ * REMIX - Usa a MESMA lógica do criar look
+ * Diferenças apenas:
+ * - scenePrompts com instruções de pose
+ * - gerarNovoLook: true
+ * - Não busca cenário no frontend (backend usa getSmartScenario)
  */
 export async function POST(request: NextRequest) {
   try {
@@ -43,8 +44,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validar se a URL da foto original é válida
-    // No mobile, URLs podem ser blob: ou data: além de http:// e https://
+    // Validar URL da foto
     const photoUrl = body.original_photo_url;
     const isValidUrl = 
       photoUrl.startsWith('http://') || 
@@ -59,41 +59,59 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
-    // Se for blob: ou data:, precisamos converter para uma URL HTTP antes de enviar ao backend
-    // O backend espera URLs HTTP válidas
-    let finalPhotoUrl = photoUrl;
-    
-    if (photoUrl.startsWith('blob:') || photoUrl.startsWith('data:')) {
-      console.warn("[remix] URL blob/data detectada - o backend pode precisar de conversão:", photoUrl.substring(0, 100));
-      // Para blob: e data:, vamos tentar usar como está e deixar o backend lidar
-      // Se o backend não aceitar, ele retornará um erro específico
-      finalPhotoUrl = photoUrl;
+
+    // Rejeitar blob: URLs - frontend deve converter antes
+    if (photoUrl.startsWith('blob:')) {
+      return NextResponse.json(
+        { error: "Foto inválida", details: "blob: URLs não podem ser processadas. Por favor, faça upload novamente da foto." },
+        { status: 400 }
+      );
     }
 
-    // PHASE 11 FIX: Aceitar products[] array OU productIds[]
+    // PHASE 27: Reservar crédito (MESMA LÓGICA DO CRIAR LOOK)
+    let creditReservation;
+    try {
+      creditReservation = await reserveCredit(body.lojistaId);
+    } catch (creditError: any) {
+      console.error("[remix] Erro ao reservar créditos:", creditError);
+      return NextResponse.json(
+        { 
+          error: "Erro ao reservar créditos", 
+          details: creditError?.message || "Erro interno na reserva de créditos" 
+        },
+        { status: 500 }
+      );
+    }
+    
+    if (!creditReservation.success) {
+      const errorMessage = creditReservation.message || "Créditos insuficientes";
+      const statusCode = creditReservation.status || 402;
+      return NextResponse.json(
+        { error: errorMessage },
+        { status: statusCode }
+      );
+    }
+
+    if (!creditReservation.reservationId) {
+      console.error("[remix] reservationId não retornado:", creditReservation);
+      return NextResponse.json(
+        { 
+          error: "Erro interno do servidor. Tente novamente em alguns instantes.",
+          details: "Reserva de crédito inválida"
+        },
+        { status: 500 }
+      );
+    }
+
+    // Validar produtos
     let productIds: string[] = [];
     let products: any[] = [];
     
     if (body?.products && Array.isArray(body.products) && body.products.length > 0) {
-      // Se products[] foi enviado, usar diretamente
       products = body.products;
       productIds = products.map((p: any) => p.id || p.productId).filter(Boolean);
     } else if (body?.productIds && Array.isArray(body.productIds) && body.productIds.length > 0) {
-      // Fallback: se apenas productIds foi enviado, buscar produtos do Firestore
       productIds = body.productIds;
-      try {
-        const db = getFirestoreAdmin();
-        const lojistaRef = db.collection("lojas").doc(body.lojistaId);
-        const produtosSnapshot = await lojistaRef.collection("produtos").get();
-        
-        products = produtosSnapshot.docs
-          .map(doc => ({ id: doc.id, ...doc.data() }))
-          .filter((p: any) => productIds.includes(p.id));
-      } catch (fetchError) {
-        console.warn("[remix] Erro ao buscar produtos do Firestore:", fetchError);
-        // Continuar com productIds mesmo sem descrições
-      }
     } else {
       return NextResponse.json(
         { error: "products ou productIds é obrigatório", details: "Pelo menos um produto deve ser selecionado" },
@@ -108,81 +126,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // PHASE 26: Buscar produtos do Firestore para extrair tags (se ainda não foram buscados)
-    let productsForTags: Produto[] = products.length > 0 ? products.map((p: any) => ({
-      id: p.id || p.productId,
-      nome: p.nome || "",
-      categoria: p.categoria || null,
-      preco: p.preco || null,
-      imagemUrl: p.imagemUrl || null,
-      obs: p.obs || null,
-    })) : [];
-    
-    // Se não temos produtos completos, buscar do Firestore
-    if (productsForTags.length === 0) {
-      try {
-        const db = getFirestoreAdmin();
-        if (db) {
-          const lojistaRef = db.collection("lojas").doc(body.lojistaId);
-          const produtosSnapshot = await lojistaRef.collection("produtos").get();
-          
-          productsForTags = produtosSnapshot.docs
-            .map(doc => {
-              const data = doc.data();
-              return {
-                id: doc.id,
-                nome: data.nome || "",
-                categoria: data.categoria || null,
-                preco: data.preco || null,
-                imagemUrl: data.imagemUrl || null,
-                obs: data.obs || null,
-              } as Produto;
-            })
-            .filter((p: Produto) => productIds.includes(p.id));
-        }
-      } catch (productError: any) {
-        console.warn("[remix] PHASE 26: Erro ao buscar produtos para tags:", productError.message);
-      }
-    }
-    
-    // PHASE 28 FIX: Para REMIX, NÃO buscar cenário no frontend
-    // O backend usará getSmartScenario para variar o cenário e criar um look diferente
-    // Buscar cenário aqui faria o remix usar o mesmo cenário do original
-    console.log("[remix] PHASE 28: Remix - NÃO buscando cenário no frontend (backend vai variar):", {
-      totalProdutos: productsForTags.length,
-      note: "Backend usará getSmartScenario para gerar novo cenário diferente",
-    });
-
-    // Validar créditos
-    let creditValidation;
+    // Buscar produtos do Firestore (MESMA LÓGICA DO CRIAR LOOK)
+    let db;
     try {
-      creditValidation = await consumeGenerationCredit(body.lojistaId);
-    } catch (creditError: any) {
-      console.error("[remix] Erro ao validar créditos:", creditError);
+      db = getFirestoreAdmin();
+    } catch (dbInitError: any) {
+      console.error("[remix] Erro ao inicializar Firestore:", dbInitError);
+      // Fazer rollback da reserva
+      try {
+        const { rollbackCredit } = await import("@/lib/financials");
+        await rollbackCredit(body.lojistaId, creditReservation.reservationId);
+      } catch (rollbackError) {
+        console.error("[remix] Erro ao fazer rollback:", rollbackError);
+      }
       return NextResponse.json(
-        { 
-          error: "Erro ao validar créditos", 
-          details: creditError?.message || "Erro interno na validação de créditos" 
+        {
+          error: "Erro interno do servidor. Tente novamente em alguns instantes.",
+          details: "Firestore Admin não disponível"
         },
         { status: 500 }
       );
     }
 
-    if (!creditValidation.allowed) {
-      const errorMessage = "message" in creditValidation ? creditValidation.message : "Créditos insuficientes";
-      const statusCode = "status" in creditValidation ? creditValidation.status : 402;
-      return NextResponse.json(
-        { error: errorMessage },
-        { status: statusCode }
-      );
+    // Buscar produtos se não foram fornecidos
+    if (products.length === 0 && db) {
+      try {
+        const lojistaRef = db.collection("lojas").doc(body.lojistaId);
+        const produtosSnapshot = await lojistaRef.collection("produtos").get();
+        
+        products = produtosSnapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter((p: any) => productIds.includes(p.id));
+      } catch (fetchError) {
+        console.warn("[remix] Erro ao buscar produtos:", fetchError);
+      }
     }
 
-    // PHASE 21 FIX: NÃO gerar cenário no frontend - deixar o backend usar getSmartScenario
-    // O backend tem acesso aos dados completos dos produtos e aplica a lógica correta
-    // Remover geração de cenário aqui para garantir coerência total
-    console.log("[remix] PHASE 21 FIX: Remix - NÃO gerando cenário no frontend, deixando backend usar getSmartScenario");
-
-    // PHASE 20: Pose Variation - Mudança Drástica mantendo identidade facial (BANIDAS poses sentadas)
+    // REMIX: Gerar prompt de pose (ÚNICA DIFERENÇA DO CRIAR LOOK)
     const poses = [
       "Walking confidently towards camera with dynamic movement, natural stride, engaging expression, fashion model walk",
       "Leaning against wall casually with relaxed posture, hands visible, one leg crossed, confident casual stance",
@@ -196,35 +176,10 @@ export async function POST(request: NextRequest) {
       "Standing with hands on hips, powerful confident pose, strong presence, fashion editorial style"
     ];
 
-    // PHASE 21 FIX: Selecionar apenas uma pose (cenário será determinado pelo backend usando getSmartScenario)
     const randomPose = poses[Math.floor(Math.random() * poses.length)];
-    
-    // PHASE 11-B: Gerar random seed para forçar variação na IA
     const randomSeed = Math.floor(Math.random() * 999999);
 
-    console.log("[remix] PHASE 21 FIX: Pose/Seed selecionados (cenário será determinado pelo backend):", {
-      pose: randomPose,
-      randomSeed,
-    });
-
-    // PHASE 11 FIX: Combinar descrições de TODOS os produtos
-    let productDescriptions: string[] = [];
-    
-    if (products.length > 0) {
-      // Usar descrições dos produtos fornecidos
-      productDescriptions = products.map((p: any) => {
-        // Priorizar descrição, depois nome, depois categoria
-        return p.descricao || p.nome || p.categoria || "product";
-      });
-    } else {
-      // Fallback: usar IDs como descrição genérica
-      productDescriptions = productIds.map(id => `product ${id}`);
-    }
-    
-    // Combinar todas as descrições com "AND" conforme especificação
-    const productPrompt = productDescriptions.join(" AND ");
-    
-    // Detectar gênero (verificar se algum produto tem categoria que indique gênero)
+    // Detectar gênero
     const gender = body.gender || 
       (products.find((p: any) => p.genero)?.genero) ||
       (products.find((p: any) => p.categoria?.toLowerCase().includes("feminino")) ? "feminino" : 
@@ -236,39 +191,22 @@ export async function POST(request: NextRequest) {
           : "A stylish man")
       : "A stylish person";
 
-    // PHASE 21 FIX: Detectar produtos para regra de calçados (chinelo ou sem calçado para roupas de banho)
+    // Combinar descrições de produtos
+    const productDescriptions = products.length > 0
+      ? products.map((p: any) => p.descricao || p.nome || p.categoria || "product")
+      : productIds.map(id => `product ${id}`);
+    const productPrompt = productDescriptions.join(" AND ");
+
+    // Detectar calçados para Smart Framing
     const allText = products.map(p => `${p?.categoria || ""} ${p?.nome || ""}`).join(" ").toLowerCase();
     const hasBeach = allText.match(/biqu|bikini|maiô|maio|sunga|praia|beachwear|saída de praia|swimwear|moda praia|banho|nado|piscina|swim|beach/i);
     const hasShoesInProducts = allText.match(/calçado|calcado|sapato|tênis|tenis|sneaker|shoe|footwear|bota|boot/i);
     
-    // PHASE 21 FIX: Adicionar regra de calçados para roupas de banho
     let beachFootwearPrompt = "";
     if (hasBeach && !hasShoesInProducts) {
       beachFootwearPrompt = " barefoot or wearing simple flip-flops/sandals, NO boots, NO sneakers, NO closed shoes";
-      console.log("[remix] PHASE 21 FIX: Roupas de banho sem calçados - Forçando chinelo ou pés descalços");
     }
-    
-    // PHASE 21 FIX: NÃO incluir cenário no prompt - deixar backend determinar baseado nos produtos
-    // O backend usará getSmartScenario que aplica a Bikini Law corretamente
-    const remixPrompt = `${subjectDescription} ${randomPose} wearing ${productPrompt}${beachFootwearPrompt}, harmonious outfit combination. 
-    
-⚠️ CRITICAL REMIX INSTRUCTION: This is a REMIX generation. The scene MUST be DRAMATICALLY DIFFERENT from any previous generation. 
-- POSE: The person must be in a ${randomPose.toLowerCase()} position, which is DIFFERENT from the original photo's pose. ⚠️ CRITICAL: The person MUST face the camera or at MOST slightly to the side (3/4 view). NEVER from behind (back view). The face and frontal body MUST be visible.
-- LIGHTING: Adapt lighting to match the new scene context.
-- CAMERA ANGLE: Use a different camera angle or perspective to emphasize the new pose and scene.
 
-Photorealistic, 8k, highly detailed, professional fashion photography, distinct visual style. The final image must look like a COMPLETELY NEW PHOTOSHOOT in a DIFFERENT LOCATION with a DIFFERENT POSE, while maintaining the person's exact identity and the products' fidelity.`;
-
-    console.log("[remix] Prompt gerado:", remixPrompt);
-
-    const backendUrl =
-      process.env.NEXT_PUBLIC_BACKEND_URL ||
-      process.env.NEXT_PUBLIC_PAINELADM_URL ||
-      DEFAULT_LOCAL_BACKEND;
-
-    // PHASE 11-B: Preparar payload para o backend
-    // IMPORTANTE: Usar a foto ORIGINAL (original_photo_url) para manter identidade
-    // PHASE 11-B: Detectar categoria para Smart Framing (previne "cut legs")
     const hasShoes = products.some((p: any) => {
       const cat = (p.categoria || "").toLowerCase();
       return cat.includes("calçado") || cat.includes("calcado") || 
@@ -276,276 +214,252 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
              cat.includes("tenis") || cat.includes("shoe") || 
              cat.includes("footwear");
     });
-    
-    // PHASE 14: Preparar payload garantindo que sempre usa original_photo_url
-    // PHASE 14: Injetar flag "GERAR NOVO LOOK" para ativar mudança de pose
-    // Usar finalPhotoUrl que foi validada (aceita blob:, data:, http://, https://)
-    const payload = {
-      original_photo_url: finalPhotoUrl, // PHASE 14: Source of Truth - Foto original (pode ser blob/data/http)
-      personImageUrl: finalPhotoUrl, // PHASE 14: Também enviar como personImageUrl para compatibilidade
-      productIds: productIds, // PHASE 14: TODOS os produtos selecionados (não apenas o último)
-      lojistaId: body.lojistaId,
-      customerId: body.customerId || null,
-      customerName: body.customerName || null, // Adicionar customerName para o Radar funcionar
-      // PHASE 28 FIX: Para REMIX, enviar scenePrompts com a pose e NÃO enviar scenarioImageUrl
-      // Isso força o backend a gerar um NOVO cenário usando getSmartScenario
-      scenePrompts: [remixPrompt], // PHASE 28: Enviar prompt de pose para variar
-      options: {
-        quality: body.options?.quality || "high",
-        skipWatermark: body.options?.skipWatermark !== false, // Default: true
-        lookType: "creative", // Sempre usar look criativo para remix
-        // PHASE 14: Smart Framing - Se houver calçados, forçar full body
-        productCategory: hasShoes ? "Calçados" : body.product_category || undefined,
-        // PHASE 14: Random seed para forçar variação na IA
-        seed: randomSeed,
-        // PHASE 14: Flag "GERAR NOVO LOOK" para ativar mudança de pose (Regra de Postura Condicional)
-        gerarNovoLook: true, // CRÍTICO: Sempre ativar no remix para permitir mudança de pose
-      },
-      // PHASE 25: Instrução explícita para evitar cenários noturnos
-      sceneInstructions: "IMPORTANT: The scene must be during DAYTIME with bright natural lighting. NEVER use night scenes, dark backgrounds, evening, sunset, dusk, or any nighttime setting. Always use well-lit daytime environments with natural sunlight.",
-      // PHASE 28 FIX: NÃO enviar scenarioImageUrl no remix - isso força o backend a gerar um NOVO cenário
-      // O backend usará getSmartScenario para variar o cenário baseado nos produtos
-      // Removido completamente: scenarioImageUrl, scenarioLightingPrompt, scenarioCategory, scenarioInstructions
-      // Isso garante que o backend gere um novo cenário diferente do original
-    };
-    
-    console.log("[remix] PHASE 14: Flag 'GERAR NOVO LOOK' ativada no payload:", {
-      gerarNovoLook: payload.options.gerarNovoLook,
-      totalProdutos: productIds.length,
-      hasShoes,
-    });
 
-    console.log("[remix] PHASE 13/26: Enviando requisição para backend com foto ORIGINAL:", {
-      url: `${backendUrl}/api/lojista/composicoes/generate`,
-      hasOriginalPhoto: !!body.original_photo_url,
-      originalPhotoUrl: body.original_photo_url?.substring(0, 80) + "...",
-      productIdsCount: productIds.length,
-      productsCount: products.length,
-      productPrompt: productPrompt.substring(0, 100) + "...",
-      remixPrompt: remixPrompt.substring(0, 150) + "...",
-      randomSeed,
-      hasShoes,
-      productCategory: payload.options.productCategory,
-      payloadOriginalPhotoUrl: payload.original_photo_url?.substring(0, 80) + "...",
-      scenarioImageUrl: "NÃO ENVIADO (remix deve variar cenário)",
+    // Gerar prompt de remix
+    const remixPrompt = `${subjectDescription} ${randomPose} wearing ${productPrompt}${beachFootwearPrompt}, harmonious outfit combination. 
+
+⚠️ CRITICAL REMIX INSTRUCTION: This is a REMIX generation. The scene MUST be DRAMATICALLY DIFFERENT from any previous generation. 
+- POSE: The person must be in a ${randomPose.toLowerCase()} position, which is DIFFERENT from the original photo's pose. ⚠️ CRITICAL: The person MUST face the camera or at MOST slightly to the side (3/4 view). NEVER from behind (back view). The face and frontal body MUST be visible.
+- LIGHTING: Adapt lighting to match the new scene context.
+- CAMERA ANGLE: Use a different camera angle or perspective to emphasize the new pose and scene.
+
+Photorealistic, 8k, highly detailed, professional fashion photography, distinct visual style. The final image must look like a COMPLETELY NEW PHOTOSHOOT in a DIFFERENT LOCATION with a DIFFERENT POSE, while maintaining the person's exact identity and the products' fidelity.`;
+
+    // IMPORTANTE: REMIX NÃO busca cenário no frontend
+    // Backend usará getSmartScenario para variar o cenário
+    console.log("[remix] REMIX - NÃO buscando cenário no frontend (backend vai variar):", {
+      totalProdutos: products.length,
       note: "Backend usará getSmartScenario para gerar novo cenário diferente",
     });
 
-    const controller = new AbortController();
-    // Aumentar timeout para 3 minutos em dispositivos móveis (conexões mais lentas)
-    const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutos
-
-    let backendResponse: Response;
-    try {
-      console.log("[remix] Iniciando requisição para backend...");
-      backendResponse = await fetch(
-        `${backendUrl}/api/lojista/composicoes/generate`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-          signal: controller.signal,
-        }
-      );
-      clearTimeout(timeoutId);
-      console.log("[remix] Resposta recebida do backend:", {
-        status: backendResponse.status,
-        statusText: backendResponse.statusText,
-        contentType: backendResponse.headers.get('content-type'),
-        contentLength: backendResponse.headers.get('content-length'),
-      });
-    } catch (fetchError: any) {
-      clearTimeout(timeoutId);
-      console.error("[remix] Erro ao conectar com backend:", {
-        name: fetchError.name,
-        message: fetchError.message,
-        stack: fetchError.stack,
-      });
-      
-      if (fetchError.name === 'AbortError' || fetchError.message?.includes('timeout') || fetchError.message?.includes('aborted')) {
-        return NextResponse.json(
-          {
-            error: "Erro ao gerar composição",
-            details: "O processo está demorando mais que o esperado. Tente novamente em alguns instantes.",
-          },
-          { status: 504 }
-        );
-      }
-      
-      // PHASE 25: Melhor tratamento de erros de rede no mobile
-      if (fetchError.message?.includes('ECONNREFUSED') || 
-          fetchError.message?.includes('fetch failed') || 
-          fetchError.message?.includes('Failed to fetch') ||
-          fetchError.message?.includes('NetworkError') ||
-          fetchError.message?.includes('Network request failed') ||
-          fetchError.message?.includes('network')) {
-        return NextResponse.json(
-          {
-            error: "Erro ao gerar composição",
-            details: "Erro de conexão. Verifique sua internet e tente novamente.",
-          },
-          { status: 503 }
-        );
-      }
-      
-      // PHASE 25: Erro genérico de rede com mensagem mais amigável
-      return NextResponse.json(
-        {
-          error: "Erro ao gerar composição",
-          details: fetchError.message || "Erro de conexão. Tente novamente em alguns instantes.",
-        },
-        { status: 500 }
-      );
-    }
-
-    let data: any;
-    try {
-      const text = await backendResponse.text();
-      if (!text || text.trim() === '') {
-        console.error("[remix] Resposta vazia do backend:", {
-          status: backendResponse.status,
-          statusText: backendResponse.statusText,
-          headers: Object.fromEntries(backendResponse.headers.entries()),
-        });
-        return NextResponse.json(
-          {
-            error: "Erro ao gerar composição",
-            details: "O servidor não retornou dados. Tente novamente em alguns instantes.",
-          },
-          { status: 500 }
-        );
-      }
-      
-      // Log do conteúdo da resposta para debug (primeiros 500 caracteres)
-      console.log("[remix] Resposta do backend (primeiros 500 chars):", text.substring(0, 500));
-      
+    // PHASE 27: Criar Job assíncrono (MESMA LÓGICA DO CRIAR LOOK)
+    if (!db) {
+      console.error("[remix] ERRO CRÍTICO - db não está disponível");
       try {
-        data = JSON.parse(text);
-      } catch (jsonError: any) {
-        console.error("[remix] Erro ao fazer parse JSON:", {
-          error: jsonError.message,
-          responsePreview: text.substring(0, 200),
-          responseLength: text.length,
-          contentType: backendResponse.headers.get('content-type'),
-        });
-        
-        // Se a resposta não for JSON, pode ser HTML de erro ou texto simples
-        if (text.trim().startsWith('<') || text.includes('<!DOCTYPE')) {
-          return NextResponse.json(
-            {
-              error: "Erro ao gerar composição",
-              details: "O servidor retornou uma resposta inválida. Tente novamente em alguns instantes.",
-            },
-            { status: 500 }
-          );
-        }
-        
-        // Se for texto simples, tentar extrair mensagem de erro
-        const errorMatch = text.match(/error["\s:]+([^"}\n]+)/i) || text.match(/message["\s:]+([^"}\n]+)/i);
-        const errorMessage = errorMatch ? errorMatch[1].trim() : "Resposta do servidor em formato inválido";
-        
-        return NextResponse.json(
-          {
-            error: "Erro ao gerar composição",
-            details: errorMessage.substring(0, 200),
-          },
-          { status: 500 }
-        );
+        const { rollbackCredit } = await import("@/lib/financials");
+        await rollbackCredit(body.lojistaId, creditReservation.reservationId);
+      } catch (rollbackError) {
+        console.error("[remix] Erro ao fazer rollback:", rollbackError);
       }
-    } catch (parseError: any) {
-      console.error("[remix] Erro inesperado ao processar resposta:", {
-        error: parseError.message,
-        name: parseError.name,
-        stack: parseError.stack,
-      });
       return NextResponse.json(
         {
-          error: "Erro ao gerar composição",
-          details: "Erro ao processar resposta do servidor. Tente novamente em alguns instantes.",
+          error: "Erro interno do servidor. Tente novamente em alguns instantes.",
+          details: "Firestore Admin não disponível"
         },
         { status: 500 }
       );
     }
 
-    if (!backendResponse.ok) {
-      // Se data não foi parseado corretamente ou não é um objeto, tratar como erro genérico
-      if (!data || typeof data !== 'object' || Array.isArray(data)) {
-        console.error("[remix] Erro do backend - resposta não é JSON válido:", {
-          status: backendResponse.status,
-          statusText: backendResponse.statusText,
-          dataType: typeof data,
-          isArray: Array.isArray(data),
-          dataPreview: String(data).substring(0, 200),
-        });
-        
-        return NextResponse.json(
-          {
-            error: "Erro ao gerar composição",
-            details: `Erro do servidor (${backendResponse.status}). Tente novamente em alguns instantes.`,
-          },
-          { status: backendResponse.status >= 500 ? 500 : backendResponse.status }
-        );
+    const jobsRef = db.collection("generation_jobs");
+    const jobId = `job-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    
+    // Preparar dados do Job (MESMA ESTRUTURA DO CRIAR LOOK)
+    const jobData: Partial<GenerationJob> & {
+      lojistaId: string;
+      status: JobStatus;
+      reservationId: string;
+      createdAt: any;
+      personImageUrl: string;
+      productIds: string[];
+      retryCount: number;
+      maxRetries: number;
+    } = {
+      lojistaId: body.lojistaId,
+      customerId: body.customerId || undefined,
+      customerName: body.customerName || undefined,
+      status: "PENDING" as JobStatus,
+      reservationId: creditReservation.reservationId,
+      createdAt: FieldValue.serverTimestamp() as any,
+      personImageUrl: photoUrl, // Usar original_photo_url diretamente
+      productIds: productIds,
+      retryCount: 0,
+      maxRetries: 3,
+      scenePrompts: [remixPrompt], // REMIX: Prompt de pose
+      options: {
+        ...body.options,
+        quality: body.options?.quality || "high",
+        skipWatermark: body.options?.skipWatermark !== false,
+        lookType: "creative",
+        productCategory: hasShoes ? "Calçados" : undefined,
+        seed: randomSeed,
+        gerarNovoLook: true, // CRÍTICO: Sempre ativar no remix
+        original_photo_url: photoUrl,
+        sceneInstructions: "IMPORTANT: The scene must be during DAYTIME with bright natural lighting. NEVER use night scenes, dark backgrounds, evening, sunset, dusk, or any nighttime setting. Always use well-lit daytime environments with natural sunlight.",
+        // REMIX: NÃO enviar scenarioImageUrl - backend usará getSmartScenario
+        scenarioImageUrl: undefined,
+      },
+    };
+
+    try {
+      // Sanitizar dados do Job (MESMA LÓGICA DO CRIAR LOOK)
+      const sanitizedJobData: any = {
+        lojistaId: jobData.lojistaId,
+        status: jobData.status,
+        reservationId: jobData.reservationId,
+        createdAt: jobData.createdAt,
+        personImageUrl: jobData.personImageUrl,
+        productIds: jobData.productIds,
+        retryCount: jobData.retryCount || 0,
+        maxRetries: jobData.maxRetries || 3,
+      };
+      
+      if (jobData.customerId !== undefined && jobData.customerId !== null) sanitizedJobData.customerId = jobData.customerId;
+      if (jobData.customerName !== undefined && jobData.customerName !== null) sanitizedJobData.customerName = jobData.customerName;
+      if (jobData.scenePrompts !== undefined && jobData.scenePrompts !== null) sanitizedJobData.scenePrompts = jobData.scenePrompts;
+      
+      // Sanitizar options: remover undefined e garantir que não há valores inválidos
+      if (jobData.options !== undefined && jobData.options !== null) {
+        const sanitizedOptions: any = {};
+        for (const [key, value] of Object.entries(jobData.options)) {
+          // Ignorar undefined e null
+          if (value !== undefined && value !== null) {
+            // Se for objeto, fazer deep sanitize
+            if (typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+              const sanitizedValue: any = {};
+              for (const [subKey, subValue] of Object.entries(value)) {
+                if (subValue !== undefined && subValue !== null) {
+                  sanitizedValue[subKey] = subValue;
+                }
+              }
+              if (Object.keys(sanitizedValue).length > 0) {
+                sanitizedOptions[key] = sanitizedValue;
+              }
+            } else {
+              sanitizedOptions[key] = value;
+            }
+          }
+        }
+        if (Object.keys(sanitizedOptions).length > 0) {
+          sanitizedJobData.options = sanitizedOptions;
+        }
       }
       
-      console.error("[remix] Erro do backend:", {
-        status: backendResponse.status,
-        error: data.error,
-        details: data.details,
-        message: data.message,
-        fullResponse: JSON.stringify(data).substring(0, 500),
+      await jobsRef.doc(jobId).set(sanitizedJobData);
+      
+      console.log("[remix] Job criado com sucesso:", {
+        jobId,
+        reservationId: creditReservation.reservationId,
+        status: "PENDING",
+      });
+
+      // Disparar processamento assíncrono (MESMA LÓGICA DO CRIAR LOOK)
+      // FIX PRODUÇÃO: Detectar URL do backend corretamente em produção
+      let backendUrl =
+        process.env.NEXT_PUBLIC_BACKEND_URL ||
+        process.env.NEXT_PUBLIC_PAINELADM_URL;
+      
+      // Se não tiver variável de ambiente, tentar detectar automaticamente em produção
+      if (!backendUrl || backendUrl === DEFAULT_LOCAL_BACKEND) {
+        const host = request.headers.get('host') || request.headers.get('x-forwarded-host');
+        const protocol = request.headers.get('x-forwarded-proto') || 'https';
+        
+        // Se estiver em produção (não localhost), usar o mesmo domínio do frontend
+        if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
+          // Tentar detectar o domínio do backend baseado no domínio do frontend
+          // Exemplo: app2.experimenteai.com.br -> paineladm.experimenteai.com.br
+          if (host.includes('app2.experimenteai.com.br')) {
+            backendUrl = 'https://paineladm.experimenteai.com.br';
+          } else if (host.includes('app.experimenteai.com.br')) {
+            backendUrl = 'https://paineladm.experimenteai.com.br';
+          } else {
+            // Fallback: usar o mesmo domínio com porta padrão (se necessário)
+            backendUrl = `${protocol}://${host}`;
+          }
+        } else {
+          // Local: usar localhost
+          backendUrl = DEFAULT_LOCAL_BACKEND;
+        }
+      }
+      
+      console.log("[remix] 🔍 Backend URL detectado:", {
+        backendUrl,
+        host: request.headers.get('host'),
+        hasEnvVar: !!(process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_PAINELADM_URL),
+        envBackend: process.env.NEXT_PUBLIC_BACKEND_URL,
+        envPaineladm: process.env.NEXT_PUBLIC_PAINELADM_URL,
       });
       
-      // Mensagens mais amigáveis para diferentes códigos de erro
-      let errorMessage = data.error || data.message || "Erro ao gerar composição";
-      let errorDetails = data.details || `Status: ${backendResponse.status}`;
+      // Disparar processamento assíncrono com logs detalhados
+      console.log("[remix] 🚀 Disparando processamento assíncrono:", {
+        backendUrl,
+        jobId,
+        endpoint: `${backendUrl}/api/internal/process-job`,
+      });
       
-      if (backendResponse.status === 500) {
-        errorMessage = "Erro ao gerar composição";
-        errorDetails = "Erro interno do servidor. Tente novamente em alguns instantes.";
-      } else if (backendResponse.status === 503) {
-        errorMessage = "Erro ao gerar composição";
-        errorDetails = "Serviço temporariamente indisponível. Tente novamente em alguns instantes.";
-      } else if (backendResponse.status === 429 || (data.error && (data.error.includes('RESOURCE_EXHAUSTED') || data.error.includes('rate limit')))) {
-        errorMessage = "Erro ao gerar composição";
-        errorDetails = "Muitas requisições. Aguarde alguns instantes e tente novamente.";
-      } else if (backendResponse.status === 400) {
-        errorMessage = "Erro ao gerar composição";
-        errorDetails = data.details || "Dados inválidos. Verifique se a foto e os produtos estão corretos.";
+      fetch(`${backendUrl}/api/internal/process-job`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Internal-Request": "true",
+        },
+        body: JSON.stringify({ jobId }),
+      })
+      .then((response) => {
+        console.log("[remix] ✅ Processamento disparado:", {
+          status: response.status,
+          statusText: response.statusText,
+          jobId,
+        });
+      })
+      .catch((error) => {
+        console.error("[remix] ❌ Erro ao disparar processamento:", {
+          error: error?.message,
+          stack: error?.stack?.substring(0, 500),
+          backendUrl,
+          jobId,
+          note: "Job será processado pelo cron job automaticamente",
+        });
+      });
+      
+      // Disparar trigger como fallback
+      fetch(`${backendUrl}/api/triggers/process-pending-jobs`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Internal-Request": "true",
+        },
+        body: JSON.stringify({ jobId, limit: 1 }),
+      })
+      .then(() => {
+        console.log("[remix] ✅ Trigger fallback disparado:", jobId);
+      })
+      .catch((error) => {
+        console.warn("[remix] ⚠️ Trigger fallback não disponível (normal em produção):", {
+          error: error?.message,
+          note: "Cron job processará o job automaticamente",
+        });
+      });
+
+      // Retornar 202 com jobId (MESMA LÓGICA DO CRIAR LOOK)
+      return NextResponse.json({
+        success: true,
+        jobId,
+        reservationId: creditReservation.reservationId,
+        status: "PENDING",
+        message: "Geração iniciada. Use o jobId para consultar o status.",
+      }, { status: 202 });
+      
+    } catch (jobError: any) {
+      console.error("[remix] Erro ao criar Job:", jobError);
+      
+      // Fazer rollback da reserva
+      try {
+        const { rollbackCredit } = await import("@/lib/financials");
+        await rollbackCredit(body.lojistaId, creditReservation.reservationId);
+      } catch (rollbackError) {
+        console.error("[remix] Erro ao fazer rollback:", rollbackError);
       }
       
       return NextResponse.json(
         {
-          error: errorMessage,
-          details: errorDetails,
+          error: "Erro ao criar job de geração",
+          details: jobError?.message || "Erro interno ao criar job.",
         },
-        { status: backendResponse.status >= 500 ? 500 : backendResponse.status }
+        { status: 500 }
       );
     }
-
-    console.log("[remix] PHASE 21 FIX: Remix gerado com sucesso (cenário determinado pelo backend):", {
-      composicaoId: data.composicaoId,
-      looksCount: data.looks?.length || 0,
-      pose: randomPose,
-      randomSeed,
-    });
-
-    // PHASE 21 FIX: Retornar dados com informações do remix (cenário foi determinado pelo backend)
-    return NextResponse.json({
-      ...data,
-      remixInfo: {
-        pose: randomPose,
-        prompt: remixPrompt,
-        randomSeed, // PHASE 11-B: Incluir seed na resposta
-      },
-    }, { status: backendResponse.status });
-
   } catch (error: any) {
     console.error("[remix] Erro inesperado:", error);
-    console.error("[remix] Stack:", error?.stack);
-    console.error("[remix] Tipo do erro:", typeof error);
-    console.error("[remix] Propriedades do erro:", Object.keys(error || {}));
     
     const errorMessage = error instanceof Error ? error.message : String(error);
     const errorName = error?.name || "UnknownError";
@@ -553,34 +467,18 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
     let userFriendlyMessage = "Erro ao gerar composição";
     let details = "Erro ao processar requisição. Tente novamente em alguns instantes.";
     
-    if (errorName === "AbortError" || errorMessage?.includes("timeout") || errorMessage?.includes("aborted")) {
-      userFriendlyMessage = "Erro ao gerar composição";
+    if (errorName === "AbortError" || errorMessage?.includes("timeout")) {
       details = "O processo está demorando mais que o esperado. Tente novamente em alguns instantes.";
-    } else if (errorMessage?.includes("ECONNREFUSED") || errorMessage?.includes("fetch failed") || errorMessage?.includes("network")) {
-      userFriendlyMessage = "Erro ao gerar composição";
+    } else if (errorMessage?.includes("ECONNREFUSED") || errorMessage?.includes("fetch failed")) {
       details = "Não foi possível conectar ao servidor. Verifique sua conexão com a internet.";
-    } else if (errorMessage?.includes("JSON") || errorMessage?.includes("parse")) {
-      userFriendlyMessage = "Erro ao gerar composição";
-      details = "Erro ao processar resposta do servidor. Tente novamente.";
-    } else if (errorMessage?.includes("429") || errorMessage?.includes("RESOURCE_EXHAUSTED") || errorMessage?.includes("rate limit")) {
-      userFriendlyMessage = "Erro ao gerar composição";
-      details = "Muitas requisições. Aguarde alguns instantes e tente novamente.";
-    } else if (errorMessage?.includes("400") || errorMessage?.includes("Bad Request")) {
-      userFriendlyMessage = "Erro ao gerar composição";
-      details = "Dados inválidos. Verifique se a foto e os produtos estão corretos.";
     }
     
     return NextResponse.json(
       {
         error: userFriendlyMessage,
         details: details,
-        ...(process.env.NODE_ENV === 'development' && {
-          originalError: errorMessage,
-          errorName: errorName,
-        }),
       },
       { status: 500 }
     );
   }
 }
-

@@ -1625,6 +1625,15 @@ export default function ResultadoPage() {
       clearTimeout(timeoutId)
       
       const responseData = await response.json()
+      
+      console.log("[handleRegenerate] 📋 Resposta recebida:", {
+        status: response.status,
+        hasJobId: !!responseData.jobId,
+        hasLooks: !!(responseData.looks && Array.isArray(responseData.looks)),
+        responseDataKeys: Object.keys(responseData),
+        jobId: responseData.jobId,
+        looksCount: responseData.looks?.length || 0,
+      })
 
       // PHASE 27: Verificar se a resposta é assíncrona (202 Accepted com jobId) - MESMA LÓGICA DO handleVisualize
       if (response.status === 202 && responseData.jobId) {
@@ -1761,7 +1770,28 @@ export default function ResultadoPage() {
         }
         
         // Iniciar polling
-        const pollResult = await pollJobStatus()
+        console.log("[handleRegenerate] 🚀 Iniciando polling do job:", jobId)
+        let pollResult: any
+        try {
+          pollResult = await pollJobStatus()
+          console.log("[handleRegenerate] ✅ Polling concluído com sucesso:", {
+            hasImageUrl: !!pollResult?.imageUrl,
+            hasCompositionId: !!pollResult?.compositionId,
+            imageUrl: pollResult?.imageUrl?.substring(0, 50) + "...",
+          })
+        } catch (pollError: any) {
+          console.error("[handleRegenerate] ❌ Erro no polling:", {
+            error: pollError?.message,
+            stack: pollError?.stack?.substring(0, 500),
+          })
+          throw new Error(`Erro ao processar geração: ${pollError?.message || "Tempo de processamento excedido"}`)
+        }
+        
+        // Validar que pollResult tem os dados necessários
+        if (!pollResult || !pollResult.imageUrl) {
+          console.error("[handleRegenerate] ❌ PollResult inválido:", pollResult)
+          throw new Error("Erro ao gerar composição. Nenhum look foi gerado.")
+        }
         
         // Salvar resultados e recarregar - MESMA LÓGICA DO handleVisualize
         const generatedLook = {
@@ -1772,6 +1802,12 @@ export default function ResultadoPage() {
           produtoPreco: products.reduce((sum: number, p: any) => sum + (p.preco || 0), 0),
           compositionId: pollResult.compositionId || null,
         }
+        
+        console.log("[handleRegenerate] 💾 Salvando look gerado:", {
+          lookId: generatedLook.id,
+          hasImageUrl: !!generatedLook.imagemUrl,
+          imageUrl: generatedLook.imagemUrl?.substring(0, 50) + "...",
+        })
 
         sessionStorage.setItem(`looks_${lojistaId}`, JSON.stringify([generatedLook]))
         // PHASE 11 FIX: Manter foto ORIGINAL (não sobrescrever com foto gerada)

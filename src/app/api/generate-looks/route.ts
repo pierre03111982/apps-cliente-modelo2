@@ -1,7 +1,7 @@
 import { reserveCredit } from "@/lib/financials";
 import { NextRequest, NextResponse } from "next/server";
 import { getFirestoreAdmin } from "@/lib/firebaseAdmin";
-import { findScenarioByProductTags } from "@/lib/scenarioMatcher";
+// REMOVIDO: findScenarioByProductTags - backend sempre usa getSmartScenario
 import type { Produto, GenerationJob, JobStatus } from "@/lib/types";
 import { FieldValue } from "firebase-admin/firestore";
 
@@ -159,34 +159,12 @@ export async function POST(request: NextRequest) {
       console.warn("[modelo-2/api/generate-looks] PHASE 26: db é null/undefined, pulando busca de produtos");
     }
     
-    // PHASE 26: Buscar cenário baseado em tags dos produtos
-    // IMPORTANTE: Quando há múltiplos produtos, usar o cenário do PRIMEIRO produto adicionado
-    let scenarioData: { imageUrl: string; lightingPrompt: string; category: string } | null = null;
-    if (products.length > 0) {
-      try {
-        // Se há múltiplos produtos, usar apenas o primeiro para buscar o cenário
-        const productsForScenario = products.length > 1 ? [products[0]] : products;
-        
-        console.log("[modelo-2/api/generate-looks] PHASE 26: Buscando cenário:", {
-          totalProdutos: products.length,
-          usandoPrimeiroProduto: products.length > 1,
-          primeiroProduto: products[0]?.nome || "N/A",
-        });
-        
-        scenarioData = await findScenarioByProductTags(productsForScenario);
-        if (scenarioData) {
-          console.log("[modelo-2/api/generate-looks] PHASE 26: Cenário encontrado por tags:", {
-            category: scenarioData.category,
-            hasImageUrl: !!scenarioData.imageUrl,
-            lightingPrompt: scenarioData.lightingPrompt.substring(0, 50) + "...",
-            baseadoNoPrimeiroProduto: products.length > 1,
-          });
-        }
-      } catch (scenarioError: any) {
-        console.warn("[modelo-2/api/generate-looks] PHASE 26: Erro ao buscar cenário:", scenarioError.message);
-        // Continuar sem cenário - backend usará prompt genérico
-      }
-    }
+    // IMPORTANTE: NÃO buscar cenário no frontend
+    // Backend sempre usa getSmartScenario que aplica todas as regras (Bikini Law, Gym Integrity, etc.)
+    console.log("[modelo-2/api/generate-looks] Backend usará getSmartScenario para determinar cenário:", {
+      totalProdutos: products.length,
+      note: "Cenário será determinado pelo backend usando getSmartScenario",
+    });
     
     // PHASE 13: Garantir que personImageUrl sempre seja a foto ORIGINAL
     // Ignorar qualquer "previous_image" ou imagem gerada anteriormente
@@ -248,29 +226,33 @@ export async function POST(request: NextRequest) {
       scenePrompts: body.scenePrompts || undefined,
       retryCount: 0, // PHASE 27: Inicializar contador de retries
       maxRetries: 3, // PHASE 27: Máximo de 3 tentativas
-      options: {
-        ...body.options,
-        // PHASE 26: Adicionar dados do cenário
-        ...(scenarioData && {
-          scenarioImageUrl: scenarioData.imageUrl,
-          scenarioLightingPrompt: scenarioData.lightingPrompt,
-          scenarioCategory: scenarioData.category,
-          scenarioInstructions: `CRITICAL: Use the provided scenarioImageUrl as the BACKGROUND IMAGE input for Gemini Vision API. 
-          - This image should be the 3rd input image (after person photo and product images)
-          - DO NOT generate or create a new background - USE the provided scenario image as-is
-          - Focus ALL AI processing power on:
-            1. Maintaining exact facial identity and features from the person photo
-            2. Ensuring products match exactly (colors, textures, fit)
-            3. Seamlessly compositing the person and products onto the provided background
-          - The background image is already perfect - just use it directly
-          - Lighting and scene context: ${scenarioData.lightingPrompt}`,
-        }),
-        sceneInstructions: body.sceneInstructions || "IMPORTANT: The scene must be during DAYTIME with bright natural lighting. NEVER use night scenes, dark backgrounds, evening, sunset, dusk, or any nighttime setting. Always use well-lit daytime environments with natural sunlight.",
-        original_photo_url: finalPersonImageUrl,
-      },
+      options: (() => {
+        const opts: any = {
+          ...body.options,
+          sceneInstructions: body.sceneInstructions || "IMPORTANT: The scene must be during DAYTIME with bright natural lighting. NEVER use night scenes, dark backgrounds, evening, sunset, dusk, or any nighttime setting. Always use well-lit daytime environments with natural sunlight.",
+          original_photo_url: finalPersonImageUrl,
+        };
+        // IMPORTANTE: NÃO incluir scenarioImageUrl (sempre undefined) - backend sempre usa getSmartScenario
+        // Remover explicitamente para não enviar undefined ao Firestore
+        if (opts.scenarioImageUrl !== undefined) delete opts.scenarioImageUrl;
+        return opts;
+      })(),
     };
 
     try {
+      // Validações finais antes de criar job
+      if (!finalPersonImageUrl || finalPersonImageUrl.trim() === "") {
+        throw new Error("personImageUrl está vazio ou inválido");
+      }
+      
+      if (!body.productIds || !Array.isArray(body.productIds) || body.productIds.length === 0) {
+        throw new Error("productIds está vazio ou inválido");
+      }
+      
+      if (!creditReservation.reservationId || creditReservation.reservationId.trim() === "") {
+        throw new Error("reservationId está vazio ou inválido");
+      }
+      
       // Criar Job no Firestore
       console.log("[modelo-2/api/generate-looks] PHASE 27: Tentando criar job no Firestore...", {
         jobId,
@@ -278,6 +260,8 @@ export async function POST(request: NextRequest) {
         productIdsCount: body.productIds?.length || 0,
         hasDb: !!db,
         hasJobsRef: !!jobsRef,
+        personImageUrlLength: finalPersonImageUrl.length,
+        reservationId: creditReservation.reservationId,
       });
       
       // Validar que jobData não contém valores inválidos
@@ -294,11 +278,37 @@ export async function POST(request: NextRequest) {
       };
       
       // Adicionar campos opcionais apenas se existirem e não forem undefined
-      if (jobData.customerId !== undefined) sanitizedJobData.customerId = jobData.customerId;
-      if (jobData.customerName !== undefined) sanitizedJobData.customerName = jobData.customerName;
-      if (jobData.productUrl !== undefined) sanitizedJobData.productUrl = jobData.productUrl;
-      if (jobData.scenePrompts !== undefined) sanitizedJobData.scenePrompts = jobData.scenePrompts;
-      if (jobData.options !== undefined) sanitizedJobData.options = jobData.options;
+      if (jobData.customerId !== undefined && jobData.customerId !== null) sanitizedJobData.customerId = jobData.customerId;
+      if (jobData.customerName !== undefined && jobData.customerName !== null) sanitizedJobData.customerName = jobData.customerName;
+      if (jobData.productUrl !== undefined && jobData.productUrl !== null) sanitizedJobData.productUrl = jobData.productUrl;
+      if (jobData.scenePrompts !== undefined && jobData.scenePrompts !== null) sanitizedJobData.scenePrompts = jobData.scenePrompts;
+      
+      // Sanitizar options: remover undefined e garantir que não há valores inválidos
+      if (jobData.options !== undefined && jobData.options !== null) {
+        const sanitizedOptions: any = {};
+        for (const [key, value] of Object.entries(jobData.options)) {
+          // Ignorar undefined e null
+          if (value !== undefined && value !== null) {
+            // Se for objeto, fazer deep sanitize
+            if (typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+              const sanitizedValue: any = {};
+              for (const [subKey, subValue] of Object.entries(value)) {
+                if (subValue !== undefined && subValue !== null) {
+                  sanitizedValue[subKey] = subValue;
+                }
+              }
+              if (Object.keys(sanitizedValue).length > 0) {
+                sanitizedOptions[key] = sanitizedValue;
+              }
+            } else {
+              sanitizedOptions[key] = value;
+            }
+          }
+        }
+        if (Object.keys(sanitizedOptions).length > 0) {
+          sanitizedJobData.options = sanitizedOptions;
+        }
+      }
       
       console.log("[modelo-2/api/generate-looks] PHASE 27: Dados do Job preparados:", {
         jobId,
@@ -306,9 +316,13 @@ export async function POST(request: NextRequest) {
         status: sanitizedJobData.status,
         reservationId: sanitizedJobData.reservationId,
         productIdsCount: sanitizedJobData.productIds?.length || 0,
+        hasOptions: !!sanitizedJobData.options,
+        optionsKeys: sanitizedJobData.options ? Object.keys(sanitizedJobData.options) : [],
       });
       
+      console.log("[modelo-2/api/generate-looks] PHASE 27: Tentando salvar no Firestore...");
       await jobsRef.doc(jobId).set(sanitizedJobData);
+      console.log("[modelo-2/api/generate-looks] PHASE 27: Job salvo no Firestore com sucesso");
       
       console.log("[modelo-2/api/generate-looks] PHASE 27: Job criado com sucesso:", {
         jobId,
@@ -317,10 +331,41 @@ export async function POST(request: NextRequest) {
       });
 
       // Disparar processamento assíncrono (não aguardar)
-      const backendUrl =
+      // FIX PRODUÇÃO: Detectar URL do backend corretamente em produção
+      let backendUrl =
         process.env.NEXT_PUBLIC_BACKEND_URL ||
-        process.env.NEXT_PUBLIC_PAINELADM_URL ||
-        DEFAULT_LOCAL_BACKEND;
+        process.env.NEXT_PUBLIC_PAINELADM_URL;
+      
+      // Se não tiver variável de ambiente, tentar detectar automaticamente em produção
+      if (!backendUrl || backendUrl === DEFAULT_LOCAL_BACKEND) {
+        const host = request.headers.get('host') || request.headers.get('x-forwarded-host');
+        const protocol = request.headers.get('x-forwarded-proto') || 'https';
+        
+        // Se estiver em produção (não localhost), usar o mesmo domínio do frontend
+        if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
+          // Tentar detectar o domínio do backend baseado no domínio do frontend
+          // Exemplo: app2.experimenteai.com.br -> paineladm.experimenteai.com.br
+          if (host.includes('app2.experimenteai.com.br')) {
+            backendUrl = 'https://paineladm.experimenteai.com.br';
+          } else if (host.includes('app.experimenteai.com.br')) {
+            backendUrl = 'https://paineladm.experimenteai.com.br';
+          } else {
+            // Fallback: usar o mesmo domínio com porta padrão (se necessário)
+            backendUrl = `${protocol}://${host}`;
+          }
+        } else {
+          // Local: usar localhost
+          backendUrl = DEFAULT_LOCAL_BACKEND;
+        }
+      }
+      
+      console.log("[modelo-2/api/generate-looks] 🔍 Backend URL detectado:", {
+        backendUrl,
+        host: request.headers.get('host'),
+        hasEnvVar: !!(process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_PAINELADM_URL),
+        envBackend: process.env.NEXT_PUBLIC_BACKEND_URL,
+        envPaineladm: process.env.NEXT_PUBLIC_PAINELADM_URL,
+      });
       
       // PHASE 27: Disparar processamento assíncrono imediatamente
       // Tentar chamar o endpoint interno primeiro, se falhar, o cron processará depois
@@ -360,13 +405,32 @@ export async function POST(request: NextRequest) {
         reservationId: creditReservation.reservationId,
       }, { status: 202 }); // 202 Accepted - requisição aceita mas ainda processando
     } catch (jobError: any) {
-      console.error("[modelo-2/api/generate-looks] PHASE 27: Erro ao criar Job:", jobError);
-      console.error("[modelo-2/api/generate-looks] PHASE 27: Mensagem do erro:", jobError?.message);
-      console.error("[modelo-2/api/generate-looks] PHASE 27: Stack do erro:", jobError?.stack);
-      console.error("[modelo-2/api/generate-looks] PHASE 27: Nome do erro:", jobError?.name);
-      console.error("[modelo-2/api/generate-looks] PHASE 27: Tipo do erro:", typeof jobError);
-      console.error("[modelo-2/api/generate-looks] PHASE 27: Erro completo (stringify):", JSON.stringify(jobError, Object.getOwnPropertyNames(jobError)));
-      console.error("[modelo-2/api/generate-looks] PHASE 27: jobData que causou erro:", JSON.stringify(jobData, null, 2));
+      console.error("[modelo-2/api/generate-looks] PHASE 27: ❌ ERRO ao criar Job:", {
+        message: jobError?.message,
+        name: jobError?.name,
+        code: jobError?.code,
+        stack: jobError?.stack?.substring(0, 500),
+        type: typeof jobError,
+      });
+      
+      // Tentar identificar o tipo de erro
+      if (jobError?.code === 'permission-denied') {
+        console.error("[modelo-2/api/generate-looks] PHASE 27: Erro de permissão do Firestore");
+      } else if (jobError?.code === 'invalid-argument') {
+        console.error("[modelo-2/api/generate-looks] PHASE 27: Argumento inválido no Firestore");
+      } else if (jobError?.message?.includes('FieldValue')) {
+        console.error("[modelo-2/api/generate-looks] PHASE 27: Erro relacionado ao FieldValue.serverTimestamp()");
+      }
+      
+      console.error("[modelo-2/api/generate-looks] PHASE 27: Dados que causaram erro:", {
+        jobId,
+        lojistaId: jobData.lojistaId,
+        hasPersonImageUrl: !!jobData.personImageUrl,
+        personImageUrlLength: jobData.personImageUrl?.length || 0,
+        productIdsCount: jobData.productIds?.length || 0,
+        hasReservationId: !!jobData.reservationId,
+        hasOptions: !!jobData.options,
+      });
       
       // Se falhar ao criar Job, fazer rollback da reserva
       try {
