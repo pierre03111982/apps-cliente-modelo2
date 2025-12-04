@@ -842,6 +842,34 @@ export default function ExperimentarPage() {
     })
   }
 
+  // Helper para garantir que nunca enviamos blob URL ao servidor
+  const ensureHttpUrl = async (url: string): Promise<string> => {
+    // Se já é HTTP/HTTPS, retornar direto
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    
+    // Se é blob ou data URL, precisa converter
+    if (url.startsWith('blob:') || url.startsWith('data:')) {
+      console.warn("[ensureHttpUrl] ⚠️ Detectado blob/data URL, convertendo para HTTP...");
+      try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const fileName = `photo-${Date.now()}.${blob.type.split('/')[1] || 'png'}`;
+        const file = new File([blob], fileName, { type: blob.type || 'image/png' });
+        
+        // Usar a função uploadPersonPhoto que está logo abaixo
+        return await uploadPersonPhoto(file);
+      } catch (error: any) {
+        console.error("[ensureHttpUrl] ❌ Erro ao converter blob/data URL:", error);
+        throw new Error("Erro ao processar foto. Por favor, faça upload novamente.");
+      }
+    }
+    
+    // Caso inesperado
+    throw new Error("Formato de foto inválido. Por favor, faça upload novamente.");
+  };
+
   // Upload de foto para o backend (usar proxy interno)
   const uploadPersonPhoto = async (file: File): Promise<string> => {
     try {
@@ -1058,6 +1086,12 @@ export default function ExperimentarPage() {
         // URL HTTP/HTTPS (já foi enviada anteriormente)
         personImageUrl = originalPhotoUrl
         console.log("[handleRefine] ✅ Usando foto original (HTTP):", personImageUrl?.substring(0, 50) + "...")
+      }
+
+      // VALIDAÇÃO FINAL: Garantir que personImageUrl NUNCA é blob URL antes de enviar
+      if (personImageUrl.startsWith('blob:') || personImageUrl.startsWith('data:')) {
+        console.warn("[handleRefine] ⚠️ VALIDAÇÃO: personImageUrl ainda é blob/data, convertendo agora...");
+        personImageUrl = await ensureHttpUrl(personImageUrl);
       }
 
       // Preparar dados para geração (mesma lógica do handleVisualize)
