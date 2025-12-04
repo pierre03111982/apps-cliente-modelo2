@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
+    
     // Rejeitar blob: URLs - frontend deve converter antes
     if (photoUrl.startsWith('blob:')) {
       return NextResponse.json(
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
         console.error("[remix] Erro ao fazer rollback:", rollbackError);
       }
       return NextResponse.json(
-        {
+        { 
           error: "Erro interno do servidor. Tente novamente em alguns instantes.",
           details: "Firestore Admin não disponível"
         },
@@ -215,7 +215,7 @@ export async function POST(request: NextRequest) {
              cat.includes("tenis") || cat.includes("shoe") || 
              cat.includes("footwear");
     });
-
+    
     // Gerar prompt de remix
     // MASTER PROMPT: REFINAMENTO DE ESTILO - Poses elegantes e estáticas
     const remixPrompt = `${subjectDescription} ${randomPose} wearing ${productPrompt}${beachFootwearPrompt}, harmonious outfit combination. 

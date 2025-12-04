@@ -160,3 +160,7 @@ Se após seguir todos os passos a logo ainda não aparecer:
 3. Verifique se a URL da logo é acessível publicamente
 
 
+
+
+
+

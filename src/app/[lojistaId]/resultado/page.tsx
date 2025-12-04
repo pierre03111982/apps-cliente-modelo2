@@ -1314,8 +1314,8 @@ export default function ResultadoPage() {
         }
         throw fetchError;
       }
-
-      if (!response.ok) {
+              
+              if (!response.ok) {
         let errorData: any = {}
         try {
           const responseText = await response.text()
@@ -1431,14 +1431,14 @@ export default function ResultadoPage() {
               clearTimeout(fetchTimeout);
             } catch (fetchError: any) {
               clearTimeout(fetchTimeout);
-              if (fetchError.name === 'AbortError') {
+            if (fetchError.name === 'AbortError') {
                 throw new Error("Tempo de resposta excedido ao carregar a foto. Verifique sua conexão e tente novamente.");
-              }
-              if (fetchError.message?.includes('fetch failed') || 
-                  fetchError.message?.includes('Failed to fetch') ||
+            }
+            if (fetchError.message?.includes('fetch failed') || 
+                fetchError.message?.includes('Failed to fetch') ||
                   fetchError.message?.includes('NetworkError')) {
                 throw new Error("Erro de conexão. Verifique sua internet e tente novamente.");
-              }
+            }
               throw fetchError;
             }
             
@@ -1511,8 +1511,8 @@ export default function ResultadoPage() {
         customerId: clienteId,
         customerName: clienteNome, // Adicionar customerName para o Radar funcionar
         gender: products.find((p: any) => p.genero)?.genero || null, // Detectar gênero dos produtos
-        options: {
-          quality: "high",
+        options: { 
+          quality: "high", 
           // IMPORTANTE: Desabilitar watermark para remover a caixa preta com informações do produto
           skipWatermark: true,
           lookType: "creative", // Sempre usar Look Criativo para multi-produto
@@ -1537,7 +1537,7 @@ export default function ResultadoPage() {
       
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
-
+      
       let response: Response
       try {
         // PHASE 11-B FIX: Usar a rota correta /api/generate-looks/remix
@@ -1586,9 +1586,9 @@ export default function ResultadoPage() {
         let errorData: any = {}
         try {
           const errorText = await response.text()
-          try {
+            try {
             errorData = JSON.parse(errorText)
-          } catch {
+            } catch {
             errorData = { error: errorText || `Erro HTTP ${response.status}` }
           }
         } catch {

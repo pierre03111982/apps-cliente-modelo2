@@ -1038,26 +1038,22 @@ export default function ExperimentarPage() {
           console.log("[handleRefine] Fazendo upload da foto convertida...");
           personImageUrl = await uploadPersonPhoto(file)
           console.log("[handleRefine] ✅ Foto original (blob/data) convertida e enviada:", personImageUrl?.substring(0, 50) + "...")
-        } catch (blobError: any) {
-          console.error("[handleRefine] Erro ao converter blob/data original para File:", {
-            message: blobError.message,
-            name: blobError.name,
-            stack: blobError.stack,
-          });
-          
-          // Se o erro já tem uma mensagem específica, usar ela
-          if (blobError.message && !blobError.message.includes("Erro ao processar foto original")) {
-            throw blobError;
+          } catch (blobError: any) {
+            console.error("[handleRefine] Erro ao converter blob/data original para File:", {
+              message: blobError.message,
+              name: blobError.name,
+              stack: blobError.stack,
+            });
+            
+            // Tentar usar diretamente APENAS se for HTTP (NUNCA blob)
+            if (originalPhotoUrl.startsWith('http')) {
+              console.warn("[handleRefine] ⚠️ Usando URL HTTP diretamente como fallback");
+              personImageUrl = originalPhotoUrl
+            } else {
+              // NUNCA fazer fallback com blob URL - lançar erro informativo
+              throw new Error("Erro ao processar foto original. Por favor, faça upload novamente.");
+            }
           }
-          
-          // Tentar usar diretamente se for HTTP (fallback)
-          if (originalPhotoUrl.startsWith('http')) {
-            console.warn("[handleRefine] ⚠️ Usando URL HTTP diretamente como fallback");
-            personImageUrl = originalPhotoUrl
-          } else {
-            throw new Error(blobError.message || "Erro ao processar foto original. Tente fazer upload novamente.");
-          }
-        }
       } else {
         // URL HTTP/HTTPS (já foi enviada anteriormente)
         personImageUrl = originalPhotoUrl
@@ -1362,6 +1358,7 @@ export default function ExperimentarPage() {
         
         if (originalPhotoUrl.startsWith('blob:')) {
           // Se for blob, converter para File e fazer upload
+          // NUNCA enviar blob URL diretamente ao servidor
           try {
             const response = await fetch(originalPhotoUrl)
             const blob = await response.blob()
@@ -1369,10 +1366,10 @@ export default function ExperimentarPage() {
             const file = new File([blob], fileName, { type: blob.type || 'image/png' })
             personImageUrl = await uploadPersonPhoto(file)
             console.log("[handleVisualize] ✅ Foto original (blob) convertida e enviada:", personImageUrl?.substring(0, 50) + "...")
-          } catch (blobError) {
+          } catch (blobError: any) {
             console.error("[handleVisualize] Erro ao converter blob original para File:", blobError)
-            // Fallback: tentar usar diretamente
-            personImageUrl = originalPhotoUrl
+            // NUNCA fazer fallback com blob URL - lançar erro
+            throw new Error("Erro ao processar foto original. Por favor, faça upload novamente.")
           }
         } else {
           // URL HTTP/HTTPS (já foi enviada anteriormente)
@@ -1484,6 +1481,12 @@ export default function ExperimentarPage() {
         }
       } else {
         throw new Error("Foto não encontrada")
+      }
+      
+      // VALIDAÇÃO FINAL: Garantir que personImageUrl NUNCA é blob URL antes de enviar
+      if (personImageUrl.startsWith('blob:') || personImageUrl.startsWith('data:')) {
+        console.warn("[handleVisualize] ⚠️ VALIDAÇÃO: personImageUrl ainda é blob/data, convertendo agora...");
+        personImageUrl = await ensureHttpUrl(personImageUrl);
       }
       
       console.log("[handleVisualize] ✅ Foto final enviada:", personImageUrl?.substring(0, 50) + "...")

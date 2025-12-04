@@ -134,3 +134,7 @@ https://app2.experimenteai.com.br/api/og-image/{lojistaId}
 - Fallback: mostra inicial do nome se logo não estiver disponível
 
 
+
+
+
+
