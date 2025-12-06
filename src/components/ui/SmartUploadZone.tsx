@@ -82,7 +82,13 @@ export function SmartUploadZone({ onFileSelect, isLoading }: SmartUploadZoneProp
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) validateAndProcess(e.target.files[0])
+    if (e.target.files?.[0]) {
+      validateAndProcess(e.target.files[0])
+      // Resetar o input para permitir selecionar o mesmo arquivo novamente
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
   }
 
   const validateAndProcess = (file: File) => {
@@ -170,13 +176,20 @@ export function SmartUploadZone({ onFileSelect, isLoading }: SmartUploadZoneProp
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          // Forçar clique direto no input para garantir que funcione em mobile
+          if (fileInputRef.current) {
+            fileInputRef.current.click()
+          }
+        }}
       >
         <input
           ref={fileInputRef}
           type="file"
           className="hidden"
-          accept="image/png, image/jpeg, image/webp"
+          accept="image/*"
           onChange={handleChange}
         />
 

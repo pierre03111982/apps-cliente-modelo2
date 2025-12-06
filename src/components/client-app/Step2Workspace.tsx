@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
-import { Upload, X, Check, Filter, Instagram, Facebook, Music2, ExternalLink, Heart } from "lucide-react"
+import { Upload, X, Check, Filter, Instagram, Facebook, Music2, ExternalLink, Heart, Gallery } from "lucide-react"
 import { Button } from "@/components/ui/Button"
 import type { Produto, SocialLinks, SalesConfig } from "@/lib/types"
 import { FavoritosStep2 } from "./FavoritosStep2"
+import { ProductAffinityBadge } from "./ProductAffinityBadge"
+import { ProductGalleryModal } from "./ProductGalleryModal"
 
 // Componente para exibir a última foto favoritada
 function UltimoFavoritoBox({ lojistaId, clienteId }: { lojistaId: string; clienteId: string }) {
@@ -108,6 +110,8 @@ export function Step2Workspace({
   const [activeCategory, setActiveCategory] = useState("Todos")
   const [categoryWarning, setCategoryWarning] = useState<string | null>(null)
   const [hasFollowedSocial, setHasFollowedSocial] = useState(false)
+  const [galleryModalOpen, setGalleryModalOpen] = useState(false)
+  const [selectedProductForGallery, setSelectedProductForGallery] = useState<Produto | null>(null)
 
   // Quando vier uma foto inicial (por ex. ao voltar do Passo 3), preencher o estado
   useEffect(() => {
@@ -294,6 +298,10 @@ export function Step2Workspace({
       const file = event.target.files[0]
       setUserPhoto(file)
       setUserPhotoUrl(URL.createObjectURL(file))
+      // Resetar o input para permitir selecionar o mesmo arquivo novamente
+      if (event.target) {
+        event.target.value = ''
+      }
     }
   }
 
@@ -554,6 +562,14 @@ export function Step2Workspace({
               <label
                 htmlFor="photo-upload"
                 className="mt-6 flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-white/30 bg-gradient-to-tl from-purple-500/80 via-indigo-700/80 to-blue-800/80 py-10 shadow-xl shadow-black/30 transition hover:border-white/50 hover:shadow-xl hover:shadow-black/40"
+                onClick={(e) => {
+                  // Garantir que o clique no label funcione em mobile
+                  e.preventDefault()
+                  const input = document.getElementById("photo-upload") as HTMLInputElement | null
+                  if (input) {
+                    input.click()
+                  }
+                }}
               >
                 <Upload className="h-10 w-10 text-accent-1" />
                 <span className="text-sm font-medium text-accent-1">Fazer upload da sua foto</span>
@@ -700,9 +716,16 @@ export function Step2Workspace({
                           {produto.categoria}
                         </span>
                       )}
-                      <div className="space-y-1">
+                      <div className="space-y-2">
                         <h4 className="text-base font-semibold text-white">{produto.nome}</h4>
                         <PriceDisplay preco={produto.preco} />
+                        {clienteId && lojistaId && (
+                          <ProductAffinityBadge
+                            lojistaId={lojistaId}
+                            clienteId={clienteId}
+                            productId={produto.id}
+                          />
+                        )}
                       </div>
 
                       {tamanhos.length > 0 ? (
@@ -746,6 +769,21 @@ export function Step2Workspace({
                       {produto.obs && (
                         <p className="text-xs text-white/70">{produto.obs}</p>
                       )}
+                      
+                      {/* Botão para ver galeria contextual - só aparece se tiver foto de upload */}
+                      {userPhotoUrl && clienteId && lojistaId && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedProductForGallery(produto)
+                            setGalleryModalOpen(true)
+                          }}
+                          className="flex items-center gap-2 w-full mt-3 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 transition-colors text-white text-xs font-medium"
+                        >
+                          <Gallery className="h-4 w-4" />
+                          Ver galeria com este produto
+                        </button>
+                      )}
                     </div>
                     {isSelected && (
                       <div className="absolute inset-0 flex items-center justify-center bg-accent-1/40 backdrop-blur-sm">
@@ -762,6 +800,22 @@ export function Step2Workspace({
           )}
         </section>
       </div>
+      
+      {/* Modal de Galeria Contextual */}
+      {selectedProductForGallery && lojistaId && clienteId && (
+        <ProductGalleryModal
+          lojistaId={lojistaId}
+          clienteId={clienteId}
+          productId={selectedProductForGallery.id}
+          productName={selectedProductForGallery.nome}
+          uploadImageHash={userPhotoUrl ? userPhotoUrl.split('?')[0] : null}
+          isOpen={galleryModalOpen}
+          onClose={() => {
+            setGalleryModalOpen(false)
+            setSelectedProductForGallery(null)
+          }}
+        />
+      )}
     </div>
   )
 }

@@ -646,6 +646,7 @@ export function ExperimentarView({
                     accept="image/*"
                     onChange={handlePhotoUpload}
                     className="hidden"
+                    multiple={false}
                   />
                 </div>
               ) : isRefineMode ? (
@@ -688,6 +689,7 @@ export function ExperimentarView({
                     accept="image/*"
                     onChange={handlePhotoUpload}
                     className="hidden"
+                    multiple={false}
                   />
                 </div>
               )}
