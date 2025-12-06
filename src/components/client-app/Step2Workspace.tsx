@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
-import { Upload, X, Check, Filter, Instagram, Facebook, Music2, ExternalLink, Heart, Gallery } from "lucide-react"
+import { Upload, X, Check, Filter, Instagram, Facebook, Music2, ExternalLink, Heart, Images } from "lucide-react"
 import { Button } from "@/components/ui/Button"
 import type { Produto, SocialLinks, SalesConfig } from "@/lib/types"
 import { FavoritosStep2 } from "./FavoritosStep2"
@@ -780,7 +780,7 @@ export function Step2Workspace({
                           }}
                           className="flex items-center gap-2 w-full mt-3 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 transition-colors text-white text-xs font-medium"
                         >
-                          <Gallery className="h-4 w-4" />
+                          <Images className="h-4 w-4" />
                           Ver galeria com este produto
                         </button>
                       )}
