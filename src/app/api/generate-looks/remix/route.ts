@@ -277,7 +277,6 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
       personImageUrl: photoUrl, // Usar original_photo_url diretamente
       productIds: productIds,
       produtos: products, // ✅ NOVO: Salvar array completo de produtos
-      temProdutos: products.length > 0, // ✅ NOVO: Flag para indicar que tem produtos
       retryCount: 0,
       maxRetries: 3,
       scenePrompts: [remixPrompt], // REMIX: Prompt de pose
@@ -307,7 +306,6 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
         personImageUrl: jobData.personImageUrl,
         productIds: jobData.productIds,
         produtos: jobData.produtos || [], // ✅ NOVO: Incluir produtos completos
-        temProdutos: jobData.temProdutos || false, // ✅ NOVO: Flag de produtos
         retryCount: jobData.retryCount || 0,
         maxRetries: jobData.maxRetries || 3,
       };
