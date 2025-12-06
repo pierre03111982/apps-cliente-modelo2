@@ -256,6 +256,7 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
     const jobId = `job-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     
     // Preparar dados do Job (MESMA ESTRUTURA DO CRIAR LOOK)
+    // ✅ CORREÇÃO: Salvar produtos completos no jobData (não apenas IDs)
     const jobData: Partial<GenerationJob> & {
       lojistaId: string;
       status: JobStatus;
@@ -263,6 +264,7 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
       createdAt: any;
       personImageUrl: string;
       productIds: string[];
+      produtos: any[]; // ✅ NOVO: Array completo de produtos
       retryCount: number;
       maxRetries: number;
     } = {
@@ -274,6 +276,8 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
       createdAt: FieldValue.serverTimestamp() as any,
       personImageUrl: photoUrl, // Usar original_photo_url diretamente
       productIds: productIds,
+      produtos: products, // ✅ NOVO: Salvar array completo de produtos
+      temProdutos: products.length > 0, // ✅ NOVO: Flag para indicar que tem produtos
       retryCount: 0,
       maxRetries: 3,
       scenePrompts: [remixPrompt], // REMIX: Prompt de pose
@@ -294,6 +298,7 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
 
     try {
       // Sanitizar dados do Job (MESMA LÓGICA DO CRIAR LOOK)
+      // ✅ CORREÇÃO: Incluir produtos completos no sanitizedJobData
       const sanitizedJobData: any = {
         lojistaId: jobData.lojistaId,
         status: jobData.status,
@@ -301,6 +306,8 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
         createdAt: jobData.createdAt,
         personImageUrl: jobData.personImageUrl,
         productIds: jobData.productIds,
+        produtos: jobData.produtos || [], // ✅ NOVO: Incluir produtos completos
+        temProdutos: jobData.temProdutos || false, // ✅ NOVO: Flag de produtos
         retryCount: jobData.retryCount || 0,
         maxRetries: jobData.maxRetries || 3,
       };
@@ -308,6 +315,17 @@ Photorealistic, 8k, highly detailed, professional fashion photography, distinct 
       if (jobData.customerId !== undefined && jobData.customerId !== null) sanitizedJobData.customerId = jobData.customerId;
       if (jobData.customerName !== undefined && jobData.customerName !== null) sanitizedJobData.customerName = jobData.customerName;
       if (jobData.scenePrompts !== undefined && jobData.scenePrompts !== null) sanitizedJobData.scenePrompts = jobData.scenePrompts;
+      
+      // ✅ NOVO: Log para confirmar que produtos estão sendo salvos
+      console.log("[remix] ✅ Produtos salvos no jobData:", {
+        totalProdutos: sanitizedJobData.produtos?.length || 0,
+        totalProductIds: sanitizedJobData.productIds?.length || 0,
+        produtos: sanitizedJobData.produtos?.map((p: any) => ({
+          id: p.id,
+          nome: p.nome || p.name,
+          preco: p.preco || p.price,
+        })) || [],
+      });
       
       // Sanitizar options: remover undefined e garantir que não há valores inválidos
       if (jobData.options !== undefined && jobData.options !== null) {
