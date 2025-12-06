@@ -97,6 +97,16 @@ export function SmartUploadZone({ onFileSelect, isLoading }: SmartUploadZoneProp
     onFileSelect(file)
   }
 
+  const handleClick = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (isLoading) return
+    // Forçar clique direto no input para garantir que funcione em mobile
+    if (fileInputRef.current) {
+      fileInputRef.current.click()
+    }
+  }
+
   return (
     <div className="w-full space-y-4 select-none">
       <div className="relative w-full overflow-hidden rounded-xl border border-gray-200 bg-gray-100 shadow-sm">
@@ -176,14 +186,9 @@ export function SmartUploadZone({ onFileSelect, isLoading }: SmartUploadZoneProp
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
-        onClick={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          // Forçar clique direto no input para garantir que funcione em mobile
-          if (fileInputRef.current) {
-            fileInputRef.current.click()
-          }
-        }}
+        onClick={handleClick}
+        onTouchStart={handleClick}
+        style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
       >
         <input
           ref={fileInputRef}
@@ -191,9 +196,10 @@ export function SmartUploadZone({ onFileSelect, isLoading }: SmartUploadZoneProp
           className="hidden"
           accept="image/*"
           onChange={handleChange}
+          style={{ display: 'none' }}
         />
 
-        <div className="flex flex-col items-center gap-2 p-4 text-center">
+        <div className="flex flex-col items-center gap-2 p-4 text-center pointer-events-none">
           <div className="rounded-full bg-white p-3 shadow-sm">
             {isLoading ? (
               <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-accent-1" />
