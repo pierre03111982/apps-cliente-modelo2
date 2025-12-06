@@ -36,9 +36,10 @@ const GUIDE_SLIDES = [
 interface SmartUploadZoneProps {
   onFileSelect: (file: File) => void
   isLoading?: boolean
+  inputId?: string // ID do input file externo para usar
 }
 
-export function SmartUploadZone({ onFileSelect, isLoading }: SmartUploadZoneProps) {
+export function SmartUploadZone({ onFileSelect, isLoading, inputId = "photo-upload" }: SmartUploadZoneProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [dragActive, setDragActive] = useState(false)
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -101,9 +102,26 @@ export function SmartUploadZone({ onFileSelect, isLoading }: SmartUploadZoneProp
     e.preventDefault()
     e.stopPropagation()
     if (isLoading) return
-    // Forçar clique direto no input para garantir que funcione em mobile
+    
+    // Prioridade 1: Tentar usar o input externo (que tem acesso à galeria/câmera)
+    const externalInput = document.getElementById(inputId) as HTMLInputElement | null
+    if (externalInput) {
+      // Resetar o input para garantir que onChange sempre dispare
+      externalInput.value = ""
+      setTimeout(() => {
+        externalInput.click()
+      }, 10)
+      return
+    }
+    
+    // Fallback: Usar o input interno
     if (fileInputRef.current) {
-      fileInputRef.current.click()
+      fileInputRef.current.value = ""
+      setTimeout(() => {
+        if (fileInputRef.current) {
+          fileInputRef.current.click()
+        }
+      }, 10)
     }
   }
 
