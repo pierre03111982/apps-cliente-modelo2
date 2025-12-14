@@ -18,6 +18,17 @@ import { normalizeSalesConfig } from "@/lib/utils"
 import { DislikeFeedbackModal } from "@/components/modals/DislikeFeedbackModal"
 import { ShoppingCartModal, CartItem } from "@/components/modals/ShoppingCartModal"
 
+// Função auxiliar para converter DislikeReason em texto legível
+function getReasonText(reason: DislikeReason): string {
+  const reasonMap: Record<DislikeReason, string> = {
+    garment_style: "Não gostei da peça",
+    fit_issue: "Caimento ruim",
+    ai_distortion: "Imagem estranha",
+    other: "Outro motivo",
+  }
+  return reasonMap[reason] || "Outro motivo"
+}
+
 // Resolver backend URL
 const getBackendUrl = () => {
   if (typeof window !== "undefined") {
@@ -955,7 +966,7 @@ export default function ResultadoPage() {
   }, [hasVoted])
 
   const submitDislike = useCallback(
-    async (reason?: DislikeReason) => {
+    async (reason?: DislikeReason, category?: "style" | "technical") => {
       if (hasVoted) {
         setIsDislikeModalOpen(false)
         return
@@ -964,6 +975,12 @@ export default function ResultadoPage() {
       const currentLook = looks[currentLookIndex]
       if (!currentLook || !lojistaId) {
         console.error("[ResultadoPage] Look ou lojistaId não encontrado")
+        setIsDislikeModalOpen(false)
+        return
+      }
+
+      // Se não tem reason nem category, é skip - não enviar
+      if (!reason && !category) {
         setIsDislikeModalOpen(false)
         return
       }
@@ -984,7 +1001,10 @@ export default function ResultadoPage() {
           compositionId = `refined-${imageHash}`
         }
 
-        console.log("[ResultadoPage] Registrando dislike:", { compositionId, jobId, clienteId, reason })
+        // Mapear reason para texto legível
+        const reasonText = reason ? getReasonText(reason) : "Outro motivo"
+
+        console.log("[ResultadoPage] Registrando dislike:", { compositionId, jobId, clienteId, reason, category, reasonText })
 
         const response = await fetch("/api/actions", {
           method: "POST",
@@ -998,7 +1018,12 @@ export default function ResultadoPage() {
             customerName: clienteData?.nome || null,
             productName: currentLook.produtoNome,
             productPrice: currentLook.produtoPreco || null,
-            reason,
+            reason: reasonText, // Enviar texto legível
+            feedbackCategory: category || null, // Enviar categoria
+            imagemUrl: currentLook.imagemUrl || null,
+            // Buscar uploadImageUrl se disponível (pode estar no localStorage ou na URL)
+            uploadImageUrl: null, // TODO: Implementar busca da URL de upload original
+            productIds: [], // TODO: Implementar busca dos IDs dos produtos
           }),
         })
 
@@ -3094,7 +3119,7 @@ export default function ResultadoPage() {
       <DislikeFeedbackModal
         open={isDislikeModalOpen}
         isSubmitting={loadingAction === "dislike"}
-        onSelect={(reason) => submitDislike(reason)}
+        onSelect={(reason, category) => submitDislike(reason, category)}
         onSkip={() => submitDislike()}
       />
       <ShoppingCartModal

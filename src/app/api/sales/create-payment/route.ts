@@ -106,7 +106,9 @@ async function createOrder(
   items: CartItem[],
   shippingPrice: number,
   destinationZip: string,
-  preferenceId?: string
+  preferenceId?: string,
+  customerName?: string,
+  customerWhatsapp?: string
 ) {
   const db = getFirestoreAdmin()
   const ordersRef = db.collection("lojas").doc(lojistaId).collection("orders")
@@ -126,8 +128,10 @@ async function createOrder(
     shipping: shippingPrice,
     total,
     destinationZip,
-    preference_id: preferenceId || null, // ID da Preference (usado para buscar pedido)
-    payment_id: null, // Será preenchido quando o pagamento for criado (via webhook)
+    customerName: customerName || null,
+    customerWhatsapp: customerWhatsapp || null,
+    preference_id: preferenceId || null,
+    payment_id: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   }
@@ -137,17 +141,32 @@ async function createOrder(
 }
 
 export async function POST(request: NextRequest) {
+  console.log('🚀🚀🚀 [create-payment] FUNÇÃO CHAMADA - TIMESTAMP:', new Date().toISOString());
+  
   // PHASE 12 FIX: Declarar variável fora do try para acesso no catch
   let lojistaId: string | undefined;
   
   try {
+    console.log('🔍 [create-payment] Parseando body...');
     const body = await request.json().catch(() => ({}))
+    
     lojistaId = body?.lojistaId as string | undefined
     const cartItems = (body?.cartItems || []) as CartItem[]
     const shippingOption = body?.shippingOption as { id: string; price: number } | null
     const destinationZip = body?.destinationZip as string | undefined
+    const customerName = body?.customerName as string | undefined
+    const customerWhatsapp = body?.customerWhatsapp as string | undefined
+
+    console.log('✅ [create-payment] Request recebido:', {
+      lojistaId,
+      cartItemsLength: cartItems.length,
+      customerName,
+      customerWhatsapp,
+      destinationZip
+    });
 
     if (!lojistaId) {
+      console.error('[create-payment] Erro: lojistaId não fornecido');
       return NextResponse.json(
         { error: "lojistaId é obrigatório" },
         { status: 400 }
@@ -155,18 +174,34 @@ export async function POST(request: NextRequest) {
     }
 
     if (!cartItems || cartItems.length === 0) {
+      console.error('[create-payment] Erro: carrinho vazio');
       return NextResponse.json(
         { error: "Carrinho vazio" },
         { status: 400 }
       )
     }
 
+    if (!customerName || customerName.trim().length < 3) {
+      console.error('[create-payment] Erro: nome inválido');
+      return NextResponse.json(
+        { error: "Nome do cliente é obrigatório" },
+        { status: 400 }
+      )
+    }
+
+    if (!customerWhatsapp || customerWhatsapp.replace(/\D/g, '').length < 10) {
+      console.error('[create-payment] Erro: WhatsApp inválido');
+      return NextResponse.json(
+        { error: "WhatsApp do cliente é obrigatório" },
+        { status: 400 }
+      )
+    }
+
     // Buscar salesConfig do Firestore
-    // Buscar em dois lugares possíveis:
-    // 1. Diretamente no documento: lojas/{lojistaId}
-    // 2. No subdocumento: lojas/{lojistaId}/perfil/dados
     let salesConfig: SalesConfig | null = null
     try {
+      console.log('[create-payment] Buscando salesConfig para lojista:', lojistaId);
+      
       const db = getFirestoreAdmin()
       const lojaRef = db.collection("lojas").doc(lojistaId)
       const lojaDoc = await lojaRef.get()
@@ -174,6 +209,7 @@ export async function POST(request: NextRequest) {
       if (lojaDoc.exists) {
         const data = lojaDoc.data()
         salesConfig = data?.salesConfig || data?.sales_config || null
+        console.log('[create-payment] SalesConfig encontrado na loja:', !!salesConfig);
       }
       
       // Se não encontrou, buscar em perfil/dados
@@ -183,13 +219,14 @@ export async function POST(request: NextRequest) {
           if (perfilDoc.exists) {
             const perfilData = perfilDoc.data()
             salesConfig = perfilData?.salesConfig || perfilData?.sales_config || null
+            console.log('[create-payment] SalesConfig encontrado no perfil:', !!salesConfig);
           }
         } catch (error) {
-          // Ignorar erro e continuar
+          console.log('[create-payment] Perfil/dados não encontrado, continuando...');
         }
       }
     } catch (error) {
-      console.error("[sales/create-payment] Erro ao buscar salesConfig:", error)
+      console.error("[create-payment] Erro CRÍTICO ao buscar salesConfig:", error)
       return NextResponse.json(
         { error: "Erro ao buscar configurações de venda." },
         { status: 500 }
@@ -205,8 +242,12 @@ export async function POST(request: NextRequest) {
 
     const shippingPrice = shippingOption?.price || 0
 
+    console.log('[create-payment] Gateway de pagamento:', salesConfig.payment_gateway);
+    console.log('[create-payment] Shipping price:', shippingPrice);
+
     // Se for manual_whatsapp, retornar link do WhatsApp
     if (salesConfig.payment_gateway === "manual_whatsapp") {
+      console.log('[create-payment] Processando via WhatsApp manual');
       const whatsappNumber = salesConfig.manual_contact || salesConfig.salesWhatsapp || salesConfig.whatsappLink
       if (!whatsappNumber) {
         return NextResponse.json(
@@ -226,7 +267,22 @@ export async function POST(request: NextRequest) {
       const whatsappUrl = `https://wa.me/${whatsappNumber.replace(/\D/g, "")}?text=${message}`
 
       // Criar pedido no Firestore
-      await createOrder(lojistaId, cartItems, shippingPrice, destinationZip || "")
+      try {
+        console.log('[create-payment] Criando pedido com dados:', {
+          lojistaId,
+          itemsCount: cartItems.length,
+          customerName,
+          customerWhatsapp,
+          destinationZip
+        });
+        
+        const orderId = await createOrder(lojistaId, cartItems, shippingPrice, destinationZip || "", undefined, customerName, customerWhatsapp)
+        
+        console.log('[create-payment] ✅ Pedido criado com sucesso:', orderId);
+      } catch (orderError) {
+        console.error('[create-payment] ❌ ERRO ao criar pedido:', orderError);
+        throw new Error('Erro ao criar pedido no banco de dados');
+      }
 
       return NextResponse.json({
         success: true,
@@ -237,14 +293,18 @@ export async function POST(request: NextRequest) {
 
     // Se for Mercado Pago, criar preference
     if (salesConfig.payment_gateway === "mercadopago") {
+      console.log('[create-payment] Processando via Mercado Pago');
+      
       const accessToken = salesConfig.integrations?.mercadopago_access_token
       if (!accessToken) {
+        console.error('[create-payment] Erro: Token MP não configurado');
         return NextResponse.json(
           { error: "Token de acesso do Mercado Pago não configurado." },
           { status: 400 }
         )
       }
 
+      console.log('[create-payment] Criando preference no Mercado Pago...');
       const preference = await createMercadoPagoPreference(
         cartItems,
         shippingPrice,
@@ -252,23 +312,41 @@ export async function POST(request: NextRequest) {
         lojistaId,
         destinationZip
       )
+      console.log('[create-payment] ✅ Preference criada:', preference.preference_id);
 
       // Criar pedido no Firestore
-      const orderId = await createOrder(
-        lojistaId,
-        cartItems,
-        shippingPrice,
-        destinationZip || "",
-        preference.preference_id
-      )
+      try {
+        console.log('[create-payment] Criando pedido no Firestore com dados:', {
+          lojistaId,
+          itemsCount: cartItems.length,
+          customerName,
+          customerWhatsapp,
+          destinationZip
+        });
+        
+        const orderId = await createOrder(
+          lojistaId,
+          cartItems,
+          shippingPrice,
+          destinationZip || "",
+          preference.preference_id,
+          customerName,
+          customerWhatsapp
+        )
+        
+        console.log('[create-payment] ✅ Pedido criado com sucesso:', orderId);
 
-      return NextResponse.json({
-        success: true,
-        preference_id: preference.preference_id,
-        checkout_url: preference.checkout_url,
-        order_id: orderId,
-        message: "Checkout iniciado via Mercado Pago.",
-      })
+        return NextResponse.json({
+          success: true,
+          preference_id: preference.preference_id,
+          checkout_url: preference.checkout_url,
+          order_id: orderId,
+          message: "Checkout iniciado via Mercado Pago.",
+        })
+      } catch (orderError) {
+        console.error('[create-payment] ❌ ERRO CRÍTICO ao criar pedido:', orderError);
+        throw new Error('Erro ao salvar pedido no banco de dados');
+      }
     }
 
     return NextResponse.json(
@@ -276,20 +354,33 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     )
   } catch (error) {
-    console.error("[sales/create-payment] erro:", error)
+    console.error("═══════════════════════════════════════");
+    console.error("❌ [create-payment] ERRO CAPTURADO:");
+    console.error("Tipo:", error instanceof Error ? error.constructor.name : typeof error);
+    console.error("Mensagem:", error instanceof Error ? error.message : String(error));
+    console.error("Stack:", error instanceof Error ? error.stack : 'N/A');
+    console.error("lojistaId:", lojistaId);
+    console.error("═══════════════════════════════════════");
     
     // PHASE 12: Logar erro crítico no Firestore
-    await logError(
-      "Payment API - Create Payment",
-      error instanceof Error ? error : new Error(String(error)),
-      {
-        storeId: lojistaId || "unknown",
-        errorType: "PaymentFailed",
-      }
-    ).catch(err => console.error("[Payment API] Erro ao salvar log:", err));
+    try {
+      await logError(
+        "Payment API - Create Payment",
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          storeId: lojistaId || "unknown",
+          errorType: "PaymentFailed",
+        }
+      );
+    } catch (logErr) {
+      console.error("[create-payment] Erro ao salvar log no Firestore:", logErr);
+    }
     
     return NextResponse.json(
-      { error: "Erro ao iniciar pagamento." },
+      { 
+        error: error instanceof Error ? error.message : "Erro ao iniciar pagamento.",
+        details: process.env.NODE_ENV === 'development' ? String(error) : undefined
+      },
       { status: 500 }
     )
   }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { X, Truck, CreditCard, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/Button"
 import type { SalesConfig } from "@/lib/types"
@@ -39,11 +39,57 @@ export function ShoppingCartModal({
   salesConfig,
 }: ShoppingCartModalProps) {
   const [destinationZip, setDestinationZip] = useState("")
+  const [customerName, setCustomerName] = useState("")
+  const [customerWhatsapp, setCustomerWhatsapp] = useState("")
   const [shippingQuotes, setShippingQuotes] = useState<ShippingQuote[]>([])
   const [selectedQuote, setSelectedQuote] = useState<string | null>(null)
   const [isCalculating, setIsCalculating] = useState(false)
   const [isPaying, setIsPaying] = useState(false)
   const [feedback, setFeedback] = useState<string | null>(null)
+
+  // Função para formatar telefone brasileiro
+  const formatPhone = (phone: string): string => {
+    // Remove todos os caracteres não numéricos
+    const numbers = phone.replace(/\D/g, '')
+    
+    // Formata conforme o tamanho
+    if (numbers.length === 11) {
+      // (XX) XXXXX-XXXX
+      return `(${numbers.substring(0, 2)}) ${numbers.substring(2, 7)}-${numbers.substring(7)}`
+    } else if (numbers.length === 10) {
+      // (XX) XXXX-XXXX
+      return `(${numbers.substring(0, 2)}) ${numbers.substring(2, 6)}-${numbers.substring(6)}`
+    }
+    // Retorna como está se não tem tamanho padrão
+    return phone
+  }
+
+  // ✅ NOVO: Preencher automaticamente com dados do cadastro do cliente
+  useEffect(() => {
+    if (!open || !lojistaId) return
+
+    try {
+      const stored = localStorage.getItem(`cliente_${lojistaId}`)
+      if (stored) {
+        const clienteData = JSON.parse(stored)
+        
+        // Preencher nome se disponível
+        if (clienteData.nome || clienteData.name) {
+          const nome = clienteData.nome || clienteData.name
+          setCustomerName(nome)
+        }
+        
+        // Preencher whatsapp se disponível (com formatação)
+        if (clienteData.whatsapp || clienteData.telefone || clienteData.phone) {
+          const whatsapp = clienteData.whatsapp || clienteData.telefone || clienteData.phone
+          const formatted = formatPhone(whatsapp)
+          setCustomerWhatsapp(formatted)
+        }
+      }
+    } catch (error) {
+      console.error('❌ [ShoppingCartModal] Erro ao carregar dados do cliente:', error)
+    }
+  }, [open, lojistaId])
 
   const subtotal = useMemo(
     () => items.reduce((sum, item) => sum + item.price * item.quantity, 0),
@@ -99,6 +145,17 @@ export function ShoppingCartModal({
       return
     }
 
+    // Validação dos campos do cliente
+    if (!customerName || customerName.trim().length < 3) {
+      setFeedback("Por favor, informe seu nome completo.")
+      return
+    }
+
+    if (!customerWhatsapp || customerWhatsapp.trim().length < 10) {
+      setFeedback("Por favor, informe um número de WhatsApp válido.")
+      return
+    }
+
     setIsPaying(true)
     setFeedback(null)
     try {
@@ -110,6 +167,8 @@ export function ShoppingCartModal({
           cartItems: items,
           shippingOption: shippingQuotes.find((q) => q.id === selectedQuote) || null,
           destinationZip,
+          customerName: customerName.trim(),
+          customerWhatsapp: customerWhatsapp.trim(),
         }),
       })
 
@@ -175,6 +234,43 @@ export function ShoppingCartModal({
               </p>
             </div>
           ))}
+
+          {/* Dados do Cliente */}
+          <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-4 space-y-3">
+            <h3 className="text-sm font-bold text-blue-900 mb-3">Seus dados</h3>
+            
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-2 block">
+                Nome completo *
+              </label>
+              <input
+                type="text"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="Seu nome completo"
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-800 focus:border-blue-500 focus:outline-none"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-2 block">
+                WhatsApp *
+              </label>
+              <input
+                type="tel"
+                value={customerWhatsapp}
+                onChange={(e) => {
+                  const formatted = formatPhone(e.target.value)
+                  setCustomerWhatsapp(formatted)
+                }}
+                placeholder="(11) 99999-9999"
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-800 focus:border-blue-500 focus:outline-none"
+                required
+                maxLength={15}
+              />
+            </div>
+          </div>
 
           <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
           <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
