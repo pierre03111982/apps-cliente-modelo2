@@ -13,8 +13,6 @@ interface DislikeFeedbackModalProps {
   onClose?: () => void
 }
 
-type FeedbackCategory = "style" | "technical";
-
 // Categorias de feedback para treinar a IA
 type FeedbackCategory = "style" | "technical";
 
