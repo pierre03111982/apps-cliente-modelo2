@@ -141,13 +141,10 @@ async function createOrder(
 }
 
 export async function POST(request: NextRequest) {
-  console.log('🚀🚀🚀 [create-payment] FUNÇÃO CHAMADA - TIMESTAMP:', new Date().toISOString());
-  
   // PHASE 12 FIX: Declarar variável fora do try para acesso no catch
   let lojistaId: string | undefined;
   
   try {
-    console.log('🔍 [create-payment] Parseando body...');
     const body = await request.json().catch(() => ({}))
     
     lojistaId = body?.lojistaId as string | undefined
@@ -156,14 +153,6 @@ export async function POST(request: NextRequest) {
     const destinationZip = body?.destinationZip as string | undefined
     const customerName = body?.customerName as string | undefined
     const customerWhatsapp = body?.customerWhatsapp as string | undefined
-
-    console.log('✅ [create-payment] Request recebido:', {
-      lojistaId,
-      cartItemsLength: cartItems.length,
-      customerName,
-      customerWhatsapp,
-      destinationZip
-    });
 
     if (!lojistaId) {
       console.error('[create-payment] Erro: lojistaId não fornecido');
