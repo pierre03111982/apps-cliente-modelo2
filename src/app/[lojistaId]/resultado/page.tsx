@@ -599,6 +599,17 @@ export default function ResultadoPage() {
         compositionId = `refined-${imageHash}`
       }
 
+      // Verificar se já votou antes de salvar (apenas para like/dislike) - PREVENIR DUPLICIDADE
+      if (action === "like" || action === "dislike") {
+        const voteStatus = await checkVoteStatus(compositionId, currentLook.imagemUrl)
+        
+        if (voteStatus === "like" || voteStatus === "dislike") {
+          console.log("[ResultadoPage] Já votou nesta imagem, não salvando duplicata:", voteStatus)
+          setLoadingAction(null)
+          return true // Retornar true para não bloquear o fluxo
+        }
+      }
+
       const response = await fetch("/api/actions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -996,9 +1007,21 @@ export default function ResultadoPage() {
         let compositionId = currentLook.compositionId
         let jobId = currentLook.jobId
 
+        // Se não houver compositionId (look refinado), criar um ID único baseado na imagemUrl
         if (!compositionId && currentLook.imagemUrl) {
-          const imageHash = currentLook.imagemUrl.split("/").pop()?.split("?")[0] || `refined-${Date.now()}`
+          const imageHash = currentLook.imagemUrl.split('/').pop()?.split('?')[0] || `refined-${Date.now()}`
           compositionId = `refined-${imageHash}`
+        }
+
+        // Verificar se já votou (like ou dislike) antes de salvar - PREVENIR DUPLICIDADE
+        const voteStatus = await checkVoteStatus(compositionId, currentLook.imagemUrl)
+        
+        if (voteStatus === "like" || voteStatus === "dislike") {
+          console.log("[ResultadoPage] Já votou nesta imagem, não salvando duplicata:", voteStatus)
+          setHasVoted(true)
+          setVotedType(voteStatus)
+          setLoadingAction(null)
+          return
         }
 
         // Mapear reason para texto legível
