@@ -39,7 +39,15 @@ export async function getClienteSession(lojistaId?: string): Promise<ClienteSess
       return null;
     }
 
-    return data.cliente;
+    // A API retorna 'id' mas a interface espera 'clienteId', fazer o mapeamento
+    return {
+      clienteId: data.cliente.id || data.cliente.clienteId,
+      nome: data.cliente.nome || "",
+      whatsapp: data.cliente.whatsapp || "",
+      lojistaId: data.cliente.lojistaId,
+      deviceId: data.cliente.deviceId || `device-${Date.now()}`,
+      loggedAt: data.cliente.loggedAt || new Date().toISOString(),
+    };
   } catch (error) {
     console.error("[getClienteSession] Erro:", error);
     return null;

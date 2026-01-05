@@ -42,7 +42,8 @@ export async function GET(request: NextRequest) {
       const clienteResponse = {
         authenticated: true,
         cliente: {
-          id: sessionData.clienteId,
+          id: sessionData.clienteId, // Manter 'id' para compatibilidade
+          clienteId: sessionData.clienteId, // Adicionar 'clienteId' também
           nome: sessionData.nome,
           whatsapp: sessionData.whatsapp,
           lojistaId: sessionData.lojistaId,
