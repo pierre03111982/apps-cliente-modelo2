@@ -39,6 +39,37 @@ const getBackendUrl = () => {
   return process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_PAINELADM_URL || "http://localhost:3000"
 }
 
+// Função auxiliar para obter sessão com fallback robusto
+async function getClienteDataWithFallback(lojistaId: string) {
+  // Tentar sessão segura primeiro
+  let clienteData = await getClienteSessionWithFallback(lojistaId)
+  
+  // Se não encontrou na sessão segura, tentar localStorage diretamente (fallback temporário)
+  if (!clienteData && typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem(`cliente_${lojistaId}`)
+      if (stored) {
+        const data = JSON.parse(stored)
+        if (data.clienteId && data.lojistaId) {
+          clienteData = {
+            clienteId: data.clienteId,
+            nome: data.nome || "",
+            whatsapp: data.whatsapp || "",
+            lojistaId: data.lojistaId,
+            deviceId: data.deviceId || `device-${Date.now()}`,
+            loggedAt: data.loggedAt || new Date().toISOString(),
+          }
+          console.log("[ResultadoPage] Usando localStorage como fallback temporário")
+        }
+      }
+    } catch (error) {
+      console.error("[ResultadoPage] Erro ao ler localStorage:", error)
+    }
+  }
+  
+  return clienteData
+}
+
 export default function ResultadoPage() {
   const params = useParams()
   const router = useRouter()
@@ -586,9 +617,15 @@ export default function ResultadoPage() {
     if (!currentLook || !lojistaId) return
 
     // FASE 0.2: Usar sessão segura (com fallback para localStorage)
-    const clienteData = await getClienteSessionWithFallback(lojistaId)
-    const clienteId = clienteData?.clienteId || null
-    const clienteNome = clienteData?.nome || null
+    const clienteData = await getClienteDataWithFallback(lojistaId)
+    if (!clienteData || !clienteData.clienteId) {
+      console.error("[ResultadoPage] Erro: sessão não encontrada para", action)
+      alert("Erro: Sessão não encontrada. Por favor, faça login novamente.")
+      return
+    }
+    
+    const clienteId = clienteData.clienteId
+    const clienteNome = clienteData.nome || null
 
     setLoadingAction(action)
 
@@ -855,7 +892,7 @@ export default function ResultadoPage() {
     if (!currentLook || !lojistaId) return
 
     // FASE 0.2: Usar sessão segura (com fallback para localStorage)
-    const clienteData = await getClienteSessionWithFallback(lojistaId)
+    const clienteData = await getClienteDataWithFallback(lojistaId)
     const clienteId = clienteData?.clienteId || null
     const clienteNome = clienteData?.nome || null
 
@@ -875,9 +912,9 @@ export default function ResultadoPage() {
 
       // Validar se temos todos os dados necessários
       if (!clienteId || !clienteData) {
-        console.error("[ResultadoPage] Erro: clienteId não encontrado na sessão")
-        // Redirecionar para login ao invés de apenas mostrar alert
-        router.push(`/${lojistaId}/login`)
+        console.error("[ResultadoPage] Erro: clienteId não encontrado na sessão nem no localStorage")
+        // Apenas mostrar erro, não redirecionar imediatamente (pode ser problema temporário)
+        alert("Erro: Sessão não encontrada. Por favor, faça login novamente.")
         setLoadingAction(null)
         return
       }
@@ -1007,21 +1044,15 @@ export default function ResultadoPage() {
 
       try {
         // FASE 0.2: Usar sessão segura (com fallback para localStorage)
-        const clienteData = await getClienteSessionWithFallback(lojistaId)
-        if (!clienteData) {
+        const clienteData = await getClienteDataWithFallback(lojistaId)
+        if (!clienteData || !clienteData.clienteId) {
           console.error("[ResultadoPage] Erro: sessão não encontrada")
-          router.push(`/${lojistaId}/login`)
+          alert("Erro: Sessão não encontrada. Por favor, faça login novamente.")
           setLoadingAction(null)
           return
         }
         
         const clienteId = clienteData.clienteId
-        if (!clienteId) {
-          console.error("[ResultadoPage] Erro: clienteId não encontrado na sessão")
-          router.push(`/${lojistaId}/login`)
-          setLoadingAction(null)
-          return
-        }
 
         let compositionId = currentLook.compositionId
         let jobId = currentLook.jobId
@@ -1563,10 +1594,10 @@ export default function ResultadoPage() {
       }
 
       // FASE 0.2: Usar sessão segura (com fallback para localStorage)
-      const clienteData = await getClienteSessionWithFallback(lojistaId)
+      const clienteData = await getClienteDataWithFallback(lojistaId)
       if (!clienteData || !clienteData.clienteId) {
         console.error("[ResultadoPage] Erro: sessão não encontrada para remix")
-        router.push(`/${lojistaId}/login`)
+        alert("Erro: Sessão não encontrada. Por favor, faça login novamente.")
         return
       }
       
