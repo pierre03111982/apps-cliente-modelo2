@@ -874,9 +874,10 @@ export default function ResultadoPage() {
       }
 
       // Validar se temos todos os dados necessários
-      if (!clienteId) {
-        console.error("[ResultadoPage] Erro: clienteId não encontrado no localStorage")
-        alert("Erro: Cliente não identificado. Faça login novamente.")
+      if (!clienteId || !clienteData) {
+        console.error("[ResultadoPage] Erro: clienteId não encontrado na sessão")
+        // Redirecionar para login ao invés de apenas mostrar alert
+        router.push(`/${lojistaId}/login`)
         setLoadingAction(null)
         return
       }
@@ -1007,7 +1008,20 @@ export default function ResultadoPage() {
       try {
         // FASE 0.2: Usar sessão segura (com fallback para localStorage)
         const clienteData = await getClienteSessionWithFallback(lojistaId)
-        const clienteId = clienteData?.clienteId || null
+        if (!clienteData) {
+          console.error("[ResultadoPage] Erro: sessão não encontrada")
+          router.push(`/${lojistaId}/login`)
+          setLoadingAction(null)
+          return
+        }
+        
+        const clienteId = clienteData.clienteId
+        if (!clienteId) {
+          console.error("[ResultadoPage] Erro: clienteId não encontrado na sessão")
+          router.push(`/${lojistaId}/login`)
+          setLoadingAction(null)
+          return
+        }
 
         let compositionId = currentLook.compositionId
         let jobId = currentLook.jobId
@@ -1550,8 +1564,14 @@ export default function ResultadoPage() {
 
       // FASE 0.2: Usar sessão segura (com fallback para localStorage)
       const clienteData = await getClienteSessionWithFallback(lojistaId)
-      const clienteId = clienteData?.clienteId || null
-      const clienteNome = clienteData?.nome || null
+      if (!clienteData || !clienteData.clienteId) {
+        console.error("[ResultadoPage] Erro: sessão não encontrada para remix")
+        router.push(`/${lojistaId}/login`)
+        return
+      }
+      
+      const clienteId = clienteData.clienteId
+      const clienteNome = clienteData.nome || null
 
       // PHASE 13: Usar a API de Remix (/api/generate-looks/remix) e enviar original_photo_url explicitamente
       const payload = {

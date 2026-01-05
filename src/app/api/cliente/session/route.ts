@@ -14,7 +14,14 @@ export async function GET(request: NextRequest) {
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get("cliente_session");
     
+    console.log("[Session API GET] Verificando sessão:", {
+      hasCookie: !!sessionCookie,
+      cookieValue: sessionCookie ? sessionCookie.value.substring(0, 50) + "..." : null,
+      allCookies: cookieStore.getAll().map(c => c.name),
+    });
+    
     if (!sessionCookie) {
+      console.log("[Session API GET] ❌ Cookie não encontrado");
       return NextResponse.json(
         { authenticated: false, cliente: null },
         { status: 200 }
@@ -32,7 +39,7 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      return NextResponse.json({
+      const clienteResponse = {
         authenticated: true,
         cliente: {
           id: sessionData.clienteId,
@@ -42,7 +49,14 @@ export async function GET(request: NextRequest) {
           deviceId: sessionData.deviceId,
           loggedAt: sessionData.loggedAt,
         },
+      };
+      
+      console.log("[Session API GET] ✅ Sessão encontrada:", {
+        clienteId: sessionData.clienteId,
+        lojistaId: sessionData.lojistaId,
       });
+      
+      return NextResponse.json(clienteResponse);
     } catch (parseError) {
       console.error("[Session API] Erro ao parsear cookie:", parseError);
       // Limpar cookie inválido
@@ -96,13 +110,20 @@ export async function POST(request: NextRequest) {
 
     // Configurar cookie HttpOnly (seguro contra XSS)
     // Max-Age: 30 dias (mesmo período do localStorage antigo)
-    response.cookies.set("cliente_session", JSON.stringify(sessionData), {
+    const cookieOptions: any = {
       httpOnly: true, // Não acessível via JavaScript (proteção XSS)
       secure: process.env.NODE_ENV === "production", // HTTPS apenas em produção
       sameSite: "lax", // Proteção CSRF
       maxAge: 60 * 60 * 24 * 30, // 30 dias
       path: "/",
-    });
+    };
+    
+    // Em produção, não definir domain explicitamente para permitir subdomínios
+    // O cookie será compartilhado entre subdomínios automaticamente se não especificarmos domain
+    // Exemplo: app2.experimenteai.com.br e paineladm.experimenteai.com.br podem compartilhar cookies
+    // se ambos estiverem no mesmo domínio base (experimenteai.com.br)
+    
+    response.cookies.set("cliente_session", JSON.stringify(sessionData), cookieOptions);
 
     console.log("[Session API] ✅ Sessão criada via cookie HttpOnly:", {
       clienteId,
