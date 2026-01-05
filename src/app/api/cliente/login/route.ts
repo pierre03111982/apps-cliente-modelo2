@@ -62,9 +62,11 @@ export async function POST(request: NextRequest) {
     // Autenticar no backend
     let res: Response;
     try {
-      // Criar AbortController para timeout
+      // Criar AbortController para timeout (aumentado para 30 segundos)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos
+
+      console.log("[Cliente Login] Fazendo requisição para:", `${backendUrl}/api/cliente/auth`);
 
       res = await fetch(`${backendUrl}/api/cliente/auth`, {
         method: "POST",
@@ -78,6 +80,12 @@ export async function POST(request: NextRequest) {
       });
 
       clearTimeout(timeoutId);
+      
+      console.log("[Cliente Login] Resposta recebida:", {
+        status: res.status,
+        statusText: res.statusText,
+        ok: res.ok,
+      });
     } catch (fetchError: any) {
       console.error("[Cliente Login] Erro ao conectar com backend:", fetchError);
       
