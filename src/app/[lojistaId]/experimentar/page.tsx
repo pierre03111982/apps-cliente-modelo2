@@ -11,6 +11,7 @@ import { useStoreSession } from "@/hooks/useStoreSession"
 import { StoreConnectionIndicator } from "@/components/StoreConnectionIndicator"
 import toast from "react-hot-toast"
 import { normalizeSalesConfig } from "@/lib/utils"
+import { getClienteSessionWithFallback } from "@/lib/session-client"
 
 // Resolver backend URL
 const getBackendUrl = () => {
@@ -179,9 +180,10 @@ export default function ExperimentarPage() {
     // Evitar execução múltipla
     if (photoLoadedRef.current) return
 
-    const checkAuthAndFinalize = () => {
-      const stored = localStorage.getItem(`cliente_${lojistaId}`)
-      if (!stored) {
+    const checkAuthAndFinalize = async () => {
+      // Usar getClienteSessionWithFallback para ler do cookie HttpOnly primeiro
+      const clienteData = await getClienteSessionWithFallback(lojistaId)
+      if (!clienteData) {
         router.push(`/${lojistaId}/login`)
         return // Não finaliza a inicialização, pois vai redirecionar
       }
@@ -282,7 +284,12 @@ export default function ExperimentarPage() {
     
     // Adiciona um pequeno delay para garantir que os dados da loja comecem a carregar primeiro
     // Isso ajuda a evitar um flash rápido da tela de loading se a verificação for muito rápida
-    const timer = setTimeout(checkAuthAndFinalize, 100);
+    const timer = setTimeout(() => {
+      checkAuthAndFinalize().catch((error) => {
+        console.error("[ExperimentarPage] Erro ao verificar autenticação:", error)
+        router.push(`/${lojistaId}/login`)
+      })
+    }, 100);
 
             return () => {
               clearTimeout(timer);
@@ -340,10 +347,9 @@ export default function ExperimentarPage() {
 
     try {
       setIsLoadingFavorites(true)
-      const stored = localStorage.getItem(`cliente_${lojistaId}`)
-      if (!stored) return
+      const clienteData = await getClienteSessionWithFallback(lojistaId)
+      if (!clienteData) return
 
-      const clienteData = JSON.parse(stored)
       const clienteId = clienteData.clienteId
 
       if (!clienteId) return
@@ -999,9 +1005,8 @@ export default function ExperimentarPage() {
       setIsGenerating(true)
       setGenerationError(null)
 
-      // Buscar clienteId do localStorage
-      const stored = localStorage.getItem(`cliente_${lojistaId}`)
-      const clienteData = stored ? JSON.parse(stored) : null
+      // Buscar clienteId da sessão
+      const clienteData = await getClienteSessionWithFallback(lojistaId)
       const clienteId = clienteData?.clienteId || null
 
       // Preparar foto original para envio
@@ -1533,11 +1538,10 @@ export default function ExperimentarPage() {
         throw new Error("Nenhum produto válido selecionado")
       }
 
-      // Buscar clienteId do localStorage
-      const stored = localStorage.getItem(`cliente_${lojistaId}`)
-      const clienteData = stored ? JSON.parse(stored) : null
+      // Buscar clienteId da sessão
+      const clienteData = await getClienteSessionWithFallback(lojistaId)
       const clienteId = clienteData?.clienteId || null
-      const clienteNome = clienteData?.nome || clienteData?.name || null
+      const clienteNome = clienteData?.nome || null
 
       // PHASE 13: Usar a API correta (/api/generate-looks) e enviar original_photo_url explicitamente
       // MASTER PROMPT: UNIFICAÇÃO DE QUALIDADE VISUAL - Aplicar protocolo Remix Universal
