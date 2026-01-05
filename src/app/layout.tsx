@@ -15,7 +15,6 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" translate="no">
       <head>
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👔</text></svg>" />
         <meta name="google" content="notranslate" />
         <meta name="google-translate-customization" content="false" />
         {/* Viewport com suporte para safe areas */}

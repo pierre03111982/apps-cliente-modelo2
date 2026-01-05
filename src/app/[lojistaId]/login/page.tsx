@@ -595,6 +595,7 @@ function LoginPageContent() {
                   placeholder="Nome completo"
                   value={nome}
                   onChange={(e) => handleNomeChange(e.target.value)}
+                  autoComplete="name"
                   className="w-full rounded-lg border-2 border-white/20 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-500 focus:border-white focus:outline-none focus:ring-1 focus:ring-white transition-all text-lg font-bold"
                   required
                 />
@@ -607,6 +608,7 @@ function LoginPageContent() {
                 placeholder="WhatsApp com DDD"
                 value={whatsapp}
                 onChange={(e) => handleWhatsAppChange(e.target.value)}
+                autoComplete={mode === "login" ? "username" : "tel"}
                 className="w-full rounded-lg border-2 border-white/20 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-500 focus:border-white focus:outline-none focus:ring-1 focus:ring-white transition-all text-lg font-bold"
                 required
               />

@@ -17,6 +17,7 @@ import type { LojistaData, GeneratedLook, DislikeReason } from "@/lib/types"
 import { normalizeSalesConfig } from "@/lib/utils"
 import { DislikeFeedbackModal } from "@/components/modals/DislikeFeedbackModal"
 import { ShoppingCartModal, CartItem } from "@/components/modals/ShoppingCartModal"
+import { getClienteSessionWithFallback } from "@/lib/session-client"
 
 // Função auxiliar para converter DislikeReason em texto legível
 function getReasonText(reason: DislikeReason): string {
@@ -166,9 +167,9 @@ export default function ResultadoPage() {
       // Carregar favoritos na inicialização apenas uma vez (silenciosamente em background)
       if (!favoritesLoadedOnce) {
         console.log("[ResultadoPage] Carregando favoritos na inicialização (background)...")
-        const stored = localStorage.getItem(`cliente_${lojistaId}`)
-        if (stored) {
-          const clienteData = JSON.parse(stored)
+        // FASE 0.2: Usar sessão segura (com fallback para localStorage)
+        const clienteData = await getClienteSessionWithFallback(lojistaId)
+        if (clienteData) {
           const clienteId = clienteData.clienteId
           if (clienteId && !isLoadingFavoritesRef) {
             setIsLoadingFavoritesRef(true)
@@ -191,10 +192,10 @@ export default function ResultadoPage() {
     if (!lojistaId) return null
 
     try {
-      const stored = localStorage.getItem(`cliente_${lojistaId}`)
-      if (!stored) return null
+      // FASE 0.2: Usar sessão segura (com fallback para localStorage)
+      const clienteData = await getClienteSessionWithFallback(lojistaId)
+      if (!clienteData) return null
 
-      const clienteData = JSON.parse(stored)
       const clienteId = clienteData.clienteId
 
       if (!clienteId) return null
@@ -396,10 +397,14 @@ export default function ResultadoPage() {
   useEffect(() => {
     if (!lojistaId) return
 
-    const stored = localStorage.getItem(`cliente_${lojistaId}`)
-    if (!stored) {
+    // FASE 0.2: Usar sessão segura (com fallback para localStorage)
+    getClienteSessionWithFallback(lojistaId).then((clienteData) => {
+      if (!clienteData) {
+        router.push(`/${lojistaId}/login`)
+      }
+    }).catch(() => {
       router.push(`/${lojistaId}/login`)
-    }
+    })
   }, [lojistaId, router])
 
   // Verificar voto quando mudar de look (mas não se vier de favoritos)
@@ -480,10 +485,10 @@ export default function ResultadoPage() {
       if (!silent) {
         setIsLoadingFavorites(true)
       }
-      const stored = localStorage.getItem(`cliente_${lojistaId}`)
-      if (!stored) return
+      // FASE 0.2: Usar sessão segura (com fallback para localStorage)
+      const clienteData = await getClienteSessionWithFallback(lojistaId)
+      if (!clienteData) return
 
-      const clienteData = JSON.parse(stored)
       const clienteId = clienteData.clienteId
 
       if (!clienteId) return
@@ -580,8 +585,8 @@ export default function ResultadoPage() {
     const currentLook = looks[currentLookIndex]
     if (!currentLook || !lojistaId) return
 
-    const stored = localStorage.getItem(`cliente_${lojistaId}`)
-    const clienteData = stored ? JSON.parse(stored) : null
+    // FASE 0.2: Usar sessão segura (com fallback para localStorage)
+    const clienteData = await getClienteSessionWithFallback(lojistaId)
     const clienteId = clienteData?.clienteId || null
     const clienteNome = clienteData?.nome || null
 
@@ -849,8 +854,8 @@ export default function ResultadoPage() {
     const currentLook = looks[currentLookIndex]
     if (!currentLook || !lojistaId) return
 
-    const stored = localStorage.getItem(`cliente_${lojistaId}`)
-    const clienteData = stored ? JSON.parse(stored) : null
+    // FASE 0.2: Usar sessão segura (com fallback para localStorage)
+    const clienteData = await getClienteSessionWithFallback(lojistaId)
     const clienteId = clienteData?.clienteId || null
     const clienteNome = clienteData?.nome || null
 
@@ -1000,8 +1005,8 @@ export default function ResultadoPage() {
       setLoadingAction("dislike")
 
       try {
-        const stored = localStorage.getItem(`cliente_${lojistaId}`)
-        const clienteData = stored ? JSON.parse(stored) : null
+        // FASE 0.2: Usar sessão segura (com fallback para localStorage)
+        const clienteData = await getClienteSessionWithFallback(lojistaId)
         const clienteId = clienteData?.clienteId || null
 
         let compositionId = currentLook.compositionId
@@ -1543,9 +1548,8 @@ export default function ResultadoPage() {
         throw new Error("Nenhum produto válido selecionado")
       }
 
-      // Buscar clienteId do localStorage
-      const stored = localStorage.getItem(`cliente_${lojistaId}`)
-      const clienteData = stored ? JSON.parse(stored) : null
+      // FASE 0.2: Usar sessão segura (com fallback para localStorage)
+      const clienteData = await getClienteSessionWithFallback(lojistaId)
       const clienteId = clienteData?.clienteId || null
       const clienteNome = clienteData?.nome || clienteData?.name || null
 
