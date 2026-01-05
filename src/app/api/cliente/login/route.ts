@@ -29,17 +29,33 @@ export async function POST(request: NextRequest) {
 
     // Se não tiver variável de ambiente, detectar automaticamente em produção
     if (!backendUrl || backendUrl === "http://localhost:3000") {
-      const host = request.headers.get('host') || request.headers.get('x-forwarded-host');
-      const protocol = request.headers.get('x-forwarded-proto') || 'https';
+      const host = request.headers.get('host') || 
+                   request.headers.get('x-forwarded-host') ||
+                   request.headers.get('x-vercel-deployment-url')?.replace('https://', '') ||
+                   null;
+      const protocol = request.headers.get('x-forwarded-proto') || 
+                      (request.url?.startsWith('https') ? 'https' : 'http') ||
+                      'https';
+      
+      console.log("[Cliente Login] Headers recebidos:", {
+        host: request.headers.get('host'),
+        xForwardedHost: request.headers.get('x-forwarded-host'),
+        xForwardedProto: request.headers.get('x-forwarded-proto'),
+        url: request.url,
+        detectedHost: host,
+        detectedProtocol: protocol,
+      });
       
       // Se estiver em produção (não localhost), usar o domínio do painel
       if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
         // Tentar detectar o domínio do backend baseado no domínio do frontend
         // Exemplo: app2.experimenteai.com.br -> paineladm.experimenteai.com.br
-        if (host.includes('app2.experimenteai.com.br') || host.includes('app.experimenteai.com.br')) {
+        if (host.includes('app2.experimenteai.com.br') || 
+            host.includes('app.experimenteai.com.br') ||
+            host.includes('experimenteai.com.br')) {
           backendUrl = 'https://paineladm.experimenteai.com.br';
         } else if (host.includes('vercel.app')) {
-          // Se estiver no Vercel, tentar detectar o projeto do painel
+          // Se estiver no Vercel, usar o domínio de produção do painel
           backendUrl = 'https://paineladm.experimenteai.com.br';
         } else {
           // Fallback: usar o mesmo domínio
@@ -49,6 +65,11 @@ export async function POST(request: NextRequest) {
         // Local: usar localhost:3000
         backendUrl = "http://localhost:3000";
       }
+    }
+    
+    // Garantir que sempre use HTTPS em produção (exceto localhost)
+    if (backendUrl && !backendUrl.includes('localhost') && !backendUrl.startsWith('https://')) {
+      backendUrl = backendUrl.replace('http://', 'https://');
     }
 
     console.log("[Cliente Login] Tentando autenticar no backend:", {
