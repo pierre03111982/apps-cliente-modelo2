@@ -1551,7 +1551,7 @@ export default function ResultadoPage() {
       // FASE 0.2: Usar sessão segura (com fallback para localStorage)
       const clienteData = await getClienteSessionWithFallback(lojistaId)
       const clienteId = clienteData?.clienteId || null
-      const clienteNome = clienteData?.nome || clienteData?.name || null
+      const clienteNome = clienteData?.nome || null
 
       // PHASE 13: Usar a API de Remix (/api/generate-looks/remix) e enviar original_photo_url explicitamente
       const payload = {
