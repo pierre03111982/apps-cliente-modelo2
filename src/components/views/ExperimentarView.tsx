@@ -31,6 +31,7 @@ import { AvatarSelector } from "@/components/ui/AvatarSelector"
 import { cn } from "@/lib/utils"
 import { PrivacyOnboardingModal } from "@/components/modals/PrivacyOnboardingModal"
 import type { LojistaData, Produto, GeneratedLook } from "@/lib/types"
+import { getClienteSessionWithFallback, setClienteSession } from "@/lib/session-client"
 
 export interface ExperimentarViewProps {
   lojistaData: LojistaData | null
@@ -173,40 +174,65 @@ export function ExperimentarView({
     return { backgroundColor: '#6b7280', color: '#ffffff' }
   }
 
-  const ensureLocalClientData = useCallback(() => {
+  // FASE 0.2: Usar sessão segura (com fallback para localStorage durante migração)
+  const ensureLocalClientData = useCallback(async () => {
     if (typeof window === "undefined" || !lojistaId) return null
-    const stored = localStorage.getItem(`cliente_${lojistaId}`)
-    if (!stored) return null
+    
     try {
-      return JSON.parse(stored)
+      const session = await getClienteSessionWithFallback(lojistaId)
+      if (session) {
+        return session
+      }
+      return null
     } catch (error) {
-      console.warn("[ExperimentarView] Não foi possível ler cliente do localStorage", error)
+      console.warn("[ExperimentarView] Não foi possível ler sessão do cliente", error)
       return null
     }
   }, [lojistaId])
 
   useEffect(() => {
     if (typeof window === "undefined" || !lojistaId) return
-    const clienteData = ensureLocalClientData()
-    if (!clienteData) {
+    
+    // FASE 0.2: Carregar sessão de forma assíncrona
+    ensureLocalClientData().then((clienteData) => {
+      if (!clienteData) {
+        setShowPrivacyModal(true)
+        return
+      }
+      // privacy_mode ainda pode estar no localStorage durante migração
+      if (typeof window !== "undefined") {
+        try {
+          const stored = localStorage.getItem(`cliente_${lojistaId}`)
+          if (stored) {
+            const localData = JSON.parse(stored)
+            if (localData.privacy_mode) {
+              setPrivacyMode(localData.privacy_mode)
+              return
+            }
+          }
+        } catch (e) {
+          // Ignorar erro
+        }
+      }
       setShowPrivacyModal(true)
-      return
-    }
-    if (clienteData.privacy_mode) {
-      setPrivacyMode(clienteData.privacy_mode)
-    } else {
-      setShowPrivacyModal(true)
-    }
+    })
   }, [ensureLocalClientData, lojistaId])
 
-  const handlePrivacySelection = (mode: "public" | "private") => {
+  const handlePrivacySelection = async (mode: "public" | "private") => {
     setPrivacyMode(mode)
     setShowPrivacyModal(false)
     if (typeof window === "undefined" || !lojistaId) return
-    const clienteData = ensureLocalClientData() || {}
-    clienteData.privacy_mode = mode
+    
+    // FASE 0.2: Salvar privacy_mode (temporariamente no localStorage até migração completa)
+    // TODO: Mover privacy_mode para cookie ou Firestore
     try {
-      localStorage.setItem(`cliente_${lojistaId}`, JSON.stringify(clienteData))
+      const clienteData = await ensureLocalClientData()
+      if (clienteData) {
+        // Atualizar sessão se possível
+        await setClienteSession({ ...clienteData, privacy_mode: mode } as any)
+      }
+      // Manter no localStorage durante migração
+      localStorage.setItem(`cliente_${lojistaId}`, JSON.stringify({ ...clienteData, privacy_mode: mode }))
     } catch (error) {
       console.warn("[ExperimentarView] Não foi possível salvar privacy_mode", error)
     }

@@ -9,6 +9,7 @@ import { fetchLojistaData } from "@/lib/firebaseQueries"
 import type { LojistaData } from "@/lib/types"
 import { normalizeSalesConfig } from "@/lib/utils"
 import { CLOSET_BACKGROUND_IMAGE } from "@/lib/constants"
+import { setClienteSession, getClienteSessionWithFallback } from "@/lib/session-client"
 
 function LoginPageContent() {
   const params = useParams()
@@ -185,7 +186,7 @@ function LoginPageContent() {
     loadLojistaData()
   }, [lojistaId])
 
-  // Verificar se cliente já está logado
+  // Verificar se cliente já está logado (FASE 0.2: Usando sessão segura)
   useEffect(() => {
     if (!lojistaId) return
 
@@ -196,11 +197,11 @@ function LoginPageContent() {
 
     const checkExistingClient = async () => {
       try {
-        const stored = localStorage.getItem(`cliente_${lojistaId}`)
-        if (stored) {
-          const clienteData = JSON.parse(stored)
+        // FASE 0.2: Verificar sessão segura (com fallback para localStorage durante migração)
+        const session = await getClienteSessionWithFallback(lojistaId)
+        if (session) {
           // Verificar se ainda é válido (menos de 30 dias)
-          const loggedAt = new Date(clienteData.loggedAt)
+          const loggedAt = new Date(session.loggedAt)
           const now = new Date()
           const daysDiff = (now.getTime() - loggedAt.getTime()) / (1000 * 60 * 60 * 24)
 
@@ -321,7 +322,7 @@ function LoginPageContent() {
           // Continuar com o cadastro normalmente
         }
 
-        // Salvar dados no localStorage
+        // FASE 0.2: Salvar sessão via cookie HttpOnly (seguro)
         const deviceId = getOrCreateDeviceId()
         const clienteData = {
           nome,
@@ -331,7 +332,17 @@ function LoginPageContent() {
           loggedAt: new Date().toISOString(),
           deviceId,
         }
-        localStorage.setItem(`cliente_${lojistaId}`, JSON.stringify(clienteData))
+        
+        // Salvar via API (cookie HttpOnly)
+        const sessionSaved = await setClienteSession(clienteData)
+        if (!sessionSaved) {
+          console.warn("[Register] ⚠️ Falha ao salvar sessão segura, usando localStorage como fallback")
+          // Fallback temporário durante migração
+          localStorage.setItem(`cliente_${lojistaId}`, JSON.stringify(clienteData))
+        } else {
+          // Remover do localStorage se existir (migração)
+          localStorage.removeItem(`cliente_${lojistaId}`)
+        }
 
         // Redirecionar para workspace
         router.push(`/${lojistaId}/experimentar`)
@@ -424,7 +435,7 @@ function LoginPageContent() {
           // Continuar com o login normalmente
         }
 
-        // Salvar dados no localStorage
+        // FASE 0.2: Salvar sessão via cookie HttpOnly (seguro)
         const deviceId = getOrCreateDeviceId()
         const clienteData = {
           nome: data.cliente.nome,
@@ -434,7 +445,17 @@ function LoginPageContent() {
           loggedAt: new Date().toISOString(),
           deviceId,
         }
-        localStorage.setItem(`cliente_${lojistaId}`, JSON.stringify(clienteData))
+        
+        // Salvar via API (cookie HttpOnly)
+        const sessionSaved = await setClienteSession(clienteData)
+        if (!sessionSaved) {
+          console.warn("[Login] ⚠️ Falha ao salvar sessão segura, usando localStorage como fallback")
+          // Fallback temporário durante migração
+          localStorage.setItem(`cliente_${lojistaId}`, JSON.stringify(clienteData))
+        } else {
+          // Remover do localStorage se existir (migração)
+          localStorage.removeItem(`cliente_${lojistaId}`)
+        }
 
         // Redirecionar para workspace
         router.push(`/${lojistaId}/experimentar`)
