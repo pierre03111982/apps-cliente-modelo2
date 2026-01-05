@@ -448,13 +448,15 @@ function LoginPageContent() {
         
         // Salvar via API (cookie HttpOnly)
         const sessionSaved = await setClienteSession(clienteData)
+        
+        // SEMPRE manter localStorage como backup, mesmo se cookie foi salvo
+        // Isso garante que a sessão estará disponível mesmo se houver problemas com cookies
+        localStorage.setItem(`cliente_${lojistaId}`, JSON.stringify(clienteData))
+        
         if (!sessionSaved) {
           console.warn("[Login] ⚠️ Falha ao salvar sessão segura, usando localStorage como fallback")
-          // Fallback temporário durante migração
-          localStorage.setItem(`cliente_${lojistaId}`, JSON.stringify(clienteData))
         } else {
-          // Remover do localStorage se existir (migração)
-          localStorage.removeItem(`cliente_${lojistaId}`)
+          console.log("[Login] ✅ Sessão salva no cookie e localStorage (backup)")
         }
 
         // Redirecionar para workspace

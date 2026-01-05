@@ -41,16 +41,34 @@ const getBackendUrl = () => {
 
 // Função auxiliar para obter sessão com fallback robusto
 async function getClienteDataWithFallback(lojistaId: string) {
+  console.log("[getClienteDataWithFallback] Buscando sessão para lojistaId:", lojistaId)
+  
   // Tentar sessão segura primeiro
   let clienteData = await getClienteSessionWithFallback(lojistaId)
   
-  // Se não encontrou na sessão segura, tentar localStorage diretamente (fallback temporário)
-  if (!clienteData && typeof window !== "undefined") {
+  if (clienteData) {
+    console.log("[getClienteDataWithFallback] ✅ Sessão encontrada no cookie")
+    return clienteData
+  }
+  
+  // Se não encontrou na sessão segura, tentar localStorage diretamente (fallback)
+  if (typeof window !== "undefined") {
     try {
       const stored = localStorage.getItem(`cliente_${lojistaId}`)
+      console.log("[getClienteDataWithFallback] Verificando localStorage:", {
+        hasStored: !!stored,
+        storedLength: stored?.length || 0,
+      })
+      
       if (stored) {
         const data = JSON.parse(stored)
-        if (data.clienteId && data.lojistaId) {
+        console.log("[getClienteDataWithFallback] Dados do localStorage:", {
+          hasClienteId: !!data.clienteId,
+          hasLojistaId: !!data.lojistaId,
+          lojistaIdMatch: data.lojistaId === lojistaId,
+        })
+        
+        if (data.clienteId && data.lojistaId && data.lojistaId === lojistaId) {
           clienteData = {
             clienteId: data.clienteId,
             nome: data.nome || "",
@@ -59,15 +77,21 @@ async function getClienteDataWithFallback(lojistaId: string) {
             deviceId: data.deviceId || `device-${Date.now()}`,
             loggedAt: data.loggedAt || new Date().toISOString(),
           }
-          console.log("[ResultadoPage] Usando localStorage como fallback temporário")
+          console.log("[getClienteDataWithFallback] ✅ Usando localStorage como fallback")
+          return clienteData
+        } else {
+          console.warn("[getClienteDataWithFallback] ⚠️ Dados do localStorage inválidos ou lojistaId não corresponde")
         }
+      } else {
+        console.warn("[getClienteDataWithFallback] ⚠️ Nenhum dado encontrado no localStorage")
       }
     } catch (error) {
-      console.error("[ResultadoPage] Erro ao ler localStorage:", error)
+      console.error("[getClienteDataWithFallback] ❌ Erro ao ler localStorage:", error)
     }
   }
   
-  return clienteData
+  console.error("[getClienteDataWithFallback] ❌ Nenhuma sessão encontrada (nem cookie nem localStorage)")
+  return null
 }
 
 export default function ResultadoPage() {
