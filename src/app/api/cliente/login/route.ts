@@ -21,15 +21,42 @@ export async function POST(request: NextRequest) {
     }
 
     const cleanWhatsapp = whatsapp.replace(/\D/g, "");
-    const backendUrl =
-      process.env.NEXT_PUBLIC_BACKEND_URL || 
-      process.env.NEXT_PUBLIC_PAINELADM_URL || 
-      "http://localhost:3000";
+    
+    // Detectar URL do backend automaticamente (mesma lógica de generate-looks/remix)
+    let backendUrl =
+      process.env.NEXT_PUBLIC_BACKEND_URL ||
+      process.env.NEXT_PUBLIC_PAINELADM_URL;
+
+    // Se não tiver variável de ambiente, detectar automaticamente em produção
+    if (!backendUrl || backendUrl === "http://localhost:3000") {
+      const host = request.headers.get('host') || request.headers.get('x-forwarded-host');
+      const protocol = request.headers.get('x-forwarded-proto') || 'https';
+      
+      // Se estiver em produção (não localhost), usar o domínio do painel
+      if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
+        // Tentar detectar o domínio do backend baseado no domínio do frontend
+        // Exemplo: app2.experimenteai.com.br -> paineladm.experimenteai.com.br
+        if (host.includes('app2.experimenteai.com.br') || host.includes('app.experimenteai.com.br')) {
+          backendUrl = 'https://paineladm.experimenteai.com.br';
+        } else if (host.includes('vercel.app')) {
+          // Se estiver no Vercel, tentar detectar o projeto do painel
+          backendUrl = 'https://paineladm.experimenteai.com.br';
+        } else {
+          // Fallback: usar o mesmo domínio
+          backendUrl = `${protocol}://${host}`;
+        }
+      } else {
+        // Local: usar localhost:3000
+        backendUrl = "http://localhost:3000";
+      }
+    }
 
     console.log("[Cliente Login] Tentando autenticar no backend:", {
       backendUrl,
       lojistaId,
       whatsapp: cleanWhatsapp.substring(0, 5) + "...",
+      hasEnvVar: !!(process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_PAINELADM_URL),
+      host: request.headers.get('host'),
     });
 
     // Autenticar no backend
