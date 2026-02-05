@@ -18,6 +18,8 @@ import {
   ArrowLeftCircle,
   ShoppingCart,
   Cast,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
 import toast from "react-hot-toast"
 import { ClockAnimation } from "../ClockAnimation"
@@ -105,6 +107,7 @@ export function ExperimentarView({
   onDisplayConnect,
 }: ExperimentarViewProps) {
   const [selectedProductDetail, setSelectedProductDetail] = useState<Produto | null>(null)
+  const [detailGalleryIndex, setDetailGalleryIndex] = useState(0)
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
   const [isButtonExpanded, setIsButtonExpanded] = useState(false)
   const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0)
@@ -478,6 +481,7 @@ export function ExperimentarView({
       return
     }
     setSelectedProductDetail(produto)
+    setDetailGalleryIndex(0)
     setSelectedSize(null) // Resetar tamanho selecionado ao abrir modal
   }
 
@@ -1117,7 +1121,17 @@ export function ExperimentarView({
       {generationError && (<div className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-lg border-2 border-red-500 dark:border-red-400 bg-red-50 dark:bg-red-900/30 px-4 py-3 shadow-md"><p className="text-sm font-medium text-red-700 dark:text-red-200">{generationError}</p></div>)}
 
       {/* Modal de Detalhes do Produto */}
-      {selectedProductDetail && (
+      {selectedProductDetail && (() => {
+        const fotosCatalogo: string[] = [
+          selectedProductDetail.imagemUrlCatalogo,
+          selectedProductDetail.imagemUrlOriginal,
+          selectedProductDetail.imagemUrl,
+          ...(selectedProductDetail.catalogImageUrls || []),
+        ].filter((u): u is string => typeof u === "string" && u.trim() !== "")
+        const fotosUnicas = Array.from(new Set(fotosCatalogo))
+        const totalFotos = fotosUnicas.length
+        const fotoAtual = totalFotos > 0 ? fotosUnicas[detailGalleryIndex % totalFotos] : null
+        return (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-8 sm:pt-12 backdrop-blur-sm overflow-y-auto" onClick={() => setSelectedProductDetail(null)}>
           <div
             className="neon-border w-full max-w-2xl rounded-xl border-2 border-white/20 bg-black/50 backdrop-blur-lg p-6 shadow-2xl mb-8"
@@ -1134,12 +1148,35 @@ export function ExperimentarView({
             </div>
 
             <div className="space-y-4">
-              {/* Imagem do Produto */}
-              {getProdutoImagem(selectedProductDetail) && (
+              {/* Galeria de fotos do catálogo: setas e contador */}
+              {fotoAtual && (
                 <div className="neon-border relative w-full min-h-96 rounded-lg overflow-hidden bg-gray-900 p-0" style={{ position: 'relative' }}>
+                  <div className="absolute top-2 right-2 z-10 rounded bg-black/60 px-2 py-1 text-xs font-medium text-white">
+                    {detailGalleryIndex + 1} / {totalFotos}
+                  </div>
+                  {totalFotos > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setDetailGalleryIndex((i) => (i - 1 + totalFotos) % totalFotos) }}
+                        className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70 transition"
+                        aria-label="Foto anterior"
+                      >
+                        <ChevronLeft className="h-6 w-6" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setDetailGalleryIndex((i) => (i + 1) % totalFotos) }}
+                        className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70 transition"
+                        aria-label="Próxima foto"
+                      >
+                        <ChevronRight className="h-6 w-6" />
+                      </button>
+                    </>
+                  )}
                   <div className="w-full h-full min-h-[400px] flex items-center justify-center">
                     <SafeImage
-                      src={getProdutoImagem(selectedProductDetail)!}
+                      src={fotoAtual}
                       alt={selectedProductDetail.nome}
                       className="w-full h-full object-contain"
                       containerClassName="w-full h-full"
@@ -1293,7 +1330,8 @@ export function ExperimentarView({
             </div>
           </div>
         </div>
-      )}
+        )
+      })()}
 
       {/* Modal de Favoritos */}
       {showFavoritesModal && (

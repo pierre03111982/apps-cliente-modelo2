@@ -43,6 +43,8 @@ export type Produto = {
   imagemUrl?: string | null
   imagemUrlCatalogo?: string | null
   imagemUrlOriginal?: string | null
+  /** URLs das fotos do catálogo (frente, costas, extras) para galeria no detalhe */
+  catalogImageUrls?: string[] | null
   categoria?: string | null
   tamanhos?: string[]
   cores?: string[]

@@ -165,6 +165,9 @@ export async function fetchProdutos(
             typeof data.imagemUrlCatalogo === "string" ? data.imagemUrlCatalogo : null
           const imagemUrlOriginal =
             typeof data.imagemUrlOriginal === "string" ? data.imagemUrlOriginal : null
+          const catalogImageUrls = Array.isArray(data.catalogImageUrls)
+            ? (data.catalogImageUrls as string[]).filter((u): u is string => typeof u === "string" && u.trim() !== "")
+            : null
           const descontoEspecialRaw = data.descontoProduto
           let descontoEspecial: number | null = null
           if (typeof descontoEspecialRaw === "number") {
@@ -185,6 +188,7 @@ export async function fetchProdutos(
             imagemUrlOriginal:
               imagemUrlOriginal ||
               (typeof data.imagemUrl === "string" ? data.imagemUrl : null),
+            catalogImageUrls: catalogImageUrls && catalogImageUrls.length > 0 ? catalogImageUrls : null,
             categoria: typeof data.categoria === "string" ? data.categoria : null,
             tamanhos: Array.isArray(data.tamanhos) ? (data.tamanhos as string[]) : [],
             cores: Array.isArray(data.cores) ? (data.cores as string[]) : [],

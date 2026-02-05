@@ -41,6 +41,7 @@ interface SmartUploadZoneProps {
 
 export function SmartUploadZone({ onFileSelect, isLoading, inputId = "photo-upload" }: SmartUploadZoneProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
   const [dragActive, setDragActive] = useState(false)
   const [currentSlide, setCurrentSlide] = useState(0)
   const [qualityWarning, setQualityWarning] = useState<string | null>(null)
@@ -103,10 +104,10 @@ export function SmartUploadZone({ onFileSelect, isLoading, inputId = "photo-uplo
     e.stopPropagation()
     if (isLoading) return
     
-    // Prioridade 1: Tentar usar o input externo (que tem acesso à galeria/câmera)
+    // Prioridade 1: Tentar usar o input externo (galeria)
     const externalInput = document.getElementById(inputId) as HTMLInputElement | null
     if (externalInput) {
-      // Resetar o input para garantir que onChange sempre dispare
+      externalInput.removeAttribute("capture")
       externalInput.value = ""
       setTimeout(() => {
         externalInput.click()
@@ -114,13 +115,27 @@ export function SmartUploadZone({ onFileSelect, isLoading, inputId = "photo-uplo
       return
     }
     
-    // Fallback: Usar o input interno
+    // Fallback: Usar o input interno (galeria)
     if (fileInputRef.current) {
+      fileInputRef.current.removeAttribute("capture")
       fileInputRef.current.value = ""
       setTimeout(() => {
         if (fileInputRef.current) {
           fileInputRef.current.click()
         }
+      }, 10)
+    }
+  }
+
+  /** Abre a câmera do dispositivo para tirar foto na hora (mobile e desktop com webcam) */
+  const handleCameraClick = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (isLoading) return
+    if (cameraInputRef.current) {
+      cameraInputRef.current.value = ""
+      setTimeout(() => {
+        cameraInputRef.current?.click()
       }, 10)
     }
   }
@@ -216,20 +231,37 @@ export function SmartUploadZone({ onFileSelect, isLoading, inputId = "photo-uplo
           onChange={handleChange}
           style={{ display: 'none' }}
         />
+        {/* Input só para câmera: capture abre a câmera no celular (e webcam no desktop) */}
+        <input
+          ref={cameraInputRef}
+          type="file"
+          className="hidden"
+          accept="image/*"
+          capture="environment"
+          onChange={handleChange}
+          style={{ display: 'none' }}
+        />
 
-        <div className="flex flex-col items-center gap-2 p-4 text-center pointer-events-none">
-          <div className="rounded-full bg-white p-3 shadow-sm">
+        <div className="flex flex-col items-center gap-2 p-4 text-center">
+          <div className="pointer-events-none rounded-full bg-white p-3 shadow-sm">
             {isLoading ? (
               <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-accent-1" />
             ) : (
               <UploadCloud className="h-6 w-6 text-accent-1" />
             )}
           </div>
-          <div>
+          <div className="pointer-events-none">
             <p className="text-sm font-semibold text-gray-700">Toque para enviar sua foto</p>
             <p className="text-xs text-gray-400">ou arraste aqui</p>
           </div>
-          <Button variant="ghost" size="sm" className="pointer-events-none mt-1 h-8 text-xs">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="mt-1 h-8 text-xs pointer-events-auto"
+            onClick={handleCameraClick}
+            onTouchEnd={(e) => { e.preventDefault(); handleCameraClick(e); }}
+          >
             <Camera className="mr-2 h-3 w-3" />
             Câmera
           </Button>
