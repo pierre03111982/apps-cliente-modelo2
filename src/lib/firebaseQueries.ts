@@ -145,7 +145,8 @@ export async function fetchProdutos(
     try {
       const baseCollection = produtosCollectionPath(lojistaId)
       if (baseCollection) {
-        const filtros = [] as any[]
+        // Catálogo: só produtos salvos (publicados). Rascunho não aparece.
+        const filtros = [where("status", "!=", "draft")] as any[]
 
         if (opts?.categoria) {
           filtros.push(where("categoria", "==", opts.categoria))
